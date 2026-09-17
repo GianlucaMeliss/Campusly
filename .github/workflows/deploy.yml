@@ -1,0 +1,36 @@
+name: Deploy to Altervista via FTP
+
+on:
+  push:
+    branches:
+      - main # Cambialo in 'master' se il tuo branch principale si chiama così
+
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🚚 Scarica il codice dal repo
+        uses: actions/checkout@v4
+      
+      - name: 📂 Sincronizza i file via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+      
+          server-dir: /template-stock/
+      
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            README.md
+            funz.txt
+            info.docx
+            OPERAZIONI.xlsx
+            repomix-output.xml
+            temp
+            app/logs/

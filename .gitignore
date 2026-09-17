@@ -1,0 +1,72 @@
+# =========================
+# OS / filesystem
+# =========================
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+.Spotlight-V100
+.Trashes
+
+# =========================
+# Editor / IDE
+# =========================
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.suo
+*.user
+*.userossc
+*.swp
+*.swo
+
+# =========================
+# Logs / debug
+# =========================
+*.log
+logs/
+applogs/
+*.tmp
+temp/
+tmp/
+
+# =========================
+# Environment / secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Local notes / exports
+# =========================
+repomix-output.xml
+funz.txt
+info.docx
+OPERAZIONI.xlsx
+
+# =========================
+# Dependency / build artifacts
+# =========================
+vendor/
+node_modules/
+dist/
+build/
+coverage/
+
+# =========================
+# Runtime / cache
+# =========================
+.cache/
+*.cache
+*.pid
+
+# =========================
+# Keep important dotfiles tracked
+# =========================
+!.gitignore
+!.gitattributes
+!public/.htaccess

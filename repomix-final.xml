@@ -1,0 +1,1364 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.github/
+  workflows/
+    deploy.yml
+app/
+  Controllers/
+    ApiController.php
+    HomeController.php
+    PageController.php
+  Core/
+    Database.php
+    Model.php
+    Router.php
+    View.php
+  Models/
+    ItemModel.php
+config/
+  app.php
+  routes.php
+data/
+  content.json
+public/
+  assets/
+    css/
+      about.css
+      home.css
+      style.css
+    img/
+      favicon.ico
+  .htaccess
+  index.php
+  robots.txt
+views/
+  components/
+    cookie-banner.php
+  layouts/
+    footer.php
+    header.php
+  pages/
+    404.php
+    about.php
+    archive.php
+    home.php
+    legal.php
+    single.php
+.gitignore
+.htaccess
+AI_INSTRUCTIONS.md
+favicon.ico
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="app/Controllers/HomeController.php">
+<?php
+declare(strict_types=1);
+
+namespace App\Controllers;
+
+use App\Core\View;
+
+final class HomeController
+{
+    public function index(): void
+    {
+        View::render('pages/home', [
+            'pageTitle' => 'Home',
+            'pageDescription' => 'Starter template base per siti e servizi web.',
+            'pageCss' => 'home',
+        ]);
+    }
+}
+</file>
+
+<file path="app/Core/Database.php">
+<?php
+declare(strict_types=1);
+
+namespace App\Core;
+
+use PDO;
+use PDOException;
+
+final class Database
+{
+    private static ?PDO $instance = null;
+
+    /**
+     * Costruttore privato per impedire l'istanziamento diretto (Pattern Singleton)
+     */
+    private function __construct() {}
+
+    /**
+     * Restituisce l'istanza univoca della connessione PDO
+     */
+    public static function getInstance(): PDO
+    {
+        if (self::$instance === null) {
+            $config = require BASEPATH . '/config/app.php';
+            $db = $config['db'] ?? [];
+
+            // Se il nome del database è vuoto, fermiamo l'esecuzione in modo pulito
+            if (empty($db['name'])) {
+                die("Database non configurato. Controlla config/app.php.");
+            }
+
+            $dsn = "mysql:host={$db['host']};dbname={$db['name']};charset={$db['charset']}";
+            
+            $options = [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, // Lancia eccezioni in caso di errore
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,       // Restituisce array associativi
+                PDO::ATTR_EMULATE_PREPARES   => false,                  // Disabilita l'emulazione (più sicuro per SQL Injection)
+            ];
+
+            try {
+                self::$instance = new PDO($dsn, $db['user'], $db['pass'], $options);
+            } catch (PDOException $e) {
+                // In un ambiente di produzione NON stampare mai $e->getMessage() per motivi di sicurezza
+                error_log("Errore di connessione DB: " . $e->getMessage());
+                die("Errore critico di connessione al database.");
+            }
+        }
+
+        return self::$instance;
+    }
+}
+</file>
+
+<file path="app/Core/Model.php">
+<?php
+declare(strict_types=1);
+
+namespace App\Core;
+
+use PDO;
+
+abstract class Model
+{
+    protected PDO $db;
+
+    public function __construct()
+    {
+        $this->db = Database::getInstance();
+    }
+}
+</file>
+
+<file path="app/Models/ItemModel.php">
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+class ItemModel
+{
+    /**
+     * Restituisce il percorso assoluto del file JSON
+     */
+    private static function getDataPath(): string
+    {
+        return BASEPATH . '/data/content.json';
+    }
+
+    /**
+     * Recupera tutti gli elementi (es. per la pagina archivio/servizi)
+     */
+    public static function getAll(): array
+    {
+        $file = self::getDataPath();
+        
+        if (!file_exists($file)) {
+            // Logica di fallback se il file non esiste
+            error_log("File JSON non trovato: " . $file);
+            return [];
+        }
+
+        $json = file_get_contents($file);
+        $data = json_decode($json, true);
+
+        return is_array($data) ? $data : [];
+    }
+
+    /**
+     * Trova un singolo elemento partendo dal suo slug
+     */
+    public static function getBySlug(string $slug): ?array
+    {
+        $items = self::getAll();
+        
+        foreach ($items as $item) {
+            if (isset($item['slug']) && $item['slug'] === $slug) {
+                return $item;
+            }
+        }
+        
+        return null;
+    }
+}
+</file>
+
+<file path="data/content.json">
+[
+    {
+        "slug": "servizio-base",
+        "title": "Servizio Base",
+        "icon": "box",
+        "short_desc": "Descrizione breve e accattivante per le card.",
+        "content": "Testo completo e dettagliato che verrà mostrato nella pagina singola del servizio o prodotto."
+    },
+    {
+        "slug": "prodotto-premium",
+        "title": "Prodotto Premium",
+        "icon": "star",
+        "short_desc": "Soluzione avanzata per esigenze specifiche.",
+        "content": "Dettagli completi del prodotto premium, eventuali specifiche tecniche e vantaggi."
+    }
+]
+</file>
+
+<file path="public/assets/css/about.css">
+
+</file>
+
+<file path="public/assets/css/home.css">
+
+</file>
+
+<file path="public/assets/css/style.css">
+
+</file>
+
+<file path="public/robots.txt">
+# ==========================================
+# robots.txt per template-base
+# ==========================================
+
+# Regole per tutti i motori di ricerca (Google, Bing, ecc.)
+User-agent: *
+
+# Permetti la scansione di tutto il sito
+Allow: /
+
+# Blocca l'accesso dei bot alle rotte tecniche/API (es. invio moduli)
+Disallow: /api/
+
+# Indica a Google dove trovare la mappa completa del sito
+Sitemap: https://www.gianlucamelistest.it/sitemap.xml
+</file>
+
+<file path="views/components/cookie-banner.php">
+<div id="cookie-banner" class="cookie-overlay">
+    <div class="cookie-text">
+        <h4><i data-lucide="cookie" style="width:20px; height:20px;"></i> La tua privacy è importante</h4>
+        <p>Utilizziamo cookie tecnici essenziali per il sito e, previo tuo consenso, cookie analitici di terze parti per migliorare i nostri servizi. Puoi accettarli tutti o rifiutare quelli non essenziali. Maggiori info nella <a href="/cookie">Cookie Policy</a>.</p>
+    </div>
+    <div class="cookie-actions">
+        <button id="btn-reject-cookies" class="btn-cookie-reject">Rifiuta non essenziali</button>
+        <button id="btn-accept-cookies" class="btn-cookie-accept">Accetta Tutti</button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const banner = document.getElementById('cookie-banner');
+    const btnAccept = document.getElementById('btn-accept-cookies');
+    const btnReject = document.getElementById('btn-reject-cookies');
+    
+    const storageKey = 'broggini_cookie_consent';
+    const uuidKey = 'broggini_cookie_uuid';
+
+    // Funzione per generare un ID anonimo per il registro consensi
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    // Recupera o crea l'UUID dell'utente
+    let userUUID = localStorage.getItem(uuidKey);
+    if (!userUUID) {
+        userUUID = generateUUID();
+        localStorage.setItem(uuidKey, userUUID);
+    }
+
+    // Funzione per inviare il log al server in background
+    function logConsentToServer(status) {
+        fetch('/api/log-cookie', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                uuid: userUUID,
+                consent_status: status
+            })
+        }).catch(err => console.error('Errore log cookie:', err));
+    }
+
+    // 1. Controlla se l'utente ha già fatto una scelta
+    const userConsent = localStorage.getItem(storageKey);
+
+    if (!userConsent) {
+        // Mostra il banner con un leggero ritardo
+        setTimeout(() => { banner.classList.add('show'); }, 800);
+    } else if (userConsent === 'accepted') {
+        loadThirdPartyScripts();
+    }
+
+    // 2. Azione: ACCETTA
+    btnAccept.addEventListener('click', () => {
+        localStorage.setItem(storageKey, 'accepted');
+        banner.classList.remove('show');
+        logConsentToServer('accepted');
+        loadThirdPartyScripts(); 
+    });
+
+    // 3. Azione: RIFIUTA
+    btnReject.addEventListener('click', () => {
+        localStorage.setItem(storageKey, 'rejected');
+        banner.classList.remove('show');
+        logConsentToServer('rejected');
+    });
+
+    // 4. Funzione globale per riaprire il banner
+    window.openCookieBanner = function(e) {
+        if(e) e.preventDefault();
+        banner.classList.add('show');
+    };
+});
+
+function loadThirdPartyScripts() {
+    if(window.scriptsLoaded) return;
+    window.scriptsLoaded = true;
+    console.log("Cookie accettati: Script di terze parti caricati.");
+    // Incolla qui gli script Google/Meta...
+}
+</script>
+</file>
+
+<file path="views/layouts/footer.php">
+</main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; <?= date('Y') ?> <?= htmlspecialchars($app['site']['name'] ?? 'Project Starter') ?>. Template base per progetti web.</p>
+        </div>
+    </footer>
+</body>
+</html>
+</file>
+
+<file path="views/pages/about.php">
+<section class="page-hero">
+    <div class="container narrow">
+        <p class="eyebrow">Pagina istituzionale</p>
+        <h1>Chi siamo</h1>
+        <p class="lead">
+            Questa pagina esiste come esempio base di contenuto istituzionale
+            all’interno del template.
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container narrow">
+        <h2>Obiettivo del template</h2>
+        <p>
+            L’obiettivo è avere una struttura chiara, riutilizzabile e facilmente comprensibile
+            sia da uno sviluppatore sia da un sistema AI incaricato di proseguire il progetto.
+        </p>
+
+        <h2>Cosa verrà personalizzato</h2>
+        <p>
+            In un progetto reale, questa sezione conterrà storia, valori, posizionamento,
+            team, metodo di lavoro e altri contenuti specifici del brand.
+        </p>
+    </div>
+</section>
+</file>
+
+<file path="views/pages/archive.php">
+<section class="page-hero">
+    <div class="container narrow">
+        <a href="/" class="hero-back-btn">
+            <i data-lucide="arrow-left"></i> Torna alla Home
+        </a>
+        <h1><?= htmlspecialchars($pageTitle ?? 'I nostri servizi') ?></h1>
+        <p class="lead">
+            <?= htmlspecialchars($pageDescription ?? 'Esplora le nostre soluzioni.') ?>
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="grid grid-3">
+            <?php if (!empty($items)): ?>
+                <?php foreach ($items as $item): ?>
+                    <article class="card">
+                        <div class="card-icon" style="margin-bottom: 1rem; color: var(--col-primary);">
+                            <i data-lucide="<?= htmlspecialchars($item['icon'] ?? 'box') ?>" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <h3><?= htmlspecialchars($item['title']) ?></h3>
+                        <p><?= htmlspecialchars($item['short_desc'] ?? '') ?></p>
+                        
+                        <a href="<?= htmlspecialchars($app['site']['base_path'] ?? '') ?>/servizi/<?= htmlspecialchars($item['slug']) ?>" class="btn btn-secondary" style="margin-top: 1rem; display: inline-block;">
+                            Scopri di più
+                        </a>
+                    </article>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="empty-state">
+                    <p>Nessun elemento trovato al momento.</p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</section>
+</file>
+
+<file path="views/pages/legal.php">
+<style>
+    .legal-container {
+        max-width: 800px;
+        margin: 60px auto 100px;
+        padding: 60px 50px;
+        background: var(--col-white);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-soft);
+    }
+    
+    @media (max-width: 768px) {
+        .legal-container { padding: 40px 24px; margin: 40px 20px 80px; }
+    }
+
+    .legal-header { text-align: center; margin-bottom: 50px; padding-bottom: 30px; border-bottom: 1px solid #E2E8F0; }
+    .legal-header h1 { color: var(--col-primary); font-size: clamp(2rem, 4vw, 2.5rem); }
+    
+    .legal-content { color: var(--col-text-main); line-height: 1.8; font-size: 1.05rem; }
+    .legal-content h2 { color: var(--col-primary); margin: 40px 0 15px; font-size: 1.5rem; }
+    .legal-content h3 { color: var(--col-primary-light); margin: 30px 0 10px; font-size: 1.25rem; }
+    .legal-content p { margin-bottom: 20px; color: var(--col-text-light); }
+    .legal-content ul { margin-bottom: 20px; padding-left: 20px; color: var(--col-text-light); }
+    .legal-content li { margin-bottom: 10px; }
+    
+    .legal-back { display: inline-flex; align-items: center; gap: 8px; color: var(--col-text-light); font-weight: 600; margin-bottom: 20px; transition: var(--transition-smooth); }
+    .legal-back:hover { color: var(--col-primary); transform: translateX(-5px); }
+</style>
+
+<div class="legal-container">
+    <a href="/" class="legal-back">
+        <i data-lucide="arrow-left"></i> Torna alla Home
+    </a>
+
+    <header class="legal-header">
+        <h1><?= htmlspecialchars($titolo) ?></h1>
+    </header>
+
+    <div class="legal-content">
+        <?= $contenuto ?>
+    </div>
+</div>
+</file>
+
+<file path="views/pages/single.php">
+<section class="page-hero">
+    <div class="container narrow">
+        <a href="<?= htmlspecialchars($app['site']['base_path'] ?? '') ?>/servizi" class="hero-back-btn">
+            <i data-lucide="arrow-left"></i> Torna ai servizi
+        </a>
+        
+        <div style="margin-top: 2rem;">
+            <i data-lucide="<?= htmlspecialchars($item['icon'] ?? 'box') ?>" style="width: 48px; height: 48px; color: var(--col-primary); margin-bottom: 1rem;"></i>
+            <h1><?= htmlspecialchars($item['title']) ?></h1>
+            <p class="lead"><?= htmlspecialchars($item['short_desc'] ?? '') ?></p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container narrow">
+        <div class="content-body" style="font-size: 1.1rem; line-height: 1.8; color: var(--col-text-main);">
+            <p><?= nl2br(htmlspecialchars($item['content'] ?? '')) ?></p>
+        </div>
+        
+        <div style="margin-top: 4rem; text-align: center;">
+            <button onclick="openContactModal()" class="btn btn-primary">
+                Richiedi informazioni
+            </button>
+        </div>
+    </div>
+</section>
+
+<?php 
+// Assicurati che il file contact-modal.php esista, altrimenti rimuovi questa riga o crealo
+$modalPath = BASEPATH . '/views/components/contact-modal.php';
+if (file_exists($modalPath)) {
+    include $modalPath; 
+}
+?>
+</file>
+
+<file path="app/Controllers/ApiController.php">
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers;
+
+class ApiController
+{
+    public function sendContact(): void
+    {
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            
+            $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+            $baseUrl = strtok($referer, '?');
+
+            // 1. RATE LIMITING
+            $timeBetweenRequests = 60;
+            if (isset($_SESSION['last_submission_time'])) {
+                $secondsSinceLast = time() - $_SESSION['last_submission_time'];
+                if ($secondsSinceLast < $timeBetweenRequests) {
+                    header("Location: " . $baseUrl . "?status=error&msg=ratelimit");
+                    exit;
+                }
+            }
+
+            // 2. VERIFICA TOKEN CSRF (assicurati di averlo nel tuo form HTML)
+            if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+                header("Location: " . $baseUrl . "?status=error&msg=csrf");
+                exit;
+            }
+
+            // 3. RECUPERO CONFIGURAZIONI MAIL
+            $appConfig = require BASEPATH . '/config/app.php';
+            $to = $appConfig['mail']['contact_email'] ?? 'noreply@localhost';
+            $subject = $appConfig['mail']['contact_subject'] ?? 'Nuovo contatto';
+
+            // 4. CREAZIONE DINAMICA DEL MESSAGGIO
+            $message = "Hai ricevuto una nuova richiesta di contatto dal sito web.\n\n";
+            $message .= "👤 DETTAGLI CONTATTO\n";
+            $message .= "-----------------------------------\n";
+            
+            $hasData = false;
+
+            // Cicla tutti i campi inviati dal form ignorando il token di sicurezza
+            foreach ($_POST as $key => $value) {
+                if ($key === 'csrf_token') continue;
+                
+                $cleanValue = htmlspecialchars(trim((string)$value));
+                if (!empty($cleanValue)) {
+                    // Trasforma "nome_azienda" in "Nome azienda" per l'email
+                    $label = ucfirst(str_replace('_', ' ', $key));
+                    $message .= "$label: $cleanValue\n";
+                    $hasData = true;
+                }
+            }
+
+            $message .= "-----------------------------------\n";
+
+            if (!$hasData) {
+                header("Location: " . $baseUrl . "?status=error&msg=empty");
+                exit;
+            }
+
+            $domain = $_SERVER['HTTP_HOST'];
+            $headers = "From: noreply@$domain\r\n"; 
+            $headers .= "Reply-To: noreply@$domain\r\n";
+            $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+
+            // 5. INVIO EFFETTIVO
+            if (mail($to, $subject, $message, $headers)) {
+                $_SESSION['last_submission_time'] = time();
+                header("Location: " . $baseUrl . "?status=success");
+                exit;
+            } else {
+                header("Location: " . $baseUrl . "?status=error&msg=server");
+                exit;
+            }
+
+        } else {
+            header("Location: /");
+            exit;
+        }
+    }
+
+    public function logCookie(): void
+    {
+        // Questo metodo era già generico e va benissimo per tracciare i consensi GDPR!
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            $jsonPayload = file_get_contents('php://input');
+            $data = json_decode($jsonPayload, true);
+
+            if ($data && isset($data['consent_status']) && isset($data['uuid'])) {
+                
+                $logDir = BASE_PATH . '/app/logs';
+                if (!is_dir($logDir)) {
+                    mkdir($logDir, 0755, true);
+                }
+                $logFile = $logDir . '/cookie_consents.csv';
+                $isNewFile = !file_exists($logFile);
+                
+                $timestamp = date('Y-m-d H:i:s');
+                $uuid = htmlspecialchars(trim($data['uuid']));
+                $status = htmlspecialchars(trim($data['consent_status']));
+                $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+                $ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
+                $anonIp = preg_replace('/[0-9]+$/', 'xxx', $ip);
+
+                $file = fopen($logFile, 'a');
+                
+                if ($file) {
+                    if ($isNewFile) {
+                        fputcsv($file, ['Timestamp', 'UUID', 'Consent_Status', 'Anon_IP', 'User_Agent']);
+                    }
+                    
+                    fputcsv($file, [$timestamp, $uuid, $status, $anonIp, $userAgent]);
+                    fclose($file);
+                    
+                    http_response_code(200);
+                    echo json_encode(['status' => 'success']);
+                } else {
+                    http_response_code(500);
+                    echo json_encode(['status' => 'error', 'message' => 'Impossibile scrivere il log.']);
+                }
+            } else {
+                http_response_code(400);
+            }
+        }
+    }
+}
+</file>
+
+<file path="app/Controllers/PageController.php">
+<?php
+declare(strict_types=1);
+
+namespace App\Controllers;
+
+use App\Core\View;
+use App\Models\ItemModel;
+
+final class PageController
+{
+    public function about(): void
+    {
+        View::render('pages/about', [
+            'pageTitle' => 'About',
+            'pageDescription' => 'Pagina istituzionale base del template.',
+            'pageCss' => 'about',
+        ]);
+    }
+
+    /**
+     * Mostra l'elenco di tutti gli elementi (es. pagina "I nostri servizi")
+     */
+    public function archive(): void
+    {
+        $items = ItemModel::getAll();
+
+        View::render('pages/archive', [
+            'pageTitle' => 'I nostri servizi',
+            'pageDescription' => 'Esplora le nostre soluzioni.',
+            'items' => $items
+        ]);
+    }
+
+    /**
+     * Mostra la pagina di dettaglio del singolo elemento (es. servizio specifico)
+     */
+    public function showItem(string $slug): void
+    {
+        $item = ItemModel::getBySlug($slug);
+
+        if (!$item) {
+            $this->notFound();
+            return;
+        }
+
+        View::render('pages/single', [
+            'pageTitle' => $item['title'],
+            'pageDescription' => $item['short_desc'],
+            'item' => $item
+        ]);
+    }
+
+    public function notFound(): void
+    {
+        http_response_code(404);
+
+        View::render('pages/404', [
+            'pageTitle' => '404 - Page not found',
+            'pageDescription' => 'La pagina richiesta non è disponibile.',
+        ]);
+    }
+}
+</file>
+
+<file path="app/Core/Router.php">
+<?php
+declare(strict_types=1);
+
+namespace App\Core;
+
+final class Router
+{
+    private array $routes = [
+        'GET' => [],
+        'POST' => [],
+    ];
+
+    public function get(string $path, callable $handler): void
+    {
+        $this->routes['GET'][$this->normalize($path)] = $handler;
+    }
+
+    public function post(string $path, callable $handler): void
+    {
+        $this->routes['POST'][$this->normalize($path)] = $handler;
+    }
+
+    public function dispatch(string $uri, string $method): void
+    {
+        $path = $this->extractPath($uri);
+        $routes = $this->routes[$method] ?? [];
+
+        foreach ($routes as $route => $handler) {
+            $pattern = preg_replace('#\{([a-zA-Z0-9_]+)\}#', '([a-zA-Z0-9\-]+)', $route);
+            $pattern = '#^' . $pattern . '$#';
+
+            if (preg_match($pattern, $path, $matches)) {
+                array_shift($matches);
+                call_user_func_array($handler, $matches);
+                return;
+            }
+        }
+
+        http_response_code(404);
+
+        if (class_exists(\App\Controllers\PageController::class)) {
+            (new \App\Controllers\PageController())->notFound();
+            return;
+        }
+
+        echo '404 - Page not found';
+    }
+
+    private function extractPath(string $uri): string
+    {
+        $path = parse_url($uri, PHP_URL_PATH) ?? '/';
+        $path = '/' . ltrim($path, '/');
+
+        if (defined('BASE_PATH') && BASE_PATH !== '') {
+            if ($path === BASE_PATH) {
+                $path = '/';
+            } elseif (strpos($path, BASE_PATH . '/') === 0) {
+                $path = substr($path, strlen(BASE_PATH));
+            }
+        }
+
+        return $this->normalize($path);
+    }
+
+    private function normalize(string $path): string
+    {
+        $path = '/' . trim($path, '/');
+        return $path === '' ? '/' : $path;
+    }
+}
+</file>
+
+<file path="app/Core/View.php">
+<?php
+declare(strict_types=1);
+
+namespace App\Core;
+
+final class View
+{
+    public static function render(string $view, array $data = []): void
+    {
+        $app = require BASEPATH . '/config/app.php';
+
+        $defaults = [
+            'app' => $app,
+            'basePath' => $app['site']['base_path'] ?? '',
+            'pageTitle' => $app['seo']['default_title'] ?? $app['site']['name'],
+            'pageDescription' => $app['seo']['default_description'] ?? '',
+            'pageCss' => null,
+        ];
+
+        $data = array_merge($defaults, $data);
+
+        extract($data, EXTR_SKIP);
+
+        $viewFile = BASEPATH . '/views/' . $view . '.php';
+
+        if (!file_exists($viewFile)) {
+            http_response_code(404);
+            exit('View not found: ' . $view);
+        }
+
+        require BASEPATH . '/views/layouts/header.php';
+        require $viewFile;
+        require BASEPATH . '/views/layouts/footer.php';
+    }
+}
+</file>
+
+<file path="views/layouts/header.php">
+<?php
+$app = $app ?? require BASEPATH . '/config/app.php';
+$siteName = $app['site']['name'] ?? 'Project Starter';
+$siteTagline = $app['site']['tagline'] ?? '';
+$locale = $app['site']['locale'] ?? 'it';
+$assetsVersion = $app['assets']['version'] ?? '1.0.0';
+$basePath = rtrim($app['site']['base_path'] ?? '', '/');
+
+$url = static function (string $path = '/') use ($basePath): string {
+    $path = '/' . ltrim($path, '/');
+    return ($basePath !== '' ? $basePath : '') . $path;
+};
+?>
+<!DOCTYPE html>
+<html lang="<?= htmlspecialchars($locale) ?>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= htmlspecialchars($pageTitle ?? $siteName) ?></title>
+    <meta name="description" content="<?= htmlspecialchars($pageDescription ?? '') ?>">
+
+    <link rel="icon" href="<?= htmlspecialchars($url('/favicon.ico')) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars($url('/assets/css/style.css')) ?>?v=<?= urlencode($assetsVersion) ?>">
+
+    <?php if (!empty($pageCss)): ?>
+        <link rel="stylesheet" href="<?= htmlspecialchars($url('/assets/css/' . $pageCss . '.css')) ?>?v=<?= urlencode($assetsVersion) ?>">
+    <?php endif; ?>
+</head>
+<body>
+    <header class="site-header">
+        <div class="container site-header__inner">
+            <a href="<?= htmlspecialchars($url('/')) ?>" class="site-brand">
+                <span class="site-brand__name"><?= htmlspecialchars($siteName) ?></span>
+                <?php if (!empty($siteTagline)): ?>
+                    <span class="site-brand__tagline"><?= htmlspecialchars($siteTagline) ?></span>
+                <?php endif; ?>
+            </a>
+
+            <nav class="site-nav" aria-label="Navigazione principale">
+                <a href="<?= htmlspecialchars($url('/')) ?>">Home</a>
+                <a href="<?= htmlspecialchars($url('/chi-siamo')) ?>">Chi siamo</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="site-main">
+</file>
+
+<file path="views/pages/404.php">
+<?php
+$basePath = rtrim($basePath ?? '', '/');
+$homeUrl = ($basePath !== '' ? $basePath : '') . '/';
+$aboutUrl = ($basePath !== '' ? $basePath : '') . '/chi-siamo';
+?>
+
+<section class="section">
+    <div class="container narrow">
+        <div class="error-page">
+            <p class="eyebrow">Errore 404</p>
+            <h1>Pagina non trovata</h1>
+            <p class="lead">
+                Il contenuto richiesto non è disponibile oppure l’indirizzo inserito non è corretto.
+            </p>
+
+            <div class="hero-actions">
+                <a href="<?= htmlspecialchars($homeUrl) ?>" class="btn btn-primary">Torna alla home</a>
+                <a href="<?= htmlspecialchars($aboutUrl) ?>" class="btn btn-secondary">Vai a chi siamo</a>
+            </div>
+        </div>
+    </div>
+</section>
+</file>
+
+<file path="views/pages/home.php">
+<?php
+$basePath = rtrim($basePath ?? '', '/');
+$homeUrl = ($basePath !== '' ? $basePath : '') . '/';
+$aboutUrl = ($basePath !== '' ? $basePath : '') . '/chi-siamo';
+$sectionsUrl = ($basePath !== '' ? $basePath : '') . '/#sections';
+?>
+
+<section class="hero">
+    <div class="container">
+        <p class="eyebrow">Starter template</p>
+        <h1>Base neutra per siti e servizi web.</h1>
+        <p class="lead">
+            Questo progetto è pensato per essere duplicato, adattato e personalizzato
+            rapidamente per clienti, brand o prodotti differenti.
+        </p>
+
+        <div class="hero-actions">
+            <a href="<?= htmlspecialchars($aboutUrl) ?>" class="btn btn-primary">Scopri la struttura</a>
+            <a href="<?= htmlspecialchars($sectionsUrl) ?>" class="btn btn-secondary">Vedi le sezioni base</a>
+        </div>
+    </div>
+</section>
+
+<section id="sections" class="section">
+    <div class="container">
+        <div class="section-heading">
+            <h2>Cosa include questa base</h2>
+            <p>Solo gli elementi essenziali per partire in modo ordinato.</p>
+        </div>
+
+        <div class="grid grid-3">
+            <article class="card">
+                <h3>Core pulito</h3>
+                <p>Bootstrap semplice, router minimale e rendering con layout condivisi.</p>
+            </article>
+
+            <article class="card">
+                <h3>Pagine neutre</h3>
+                <p>Contenuti placeholder chiari, senza copy verticale o riferimenti di settore.</p>
+            </article>
+
+            <article class="card">
+                <h3>Facile da estendere</h3>
+                <p>La struttura è pronta per aggiungere servizi, pagine, componenti e dati dinamici.</p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="section section-muted">
+    <div class="container narrow">
+        <div class="section-heading">
+            <h2>Come usarlo</h2>
+        </div>
+
+        <p>
+            Duplica il progetto, aggiorna la configurazione, sostituisci i testi placeholder
+            e poi costruisci sopra moduli, contenuti e componenti specifici per il caso reale.
+        </p>
+    </div>
+</section>
+</file>
+
+<file path=".gitignore">
+# =========================
+# OS / filesystem
+# =========================
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+.Spotlight-V100
+.Trashes
+
+# =========================
+# Editor / IDE
+# =========================
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.suo
+*.user
+*.userossc
+*.swp
+*.swo
+
+# =========================
+# Logs / debug
+# =========================
+*.log
+logs/
+applogs/
+*.tmp
+temp/
+tmp/
+
+# =========================
+# Environment / secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Local notes / exports
+# =========================
+repomix-output.xml
+funz.txt
+info.docx
+OPERAZIONI.xlsx
+
+# =========================
+# Dependency / build artifacts
+# =========================
+vendor/
+node_modules/
+dist/
+build/
+coverage/
+
+# =========================
+# Runtime / cache
+# =========================
+.cache/
+*.cache
+*.pid
+
+# =========================
+# Keep important dotfiles tracked
+# =========================
+!.gitignore
+!.gitattributes
+!public/.htaccess
+</file>
+
+<file path="AI_INSTRUCTIONS.md">
+# 🤖 AI Developer Instructions for PHP MVC Starter Template
+
+## 📌 Project Overview
+This is a custom, lightweight, vanilla PHP (8.4+) MVC boilerplate designed for fast deployment of websites, landing pages, and web services. It uses a Front Controller pattern, flat-file JSON data storage (no SQL database by default), and requires no external dependencies like Composer or Node.js to run the core architecture.
+
+**Your Goal as an AI:** When assisting with this project, you MUST adhere to the existing architectural patterns. Do not suggest adding heavyweight frameworks (like Laravel or Symfony components) unless explicitly requested. Maintain the simplicity, security, and speed of this vanilla PHP structure.
+
+---
+
+## 🏗️ Architecture & Directory Structure
+
+- `/app/` - Contains the core application logic (Namespaced `App\`).
+  - `/Controllers/` - Handles incoming requests and calls views/models.
+  - `/Core/` - System files (`Router.php`, `View.php`).
+  - `/Models/` - Data retrieval logic.
+- `/config/` - Centralized configuration (`app.php`) and routing definitions (`routes.php`).
+- `/data/` - Flat-file databases (e.g., `content.json`). **Keep this outside of public access.**
+- `/public/` - The Web Root. Contains the Front Controller (`index.php`), `.htaccess`, and all public assets (`/assets/`).
+- `/views/` - HTML/PHP templates.
+  - `/layouts/` - Base header and footer.
+  - `/pages/` - Main view files.
+  - `/components/` - Reusable UI chunks (e.g., modals, cookie banners).
+
+---
+
+## ⚙️ Core Mechanics & Rules
+
+### 1. Routing
+All requests are routed through `/public/index.php` via `.htaccess`.
+- **Do not modify `.htaccess`** unless strictly necessary for server setup (currently configured for Altervista with a specific `RewriteBase`).
+- **Define new routes** ONLY in `/config/routes.php`.
+- **Syntax:** `$router->get('/path', function() { (new Controller())->method(); });`
+- Dynamic routes use `{slug}` syntax, which is passed as a string parameter to the controller method.
+
+### 2. Views & Rendering
+Views are rendered using `App\Core\View::render('folder/file', $dataArray);`.
+- `View::render()` automatically prepends `views/layouts/header.php` and appends `views/layouts/footer.php`.
+- Global configurations (from `config/app.php`) like `$basePath`, `$pageTitle`, and `$pageDescription` are automatically injected into the views.
+- **Rule:** Keep business logic OUT of the views. Views should only use `if/else` and `foreach` statements to display data passed from the Controller. Always use `htmlspecialchars()` when outputting variables to prevent XSS.
+
+### 3. Data Management (Models)
+By default, this boilerplate does not use PDO/MySQL. Data is stored in JSON format inside the `/data/` directory.
+- `App\Models\ItemModel.php` reads `data/content.json` and returns it as a PHP associative array.
+- **Rule:** If the user asks to add new services, products, or portfolio items, simply instruct them to add a new JSON object to `content.json`. No database migrations are needed.
+
+### Database (Optional PDO Setup)
+- If the project requires an SQL database, the boilerplate includes a robust PDO Singleton setup.
+- **Connection:** Database credentials are set in `config/app.php` under the `db` array.
+- **Models:** Any database-driven model MUST extend `App\Core\Model`. This automatically provides the `$this->db` property (the PDO instance).
+- **Security:** ALWAYS use PDO Prepared Statements (`prepare()` and `execute()`) for any query involving user input. Never concatenate strings into SQL queries.
+
+### 4. Form Handling & APIs
+- API endpoints (like contact form submissions or cookie logging) are handled by `App\Controllers\ApiController.php`.
+- **Rule:** Always enforce CSRF token validation and basic rate-limiting (already implemented via sessions) when creating new `POST` endpoints. Email configurations are pulled directly from `config/app.php`.
+
+---
+
+## 🛠️ Standard Operating Procedures (How to execute common tasks)
+
+### How to add a new Static Page
+1. Add the route in `config/routes.php`:
+   `$router->get('/new-page', function (): void { (new PageController())->newPage(); });`
+2. Create the method `newPage()` in `app/Controllers/PageController.php` and call `View::render('pages/new-page', ['pageTitle' => 'Title']);`.
+3. Create the view file `views/pages/new-page.php` with the HTML content.
+
+### How to add CSS/Assets
+1. Place the `.css` file in `public/assets/css/`.
+2. To load it only on a specific page, pass the filename (without `.css`) via the controller:
+   `View::render('pages/home', ['pageCss' => 'home']);`
+
+### How to handle internal Links
+- Always use the injected `$basePath` or the `$url()` helper function (available in `header.php`) to construct internal links. This ensures the app works perfectly whether it is deployed on a main domain (`/`) or in a subfolder (`/template-stock/`).
+- Example: `<a href="<?= htmlspecialchars($app['site']['base_path'] ?? '') ?>/contatti">Contattaci</a>`
+</file>
+
+<file path=".github/workflows/deploy.yml">
+name: Deploy to Altervista via FTP
+
+on:
+  push:
+    branches:
+      - main # Cambialo in 'master' se il tuo branch principale si chiama così
+
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🚚 Scarica il codice dal repo
+        uses: actions/checkout@v4
+      
+      - name: 📂 Sincronizza i file via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+      
+          server-dir: /template-stock/
+      
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            README.md
+            funz.txt
+            info.docx
+            OPERAZIONI.xlsx
+            repomix-output.xml
+            temp
+            app/logs/
+</file>
+
+<file path="config/routes.php">
+<?php
+declare(strict_types=1);
+
+use App\Core\Router;
+use App\Controllers\HomeController;
+use App\Controllers\PageController;
+
+/** @var Router $router */
+
+// Pagine Statiche Principali
+$router->get('/', function (): void {
+    (new HomeController())->index();
+});
+
+$router->get('/chi-siamo', function (): void {
+    (new PageController())->about();
+});
+
+// Pagina archivio generale
+$router->get('/servizi', function (): void {
+    (new PageController())->archive();
+});
+
+// Pagina di dettaglio dinamica (legge lo {slug} dall'URL)
+$router->get('/servizi/{slug}', function (string $slug): void {
+    (new PageController())->showItem($slug);
+});
+
+// Esempio di rotta dinamica per gestire futuri elementi (es. servizi, portfolio)
+// $router->get('/item/{slug}', function (string $slug): void {
+//     (new PageController())->showItem($slug);
+// });
+</file>
+
+<file path="config/app.php">
+<?php
+declare(strict_types=1);
+
+return [
+    'site' => [
+        'name' => 'Project Starter',
+        'tagline' => 'Base template for websites and web services',
+        'url' => '',
+        'locale' => 'it',
+        'base_path' => defined('BASE_PATH') ? BASE_PATH : '',
+    ],
+
+    'seo' => [
+        'default_title' => 'Project Starter',
+        'default_description' => 'Template base neutro per progetti web riutilizzabili.',
+    ],
+
+    'assets' => [
+        'version' => '1.0.0',
+    ],
+    
+    'db' => [
+        'host' => 'localhost',
+        'name' => '', // Nome del database
+        'user' => '', // Username
+        'pass' => '', // Password
+        'charset' => 'utf8mb4'
+    ],
+
+    'mail' => [
+        'contact_email' => 'tuaemail@dominio.it', // Cambia questa email per ogni nuovo progetto
+        'contact_subject' => '🔔 Nuovo Contatto dal Sito',
+    ],
+];
+</file>
+
+<file path="public/index.php">
+<?php
+declare(strict_types=1);
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+define('BASEPATH', dirname(__DIR__));
+
+$scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+$basePath = rtrim(str_replace('/index.php', '', $scriptName), '/');
+
+if ($basePath === '/public') {
+    $basePath = '';
+} elseif (str_ends_with($basePath, '/public')) {
+    $basePath = substr($basePath, 0, -7);
+}
+
+define('BASE_PATH', $basePath);
+
+spl_autoload_register(function (string $class): void {
+    $prefix = 'App\\';
+    $baseDir = BASEPATH . '/app/';
+
+    if (strncmp($prefix, $class, strlen($prefix)) !== 0) {
+        return;
+    }
+
+    $relativeClass = substr($class, strlen($prefix));
+    $file = $baseDir . str_replace('\\', '/', $relativeClass) . '.php';
+
+    if (file_exists($file)) {
+        require $file;
+    }
+});
+
+$router = new \App\Core\Router();
+
+require BASEPATH . '/config/routes.php';
+
+$router->dispatch($_SERVER['REQUEST_URI'] ?? '/', $_SERVER['REQUEST_METHOD'] ?? 'GET');
+</file>
+
+<file path=".htaccess">
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Specifica la sottocartella in cui si trova il template
+    RewriteBase /template-stock/
+
+    # 🛡️ BLOCCO DI SICUREZZA: Vieta l'accesso alle cartelle di core e dati
+    RewriteRule ^(app|config|data|views)(/.*)?$ - [F,L]
+
+    # Se la richiesta è già per la cartella public, fermati qui
+    RewriteRule ^public/ - [L]
+    
+    # Altrimenti, reindirizza tutto silenziosamente dentro public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+AddHandler av-php84 .php
+</file>
+
+<file path="public/.htaccess">
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Specifica il percorso completo fino a public
+    RewriteBase /template-stock/public/
+
+    # Forza HTTPS
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Front Controller: invia tutto a index.php se non è un file/cartella esistente
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType font/woff2 "access plus 1 year"
+
+    <IfModule mod_headers.c>
+        <FilesMatch "\.(jpg|jpeg|png|gif|webp|svg|css|js|woff2|ico)$">
+            Header set Cache-Control "max-age=2592000, public"
+        </FilesMatch>
+    </IfModule>
+</IfModule>
+
+Options -Indexes
+</file>
+
+</files>

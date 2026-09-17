@@ -1,0 +1,16 @@
+[
+    {
+        "slug": "servizio-base",
+        "title": "Servizio Base",
+        "icon": "box",
+        "short_desc": "Descrizione breve e accattivante per le card.",
+        "content": "Testo completo e dettagliato che verrà mostrato nella pagina singola del servizio o prodotto."
+    },
+    {
+        "slug": "prodotto-premium",
+        "title": "Prodotto Premium",
+        "icon": "star",
+        "short_desc": "Soluzione avanzata per esigenze specifiche.",
+        "content": "Dettagli completi del prodotto premium, eventuali specifiche tecniche e vantaggi."
+    }
+]

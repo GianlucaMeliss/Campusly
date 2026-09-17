@@ -1,0 +1,17 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Specifica la sottocartella in cui si trova il template
+    RewriteBase /template-stock/
+
+    # 🛡️ BLOCCO DI SICUREZZA: Vieta l'accesso alle cartelle di core e dati
+    RewriteRule ^(app|config|data|views)(/.*)?$ - [F,L]
+
+    # Se la richiesta è già per la cartella public, fermati qui
+    RewriteRule ^public/ - [L]
+    
+    # Altrimenti, reindirizza tutto silenziosamente dentro public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+AddHandler av-php84 .php

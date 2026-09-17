@@ -1,0 +1,15 @@
+# ==========================================
+# robots.txt per template-base
+# ==========================================
+
+# Regole per tutti i motori di ricerca (Google, Bing, ecc.)
+User-agent: *
+
+# Permetti la scansione di tutto il sito
+Allow: /
+
+# Blocca l'accesso dei bot alle rotte tecniche/API (es. invio moduli)
+Disallow: /api/
+
+# Indica a Google dove trovare la mappa completa del sito
+Sitemap: https://www.gianlucamelistest.it/sitemap.xml
