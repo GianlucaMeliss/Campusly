@@ -3,10 +3,10 @@ DirectoryIndex index.php
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
-    # Specifica il percorso completo fino a public
-    RewriteBase /template-stock/public/
+    # AGGIORNATO: Specifica il percorso completo fino a public
+    RewriteBase /Campusly/public/
 
-    # Forza HTTPS
+    # Forza HTTPS (consigliato)
     RewriteCond %{HTTP:X-Forwarded-Proto} !https
     RewriteCond %{HTTPS} off
     RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

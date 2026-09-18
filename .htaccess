@@ -1,8 +1,8 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
-    # Specifica la sottocartella in cui si trova il template
-    RewriteBase /template-stock/
+    # AGGIORNATO: Specifica la sottocartella in cui si trova il progetto
+    RewriteBase /Campusly/
 
     # 🛡️ BLOCCO DI SICUREZZA: Vieta l'accesso alle cartelle di core e dati
     RewriteRule ^(app|config|data|views)(/.*)?$ - [F,L]
@@ -14,4 +14,5 @@
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
 
+# Abilita PHP 8.4 su Altervista (assicurati che sia supportato dal tuo pannello)
 AddHandler av-php84 .php
