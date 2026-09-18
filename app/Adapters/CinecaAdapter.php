@@ -11,12 +11,11 @@ class CinecaAdapter implements UniversityAdapterInterface
 
     public function getSchedule(string $startDate, string $endDate, array $courseConfig): array
     {
-        // Recuperiamo gli ID specifici del corso passati dal database
         $linkCalendarioId = $courseConfig['linkCalendarioId'] ?? '';
         $clienteId = $courseConfig['clienteId'] ?? '';
 
         if (empty($linkCalendarioId) || empty($clienteId)) {
-            throw new Exception("Configurazione corso Cineca mancante.");
+            throw new \Exception("Codici Insubria mancanti. Rifai l'onboarding.");
         }
 
         $payloadArray = [

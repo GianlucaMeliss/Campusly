@@ -165,27 +165,56 @@ class ApiController
         header("Access-Control-Allow-Origin: *");
         header("Content-Type: application/json; charset=UTF-8");
 
+        // 1. Blocco Sicurezza: chi non è loggato non passa
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Utente non autenticato']);
+            exit;
+        }
+        $userId = (int)$_SESSION['user_id'];
+
         $dataInizio = $_GET['inizio'] ?? date('Y-m-d\T00:00:00.000\Z');
         $dataFine = $_GET['fine'] ?? date('Y-m-d\T23:59:59.000\Z', strtotime('+7 days'));
 
-        // IN FUTURO: Qui leggeremo i dati dal DB basandoci sull'utente loggato ($_SESSION['user_id']).
-        // PER ORA: Mockiamo la configurazione del tuo corso attuale di Ostetricia per testare l'Adapter.
-        $courseConfig = [
-            'linkCalendarioId' => '6a69b9d9c4a67700195312e8',
-            'clienteId' => '59f05192a635f443422fe8fd',
-            'adapter' => \App\Adapters\CinecaAdapter::class
-        ];
+        // 2. Lettura Dinamica dal Database
+        $userModel = new \App\Models\UserModel();
+        $courseData = $userModel->getUserCourseConfig($userId);
 
-        // LOGICA DI CACHE SERVER-SIDE (solo per evitare sovraccarichi al Cineca)
+        if (!$courseData) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Profilo accademico non configurato']);
+            exit;
+        }
+
+        // Il JSON che abbiamo salvato durante l'onboarding (contiene linkCalendarioId e clienteId)
+        $extConfig = json_decode($courseData['external_course_id'], true);
+        
+        // Assegniamo i valori dinamici
+        $courseConfig = [
+            'linkCalendarioId' => $extConfig['linkCalendarioId'] ?? '',
+            'clienteId' => $extConfig['clienteId'] ?? '',
+        ];
+        
+        // 3. Adapter Dinamico (Estraiamo il nome della classe dal DB, es: \App\Adapters\CinecaAdapter)
+        $adapterClass = $courseData['adapter_class'];
+
+        if (!class_exists($adapterClass)) {
+            http_response_code(500);
+            echo json_encode(['error' => "Adapter non trovato: $adapterClass"]);
+            exit;
+        }
+
+        // 4. Logica di Micro-Cache (5 minuti) - Usiamo i codici univoci nel nome del file!
         $dataPulita = substr(preg_replace('/[^0-9]/', '', $dataInizio), 0, 8);
         $cacheDir = BASEPATH . '/data/cache';
         if (!is_dir($cacheDir)) {
             mkdir($cacheDir, 0755, true);
         }
-        $cacheFile = $cacheDir . '/settimana_' . $dataPulita . '_' . $courseConfig['linkCalendarioId'] . '.json';
-        $cacheTime = 300; // 5 minuti
-
-        if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTime)) {
+        
+        $hashCorso = md5($courseData['external_course_id']);
+        $cacheFile = $cacheDir . '/settimana_' . $dataPulita . '_' . $hashCorso . '.json';
+        
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
             header("X-Cache-Status: HIT-MICROCACHE");
             echo file_get_contents($cacheFile);
             exit;
@@ -194,21 +223,19 @@ class ApiController
         header("X-Cache-Status: MISS-FETCHING-API");
 
         try {
-            // Istanziamo dinamicamente l'Adapter salvato nel database
-            $adapterClass = $courseConfig['adapter'];
+            // 5. Eseguiamo la fetch all'università giusta
             /** @var \App\Adapters\UniversityAdapterInterface $adapter */
             $adapter = new $adapterClass();
-
             $eventi = $adapter->getSchedule($dataInizio, $dataFine, $courseConfig);
 
             $jsonResponse = json_encode($eventi);
             
-            // Salviamo la cache su file system
+            // Salviamo la cache per i futuri studenti dello stesso corso
             file_put_contents($cacheFile, $jsonResponse);
             
             echo $jsonResponse;
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }

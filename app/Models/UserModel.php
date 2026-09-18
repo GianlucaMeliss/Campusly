@@ -92,7 +92,9 @@ class UserModel extends Model
     public function getUserCourseConfig(int $userId): ?array
     {
         $stmt = $this->db->prepare("
-            SELECT c.*, u.adapter_class 
+            SELECT 
+                c.external_course_id, 
+                u.adapter_class 
             FROM user_academic_profiles uap
             JOIN courses c ON uap.course_id = c.id
             JOIN universities u ON c.university_id = u.id
@@ -101,6 +103,7 @@ class UserModel extends Model
         ");
         $stmt->execute(['user_id' => $userId]);
         $result = $stmt->fetch();
+        
         return $result ?: null;
     }
 }
