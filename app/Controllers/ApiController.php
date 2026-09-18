@@ -222,8 +222,12 @@ class ApiController
     {
         header("Content-Type: application/json; charset=UTF-8");
         
-        // Simulo l'utente loggato (da sostituire con $_SESSION['user_id'])
-        $userId = 1; 
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401); // Non autorizzato
+            echo json_encode(['error' => 'Non autenticato']);
+            exit;
+        }
+        $userId = (int)$_SESSION['user_id'];
 
         $model = new \App\Models\PersonalEventModel();
         $events = $model->getUserEvents($userId);
@@ -249,7 +253,12 @@ class ApiController
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
         
-        $userId = 1; // Simulo l'utente loggato
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401); // Non autorizzato
+            echo json_encode(['error' => 'Non autenticato']);
+            exit;
+        }
+        $userId = (int)$_SESSION['user_id'];
         $data = json_decode(file_get_contents('php://input'), true);
 
         if ($data) {
@@ -272,7 +281,12 @@ class ApiController
 
     public function deletePersonalEvent(string $eventId): void
     {
-        $userId = 1; // Simulo l'utente loggato
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401); // Non autorizzato
+            echo json_encode(['error' => 'Non autenticato']);
+            exit;
+        }
+        $userId = (int)$_SESSION['user_id'];
         $model = new \App\Models\PersonalEventModel();
         $model->deleteEvent($userId, (int)$eventId);
         echo json_encode(['status' => 'success']);
@@ -282,7 +296,12 @@ class ApiController
     public function getHiddenCourses(): void
     {
         header("Content-Type: application/json; charset=UTF-8");
-        $userId = 1; // Simulo l'utente loggato
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401); // Non autorizzato
+            echo json_encode(['error' => 'Non autenticato']);
+            exit;
+        }
+        $userId = (int)$_SESSION['user_id'];
 
         $model = new \App\Models\HiddenCourseModel();
         $courses = $model->getHiddenCourses($userId);
@@ -295,7 +314,13 @@ class ApiController
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
         
-        $userId = 1; // Simulo l'utente loggato
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401); // Non autorizzato
+            echo json_encode(['error' => 'Non autenticato']);
+            exit;
+        }
+        $userId = (int)$_SESSION['user_id'];
+
         $data = json_decode(file_get_contents('php://input'), true);
 
         if (isset($data['course_name'])) {

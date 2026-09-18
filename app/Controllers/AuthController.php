@@ -75,4 +75,53 @@ class AuthController
         header('Location: /');
         exit;
     }
+
+    public function showRegister(): void
+    {
+        \App\Core\View::render('auth/register', ['pageTitle' => 'Crea Account - Campusly']);
+    }
+
+    public function processRegister(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /register');
+            exit;
+        }
+
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $firstName = trim($_POST['first_name'] ?? '');
+        $lastName = trim($_POST['last_name'] ?? '');
+
+        // Validazione base
+        if (empty($email) || empty($password) || empty($firstName)) {
+            header('Location: /register?error=empty_fields');
+            exit;
+        }
+
+        // Verifica se l'email esiste già
+        if ($this->userModel->findByEmail($email)) {
+            header('Location: /register?error=email_exists');
+            exit;
+        }
+
+        // Crea l'utente
+        $userId = $this->userModel->create([
+            'email' => $email,
+            'password' => $password,
+            'first_name' => $firstName,
+            'last_name' => $lastName
+        ]);
+
+        if ($userId) {
+            // Autenticazione automatica dopo la registrazione
+            $_SESSION['user_id'] = $userId;
+            $_SESSION['user_name'] = $firstName;
+            header('Location: /dashboard');
+            exit;
+        }
+
+        header('Location: /register?error=server');
+        exit;
+    }
 }
