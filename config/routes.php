@@ -6,6 +6,7 @@ use App\Controllers\HomeController;
 use App\Controllers\PageController;
 use App\Controllers\ApiController;
 use App\Controllers\AuthController;
+use App\Controllers\ProfileController;
 
 /** @var Router $router */
 
@@ -55,6 +56,22 @@ $router->get('/onboarding', function () use ($requireAuth): void {
 $router->post('/onboarding', function () use ($requireAuth): void {
     $requireAuth();
     (new AuthController())->processOnboarding();
+});
+
+// Pagine Profilo
+$router->get('/profilo', function () use ($requireAuth): void {
+    $requireAuth();
+    (new ProfileController())->showProfile();
+});
+$router->post('/profilo/aggiorna-corso', function () use ($requireAuth): void {
+    $requireAuth();
+    (new ProfileController())->updateCourse();
+});
+
+// API Sincronizzazione Tema
+$router->post('/api/preferenze/tema', function () use ($requireAuth): void {
+    $requireAuth();
+    (new ProfileController())->syncTheme();
 });
 
 // Pagine Statiche Principali

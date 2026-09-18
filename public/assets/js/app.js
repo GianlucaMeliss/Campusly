@@ -74,10 +74,23 @@ document.addEventListener('DOMContentLoaded', () => {
         impostaTema(sistemaScuro);
     }
 
-    btnTheme.addEventListener('click', () => {
+    btnTheme.addEventListener('click', async () => {
         const diventaScuro = !document.body.classList.contains('dark-mode');
         impostaTema(diventaScuro);
-        localStorage.setItem('theme', diventaScuro ? 'dark' : 'light');
+        
+        const stringaTema = diventaScuro ? 'dark' : 'light';
+        localStorage.setItem('theme', stringaTema);
+        
+        // Salviamo in Cloud (fuoco e dimentica, non blocchiamo l'interfaccia se fallisce)
+        try {
+            await fetch(`${basePath}/api/preferenze/tema`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ theme: stringaTema })
+            });
+        } catch (e) {
+            console.warn("Impossibile sincronizzare il tema in cloud.");
+        }
     });
 
     document.getElementById('btn-prec').addEventListener('click', () => cambiaSettimana(-7));

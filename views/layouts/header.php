@@ -47,6 +47,7 @@ $url = static function (string $path = '/') use ($basePath): string {
                 
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <a href="<?= htmlspecialchars($url('/dashboard')) ?>" style="color: var(--text-primary); text-decoration: none; font-weight: 500;">Calendario</a>
+                    <a href="<?= htmlspecialchars($url('/profilo')) ?>" style="color: var(--text-primary); text-decoration: none; font-weight: 500;">Profilo</a>
                     <a href="<?= htmlspecialchars($url('/logout')) ?>" style="color: #ef4444; text-decoration: none; font-weight: 500;">Esci</a>
                 <?php else: ?>
                     <a href="<?= htmlspecialchars($url('/login')) ?>" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">Accedi</a>
