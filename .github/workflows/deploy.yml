@@ -20,17 +20,12 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-      
-          server-dir: /template-stock/
-      
+          server-dir: /Campusly/
           exclude: |
-            **/.git*
+            **/.DS_Store
+            app/logs/**
+            AI_INSTRUCTIONS.md
+            repomix-final.xml
+            .git*
             **/.git*/**
-            **/.github/**
-            README.md
-            funz.txt
-            info.docx
-            OPERAZIONI.xlsx
-            repomix-output.xml
-            temp
-            app/logs/
+            .github/**

@@ -1,0 +1,84 @@
+Ecco una roadmap dettagliata per la conversione e la ristrutturazione del tuo progetto "Orari Insubria" (descritto in `repomix-base.xml`) verso la nuova architettura MVC (basata su `repomix-final.xml`) e verso gli obiettivi descritti nel file `DescrizioneCampusly.docx`.
+
+### Roadmap di Sviluppo e Progettazione
+
+#### Fase 1: Progettazione del Database (MySQL) e Architettura Dati
+
+Poiché il sistema supererà i limiti del salvataggio esclusivo nel `localStorage` passando a una sincronizzazione in cloud, il primo passo è progettare uno schema relazionale per phpMyAdmin:
+
+* **Tabella Utenti (`users`)**: Gestirà la registrazione e la creazione del profilo utente (tramite email, Google o credenziali universitarie) per creare un'identità digitale.
+
+
+* **Tabella Catalogo Accademico (`universities`, `faculties`, `courses`)**: Ospiterà il database che mappa le diverse università, le facoltà, i corsi di laurea e gli anni accademici.
+
+
+* **Tabella Preferenze Utente (`user_preferences`)**: Salverà le personalizzazioni estetiche, come la scelta del tema (chiaro/scuro) e i colori delle singole materie.
+
+
+* **Tabella Corsi Nascosti (`hidden_courses`)**: Sostituirà l'attuale array fisso `corsiDaNascondere`, permettendo allo studente di "spegnere" visivamente le materie che non segue tramite un pannello di controllo.
+
+
+* **Tabella Eventi Personali (`personal_events`)**: Permetterà di salvare in cloud gli eventi personali dell'utente, rendendoli persistenti sui server della piattaforma.
+
+
+
+#### Fase 2: Configurazione dell'Ambiente e del Boilerplate MVC
+
+* **Setup su Altervista**: Implementeremo la struttura delle cartelle del boilerplate (`app`, `config`, `data`, `public`, `views`).
+
+
+* **Configurazione Database**: Aggiorneremo il file `config/app.php` inserendo le credenziali (host, name, user, pass) del database MySQL di Altervista.
+
+
+* **Gestione Connessione**: Sfrutteremo la classe `App\Core\Database` già predisposta nel template, che implementa il Pattern Singleton per fornire un'istanza univoca della connessione PDO.
+
+
+* **Routing e Sicurezza**: Manterremo il Front Controller `public/index.php` e configureremo il file `.htaccess` (attualmente impostato con `RewriteBase /template-stock/`) per adattarlo alla cartella di destinazione su Altervista, garantendo che l'accesso alle cartelle core (come `app/` e `config/`) sia bloccato.
+
+
+
+#### Fase 3: Ristrutturazione del Backend (Da Script Singolo ad API Dinamiche)
+
+* **Sviluppo dei Modelli (`Models`)**: Creeremo classi (es. `UserModel`, `CourseModel`) che estendono `App\Core\Model` per interagire in sicurezza con il database tramite Prepared Statements PDO.
+
+
+* **Motore Multi-Università (Controller)**: Elimineremo il file `backend/proxy.php`. Al suo posto, creeremo un `ApiController.php` che fungerà da aggregatore universale.
+
+
+* **Connessione Dinamica**: Il nuovo backend comporrà dinamicamente le richieste API sostituendo gli ID statici (es. `linkCalendarioId` e `clienteId`) con gli ID specifici associati al corso scelto dallo studente nel proprio piano di studi.
+
+
+
+#### Fase 4: Sviluppo del Frontend e Area Privata
+
+* **Integrazione Views**: Divideremo l'attuale `index.html` nel sistema di layout del boilerplate: `views/layouts/header.php`, `views/layouts/footer.php` e una view principale per il calendario (es. `views/pages/calendar.php`).
+
+
+* **Migrazione Assets**: Sposteremo `frontend/css/style.css` e `frontend/js/app.js` all'interno della cartella `public/assets/`.
+
+
+* **Sviluppo dell'Area Privata**: Implementeremo un'interfaccia dove l'utente potrà gestire il proprio piano di studi in modo dinamico.
+
+
+* **Calendario Ibrido**: Aggiorneremo la logica JavaScript in modo che recuperi dal nuovo database MySQL (tramite gli endpoint MVC) sia le lezioni ufficiali scaricate in tempo reale, sia gli eventi personali centralizzati nell'account.
+
+
+
+#### Fase 5: Test, PWA e Rilascio
+
+* **Integrazione Service Worker**: Adatteremo i file `manifest.json` e `service-worker.js` per garantire che la cache funzioni correttamente con le nuove rotte dinamiche gestite da `Router.php`.
+
+
+* **Test Multi-Dispositivo**: Verificheremo che un utente, accedendo da telefono, tablet o computer, ritrovi esattamente il suo calendario e le sue preferenze aggiornate in tempo reale.
+
+
+
+---
+
+### Hai domande?
+
+Per poter procedere operativamente, avrei bisogno di chiarire alcuni punti con te:
+
+1. **API Cineca / Altre Università**: Abbiamo già a disposizione un elenco di ID per le altre facoltà/università da inserire nel "Catalogo Accademico", o dovremo creare uno script di scraping/discovery per popolare il database?
+2. **Autenticazione**: Vuoi che iniziamo implementando prima un sistema di registrazione proprietario (email e password) o vuoi partire subito con il Single Sign-On (es. "Accedi con Google")?
+3. **Mantenimento Cache**: Attualmente il `proxy.php` usa una micro-cache di 300 secondi (5 minuti) per proteggere il server Cineca. Vogliamo mantenere questa logica di caching a livello di database o di file system nel nuovo Controller?
