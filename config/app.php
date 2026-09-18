@@ -21,9 +21,9 @@ return [
     
     'db' => [
         'host' => 'localhost', // Host del database
-        'name' => 'gianlucamelis', // Nome del database
+        'name' => 'my_gianlucamelis', // Nome del database
         'user' => 'gianlucamelis', // Username
-        'pass' => 'your_password', // Password
+        'pass' => '', // Password
         'charset' => 'utf8mb4'
     ],
 
