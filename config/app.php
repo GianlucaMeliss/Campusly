@@ -20,10 +20,10 @@ return [
     ],
     
     'db' => [
-        'host' => 'localhost',
-        'name' => '', // Nome del database
-        'user' => '', // Username
-        'pass' => '', // Password
+        'host' => 'localhost', // Host del database
+        'name' => 'gianlucamelis', // Nome del database
+        'user' => 'gianlucamelis', // Username
+        'pass' => 'your_password', // Password
         'charset' => 'utf8mb4'
     ],
 
