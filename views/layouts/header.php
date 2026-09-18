@@ -35,18 +35,22 @@ $url = static function (string $path = '/') use ($basePath): string {
     <?php endif; ?>
 </head>
 <body>
-    <header class="site-header">
-        <div class="container site-header__inner">
-            <a href="<?= htmlspecialchars($url('/')) ?>" class="site-brand">
-                <span class="site-brand__name"><?= htmlspecialchars($siteName) ?></span>
-                <?php if (!empty($siteTagline)): ?>
-                    <span class="site-brand__tagline"><?= htmlspecialchars($siteTagline) ?></span>
-                <?php endif; ?>
+    <header class="site-header" style="background: var(--surface); box-shadow: var(--shadow-soft);">
+        <div class="container site-header__inner" style="display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+            <a href="<?= htmlspecialchars($url('/')) ?>" class="site-brand" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+                <img src="<?= htmlspecialchars($url('/img/icon-192.png')) ?>" alt="Logo" style="height: 32px; border-radius: 6px;">
+                <span style="font-weight: bold; color: var(--primary-color); font-size: 1.2rem;">Campusly</span>
             </a>
 
-            <nav class="site-nav" aria-label="Navigazione principale">
-                <a href="<?= htmlspecialchars($url('/')) ?>">Home</a>
-                <a href="<?= htmlspecialchars($url('/chi-siamo')) ?>">Chi siamo</a>
+            <nav class="site-nav" aria-label="Navigazione principale" style="display: flex; gap: 15px;">
+                <a href="<?= htmlspecialchars($url('/')) ?>" style="color: var(--text-primary); text-decoration: none; font-weight: 500;">Home</a>
+                
+                <?php if (isset($_SESSION['user_id'])): ?>
+                    <a href="<?= htmlspecialchars($url('/dashboard')) ?>" style="color: var(--text-primary); text-decoration: none; font-weight: 500;">Calendario</a>
+                    <a href="<?= htmlspecialchars($url('/logout')) ?>" style="color: #ef4444; text-decoration: none; font-weight: 500;">Esci</a>
+                <?php else: ?>
+                    <a href="<?= htmlspecialchars($url('/login')) ?>" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">Accedi</a>
+                <?php endif; ?>
             </nav>
         </div>
     </header>
