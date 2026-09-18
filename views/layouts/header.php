@@ -14,6 +14,14 @@ $url = static function (string $path = '/') use ($basePath): string {
 <!DOCTYPE html>
 <html lang="<?= htmlspecialchars($locale) ?>">
 <head>
+    <!-- PWA e Mobile settings -->
+    <link rel="manifest" href="<?= htmlspecialchars($url('/manifest.json')) ?>">
+    <meta name="theme-color" content="#007161">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Campusly">
+    <link rel="apple-touch-icon" href="<?= htmlspecialchars($url('/img/icon-192.png')) ?>">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle ?? $siteName) ?></title>

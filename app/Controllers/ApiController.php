@@ -159,4 +159,59 @@ class ApiController
             echo json_encode(['status' => 'error', 'message' => 'Metodo non consentito.']);
         }
     }
+
+    public function getCalendarEvents(): void
+    {
+        header("Access-Control-Allow-Origin: *");
+        header("Content-Type: application/json; charset=UTF-8");
+
+        $dataInizio = $_GET['inizio'] ?? date('Y-m-d\T00:00:00.000\Z');
+        $dataFine = $_GET['fine'] ?? date('Y-m-d\T23:59:59.000\Z', strtotime('+7 days'));
+
+        // IN FUTURO: Qui leggeremo i dati dal DB basandoci sull'utente loggato ($_SESSION['user_id']).
+        // PER ORA: Mockiamo la configurazione del tuo corso attuale di Ostetricia per testare l'Adapter.
+        $courseConfig = [
+            'linkCalendarioId' => '6a69b9d9c4a67700195312e8',
+            'clienteId' => '59f05192a635f443422fe8fd',
+            'adapter' => \App\Adapters\CinecaAdapter::class
+        ];
+
+        // LOGICA DI CACHE SERVER-SIDE (solo per evitare sovraccarichi al Cineca)
+        $dataPulita = substr(preg_replace('/[^0-9]/', '', $dataInizio), 0, 8);
+        $cacheDir = BASEPATH . '/data/cache';
+        if (!is_dir($cacheDir)) {
+            mkdir($cacheDir, 0755, true);
+        }
+        $cacheFile = $cacheDir . '/settimana_' . $dataPulita . '_' . $courseConfig['linkCalendarioId'] . '.json';
+        $cacheTime = 300; // 5 minuti
+
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTime)) {
+            header("X-Cache-Status: HIT-MICROCACHE");
+            echo file_get_contents($cacheFile);
+            exit;
+        }
+
+        header("X-Cache-Status: MISS-FETCHING-API");
+
+        try {
+            // Istanziamo dinamicamente l'Adapter salvato nel database
+            $adapterClass = $courseConfig['adapter'];
+            /** @var \App\Adapters\UniversityAdapterInterface $adapter */
+            $adapter = new $adapterClass();
+
+            $eventi = $adapter->getSchedule($dataInizio, $dataFine, $courseConfig);
+
+            $jsonResponse = json_encode($eventi);
+            
+            // Salviamo la cache su file system
+            file_put_contents($cacheFile, $jsonResponse);
+            
+            echo $jsonResponse;
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
 }

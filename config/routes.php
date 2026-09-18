@@ -4,8 +4,29 @@ declare(strict_types=1);
 use App\Core\Router;
 use App\Controllers\HomeController;
 use App\Controllers\PageController;
+use App\Controllers\ApiController;
+use App\Controllers\AuthController;
 
 /** @var Router $router */
+
+$router->get('/login', function (): void { (new AuthController())->showLogin(); });
+$router->post('/login', function (): void { (new AuthController())->processLogin(); });
+$router->get('/logout', function (): void { (new AuthController())->logout(); });
+
+$router->get('/api/calendario', function (): void {
+    (new ApiController())->getCalendarEvents();
+});
+
+$router->get('/dashboard', function (): void {
+    // Qui in futuro metteremo un controllo per verificare che l'utente sia loggato
+    // if (!isset($_SESSION['user_id'])) { header('Location: /login'); exit; }
+    
+    \App\Core\View::render('pages/calendar', [
+        'pageTitle' => 'Il Mio Calendario',
+        'pageCss' => 'calendar' // Carica automaticamente assets/css/calendar.css
+    ]);
+});
+
 
 // Pagine Statiche Principali
 $router->get('/', function (): void {

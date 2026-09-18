@@ -1,0 +1,21 @@
+{
+  "name": "Calendario Insubria",
+  "short_name": "Orari UnInsubria",
+  "description": "Orari delle lezioni di Ostetricia - Università dell'Insubria",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#007161",
+  "theme_color": "#007161",
+  "icons": [
+    {
+      "src": "img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
