@@ -214,4 +214,98 @@ class ApiController
         }
         exit;
     }
+
+    // Aggiungi queste use in alto nel file ApiController.php
+    // use App\Models\PersonalEventModel;
+
+    public function getPersonalEvents(): void
+    {
+        header("Content-Type: application/json; charset=UTF-8");
+        
+        // Simulo l'utente loggato (da sostituire con $_SESSION['user_id'])
+        $userId = 1; 
+
+        $model = new \App\Models\PersonalEventModel();
+        $events = $model->getUserEvents($userId);
+
+        // Formattiamo i dati per farli digerire al frontend come se fossero eventi Cineca
+        $formattedEvents = array_map(function($ev) {
+            return [
+                'idPersonale' => $ev['id'],
+                'nome' => $ev['title'],
+                'dataInizio' => str_replace(' ', 'T', $ev['start_time']) . 'Z',
+                'dataFine' => str_replace(' ', 'T', $ev['end_time']) . 'Z',
+                'tipoAbbreviazione' => "Personale",
+                'risorse' => [['aula' => ['descrizione' => $ev['location']]]],
+                'isPersonale' => true
+            ];
+        }, $events);
+
+        echo json_encode($formattedEvents);
+        exit;
+    }
+
+    public function savePersonalEvent(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
+        
+        $userId = 1; // Simulo l'utente loggato
+        $data = json_decode(file_get_contents('php://input'), true);
+
+        if ($data) {
+            $model = new \App\Models\PersonalEventModel();
+            // Convertiamo le date ISO JS (es. 2026-09-18T10:00:00.000Z) in formato MySQL (YYYY-MM-DD HH:MM:SS)
+            $startTime = date('Y-m-d H:i:s', strtotime($data['dataInizio']));
+            $endTime = date('Y-m-d H:i:s', strtotime($data['dataFine']));
+            
+            $model->createEvent($userId, [
+                'title' => $data['nome'],
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+                'location' => $data['luogo']
+            ]);
+            
+            echo json_encode(['status' => 'success']);
+        }
+        exit;
+    }
+
+    public function deletePersonalEvent(string $eventId): void
+    {
+        $userId = 1; // Simulo l'utente loggato
+        $model = new \App\Models\PersonalEventModel();
+        $model->deleteEvent($userId, (int)$eventId);
+        echo json_encode(['status' => 'success']);
+        exit;
+    }
+
+    public function getHiddenCourses(): void
+    {
+        header("Content-Type: application/json; charset=UTF-8");
+        $userId = 1; // Simulo l'utente loggato
+
+        $model = new \App\Models\HiddenCourseModel();
+        $courses = $model->getHiddenCourses($userId);
+
+        echo json_encode($courses);
+        exit;
+    }
+
+    public function toggleHiddenCourse(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
+        
+        $userId = 1; // Simulo l'utente loggato
+        $data = json_decode(file_get_contents('php://input'), true);
+
+        if (isset($data['course_name'])) {
+            $model = new \App\Models\HiddenCourseModel();
+            $result = $model->toggleCourse($userId, strtoupper(trim($data['course_name'])));
+            echo json_encode($result);
+        } else {
+            http_response_code(400);
+            echo json_encode(['error' => 'Nome corso mancante']);
+        }
+        exit;
+    }
 }

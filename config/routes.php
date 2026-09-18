@@ -12,6 +12,11 @@ use App\Controllers\AuthController;
 $router->get('/login', function (): void { (new AuthController())->showLogin(); });
 $router->post('/login', function (): void { (new AuthController())->processLogin(); });
 $router->get('/logout', function (): void { (new AuthController())->logout(); });
+$router->get('/api/eventi-personali', function (): void { (new ApiController())->getPersonalEvents(); });
+$router->post('/api/eventi-personali', function (): void { (new ApiController())->savePersonalEvent(); });
+$router->get('/api/eventi-personali/delete/{id}', function (string $id): void { (new ApiController())->deletePersonalEvent($id); });
+$router->get('/api/corsi-nascosti', function (): void { (new ApiController())->getHiddenCourses(); });
+$router->post('/api/corsi-nascosti/toggle', function (): void { (new ApiController())->toggleHiddenCourse(); });
 
 $router->get('/api/calendario', function (): void {
     (new ApiController())->getCalendarEvents();
