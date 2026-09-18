@@ -25,7 +25,7 @@ $router->get('/api/calendario', function (): void { (new ApiController())->getCa
 // Middleware/Controllo di Sicurezza (Funzione helper)
 $requireAuth = function() {
     if (!isset($_SESSION['user_id'])) {
-        header('Location: /login');
+        header('Location: ' . BASE_PATH . '/login');
         exit;
     }
 };

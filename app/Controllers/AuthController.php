@@ -23,7 +23,7 @@ class AuthController
     public function processLogin(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /login');
+            header('Location: ' . BASE_PATH . '/login');
             exit;
         }
 
@@ -51,12 +51,12 @@ class AuthController
                 setcookie('remember_me', $token, time() + (365 * 24 * 60 * 60), '/', '', false, true);
             }
 
-            header('Location: /dashboard');
+            header('Location: ' . BASE_PATH . '/dashboard');
             exit;
         }
 
         // Login fallito (da gestire poi con messaggi di errore nella View)
-        header('Location: /login?error=1');
+        header('Location: ' . BASE_PATH . '/login?error=1');
         exit;
     }
 
@@ -72,7 +72,7 @@ class AuthController
             // Nota: Andrebbe anche cancellato il token dal DB per sicurezza
         }
 
-        header('Location: /');
+        header('Location: ' . BASE_PATH . '/');
         exit;
     }
 
@@ -84,7 +84,7 @@ class AuthController
     public function processRegister(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /register');
+            header('Location: ' . BASE_PATH . '/register');
             exit;
         }
 
@@ -95,13 +95,13 @@ class AuthController
 
         // Validazione base
         if (empty($email) || empty($password) || empty($firstName)) {
-            header('Location: /register?error=empty_fields');
+            header('Location: ' . BASE_PATH . '/register?error=empty_fields');
             exit;
         }
 
         // Verifica se l'email esiste già
         if ($this->userModel->findByEmail($email)) {
-            header('Location: /register?error=email_exists');
+            header('Location: ' . BASE_PATH . '/register?error=email_exists');
             exit;
         }
 
@@ -117,11 +117,11 @@ class AuthController
             // Autenticazione automatica dopo la registrazione
             $_SESSION['user_id'] = $userId;
             $_SESSION['user_name'] = $firstName;
-            header('Location: /dashboard');
+            header('Location: ' . BASE_PATH . '/dashboard');
             exit;
         }
 
-        header('Location: /register?error=server');
+        header('Location: ' . BASE_PATH . '/register?error=server');
         exit;
     }
 }
