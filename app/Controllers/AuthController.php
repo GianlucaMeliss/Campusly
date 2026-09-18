@@ -117,7 +117,9 @@ class AuthController
             // Autenticazione automatica dopo la registrazione
             $_SESSION['user_id'] = $userId;
             $_SESSION['user_name'] = $firstName;
-            header('Location: ' . BASE_PATH . '/dashboard');
+            
+            // CORREZIONE: Mandalo all'onboarding, non alla dashboard!
+            header('Location: ' . BASE_PATH . '/onboarding');
             exit;
         }
 

@@ -30,9 +30,18 @@ $requireAuth = function() {
     }
 };
 
-// Rotte Protette (Frontend)
 $router->get('/dashboard', function () use ($requireAuth): void {
-    $requireAuth();
+    $requireAuth(); // Verifica che sia loggato
+    
+    // Verifica che abbia completato l'onboarding
+    $userModel = new \App\Models\UserModel();
+    $config = $userModel->getUserCourseConfig((int)$_SESSION['user_id']);
+    
+    if (!$config) {
+        header('Location: ' . BASE_PATH . '/onboarding');
+        exit;
+    }
+
     \App\Core\View::render('pages/calendar', [
         'pageTitle' => 'Il Mio Calendario',
         'pageCss' => 'calendar'
