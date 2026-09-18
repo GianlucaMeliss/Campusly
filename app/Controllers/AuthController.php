@@ -124,4 +124,36 @@ class AuthController
         header('Location: ' . BASE_PATH . '/register?error=server');
         exit;
     }
+
+    public function showOnboarding(): void
+    {
+        // Se ha già configurato un corso, lo mandiamo alla dashboard
+        $config = (new \App\Models\UserModel())->getUserCourseConfig((int)$_SESSION['user_id']);
+        if ($config) {
+            header('Location: ' . BASE_PATH . '/dashboard');
+            exit;
+        }
+
+        \App\Core\View::render('pages/onboarding', ['pageTitle' => 'Configurazione - Campusly']);
+    }
+
+    public function processOnboarding(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
+
+        $userId = (int)$_SESSION['user_id'];
+        $uniId = (int)$_POST['university_id'];
+        $courseName = trim($_POST['course_name']);
+        
+        // Creiamo il JSON di configurazione che l'Adapter andrà a leggere
+        $configJson = json_encode([
+            'linkCalendarioId' => trim($_POST['link_calendario_id']),
+            'clienteId' => trim($_POST['cliente_id'])
+        ]);
+
+        (new \App\Models\UserModel())->saveAcademicProfile($userId, $uniId, $courseName, $configJson);
+
+        header('Location: ' . BASE_PATH . '/dashboard');
+        exit;
+    }
 }

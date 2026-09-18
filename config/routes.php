@@ -39,7 +39,14 @@ $router->get('/dashboard', function () use ($requireAuth): void {
     ]);
 });
 
-
+$router->get('/onboarding', function () use ($requireAuth): void {
+    $requireAuth();
+    (new AuthController())->showOnboarding();
+});
+$router->post('/onboarding', function () use ($requireAuth): void {
+    $requireAuth();
+    (new AuthController())->processOnboarding();
+});
 
 // Pagine Statiche Principali
 $router->get('/', function (): void {

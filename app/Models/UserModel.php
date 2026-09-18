@@ -59,4 +59,48 @@ class UserModel extends Model
         $user = $stmt->fetch();
         return $user ?: null;
     }
+
+    // In app/Models/UserModel.php
+    public function saveAcademicProfile(int $userId, int $universityId, string $courseName, string $externalId, string $department = ''): void
+    {
+        // 1. Inseriamo il corso "personalizzato" nel database
+        $stmt = $this->db->prepare("
+            INSERT INTO courses (university_id, name, external_course_id, department) 
+            VALUES (:uni_id, :name, :ext_id, :dept)
+        ");
+        $stmt->execute([
+            'uni_id' => $universityId,
+            'name' => $courseName,
+            'ext_id' => $externalId, // Qui salveremo un JSON con clienteId e linkCalendarioId
+            'dept' => $department
+        ]);
+        
+        $courseId = (int)$this->db->lastInsertId();
+
+        // 2. Colleghiamo l'utente al corso
+        $stmt2 = $this->db->prepare("
+            INSERT INTO user_academic_profiles (user_id, course_id, enrollment_year) 
+            VALUES (:user_id, :course_id, :year)
+        ");
+        $stmt2->execute([
+            'user_id' => $userId,
+            'course_id' => $courseId,
+            'year' => date('Y')
+        ]);
+    }
+
+    public function getUserCourseConfig(int $userId): ?array
+    {
+        $stmt = $this->db->prepare("
+            SELECT c.*, u.adapter_class 
+            FROM user_academic_profiles uap
+            JOIN courses c ON uap.course_id = c.id
+            JOIN universities u ON c.university_id = u.id
+            WHERE uap.user_id = :user_id AND uap.is_primary = 1
+            LIMIT 1
+        ");
+        $stmt->execute(['user_id' => $userId]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
 }
