@@ -1,9 +1,21 @@
-<!-- Header specifico dell'app (con controlli settimana e tema) -->
+<?php
+// Assicuriamoci che la variabile $url sia disponibile dalla vista
+$url = $url ?? function(string $path = '/') use ($basePath): string {
+    return rtrim($basePath, '/') . '/' . ltrim($path, '/');
+};
+?>
+
+<!-- Passiamo il basePath a JavaScript in modo che sappia sempre dove fare le chiamate API -->
+<script>
+    window.APP_BASE_PATH = '<?= htmlspecialchars($basePath ?? '') ?>';
+</script>
+
 <div class="header-top" style="padding: 15px; background: var(--header-bg); color: white;">
     <div class="brand-container" style="display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 12px;">
-            <img src="/img/logo-light.png" alt="Logo" class="brand-logo logo-light">
-            <img src="/img/logo-dark.png" alt="Logo" class="brand-logo logo-dark">
+            <!-- Usa l'helper $url() per i loghi -->
+            <img src="<?= htmlspecialchars($url('/img/logo-light.png')) ?>" alt="Logo" class="brand-logo logo-light">
+            <img src="<?= htmlspecialchars($url('/img/logo-dark.png')) ?>" alt="Logo" class="brand-logo logo-dark">
             <h1 style="margin: 0; font-size: 18px;">Il Mio Calendario</h1>
         </div>
         <button id="theme-toggle" class="theme-btn" aria-label="Cambia tema">
@@ -23,9 +35,9 @@
     <div id="calendario-container">
         <p id="caricamento">⏳ Caricamento lezioni in corso...</p>
     </div>
-</main>
 
 <!-- Qui incolleremo il resto dei modali (Dettagli e Aggiunta Evento) presenti nel vecchio index.html -->
 <!-- ... -->
 
-<script src="/assets/js/app.js?v=8"></script>
+<!-- Usa l'helper per caricare il file JS -->
+<script src="<?= htmlspecialchars($url('/assets/js/app.js')) ?>?v=9"></script>

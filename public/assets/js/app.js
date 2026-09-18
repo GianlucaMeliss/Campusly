@@ -294,7 +294,11 @@ async function caricaSettimana(dataRif) {
 
     labelSettimana.textContent = `${lunedi.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })} - ${domenica.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}`;
 
-    const urlProxy = `/api/calendario?inizio=${encodeURIComponent(lunedi.toISOString())}&fine=${encodeURIComponent(domenica.toISOString())}`;
+    // Usiamo la rotta base passata dal PHP, altrimenti usiamo una stringa vuota come fallback
+const basePath = window.APP_BASE_PATH || '';
+
+// Creiamo l'URL unendo la base path alla rotta API
+const urlProxy = `${basePath}/api/calendario?inizio=${encodeURIComponent(lunedi.toISOString())}&fine=${encodeURIComponent(domenica.toISOString())}`;
     
     mostraSkeleton();
 
