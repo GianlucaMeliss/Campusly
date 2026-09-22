@@ -1,8 +1,4 @@
 <?php
-$url = $url ?? function(string $path = '/') use ($basePath): string {
-    return rtrim($basePath ?? '', '/') . '/' . ltrim($path, '/');
-};
-
 // MAPPING COLORI UNIVERSITÀ (In futuro gestito dinamicamente dal DB)
 $uniId = $course['university_id'] ?? 1; // 1 = Insubria
 $uniColors = [
@@ -14,6 +10,14 @@ $uniColors = [
 // Fallback al Fucsia Campusly se l'ID non è mappato
 $activeUniColor = $uniColors[$uniId] ?? '#E83E8C'; 
 ?>
+
+<!-- Passiamo il path a JavaScript -->
+<script>
+    window.APP_BASE_PATH = '<?= htmlspecialchars($basePath ?? '') ?>';
+</script>
+
+<!-- WRAPPER TEMA UNIVERSITÀ: Passa il colore dinamicamente al CSS -->
+<div class="uni-theme" style="--uni-primary: <?= $activeUniColor ?>; --uni-primary-hover: <?= $activeUniColor ?>E6;">
 
 <!-- Passiamo il path a JavaScript -->
 <script>
