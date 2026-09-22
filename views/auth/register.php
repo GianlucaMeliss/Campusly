@@ -18,7 +18,7 @@
 
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <label for="email" style="font-size: 0.9rem; font-weight: 600;">Email</label>
-                    <input type="email" name="email" id="email" placeholder="m.rossi@studenti.uninsubria.it" required style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                    <input type="email" name="email" id="email" placeholder="m.rossi@universita.it" required style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 5px;">

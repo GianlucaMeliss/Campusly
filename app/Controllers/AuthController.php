@@ -144,16 +144,25 @@ class AuthController
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
 
         $userId = (int)$_SESSION['user_id'];
-        $uniId = (int)$_POST['university_id'];
-        $courseName = trim($_POST['course_name']);
         
-        // Creiamo il JSON di configurazione che l'Adapter andrà a leggere
+        // Dati in arrivo dal nuovo form Wizard o Manuale
+        $uniId = (int)($_POST['university_id'] ?? 1);
+        $courseName = trim($_POST['course_name'] ?? '');
+        $sede = trim($_POST['sede'] ?? 'Non specificata');
+        $anno = (int)($_POST['anno'] ?? 1);
+        
+        // Se l'utente usa il Wizard, il JS invia "AUTO" nei codici. 
+        // Se usa il manuale (Step 4), invia i codici reali.
+        $linkId = trim($_POST['link_calendario_id'] ?? '');
+        $clienteId = trim($_POST['cliente_id'] ?? '');
+
+        // Creiamo il JSON di configurazione
         $configJson = json_encode([
-            'linkCalendarioId' => trim($_POST['link_calendario_id']),
-            'clienteId' => trim($_POST['cliente_id'])
+            'linkCalendarioId' => $linkId,
+            'clienteId' => $clienteId
         ]);
 
-        (new \App\Models\UserModel())->saveAcademicProfile($userId, $uniId, $courseName, $configJson);
+        (new \App\Models\UserModel())->saveAcademicProfile($userId, $uniId, $courseName, $sede, $anno, $configJson);
 
         header('Location: ' . BASE_PATH . '/dashboard');
         exit;
