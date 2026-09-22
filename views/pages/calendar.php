@@ -121,4 +121,8 @@ $activeUniColor = $uniColors[$uniId] ?? '#E83E8C';
     </div>
 </div>
 
+<!-- Script base (Dark mode, Modali, PWA) -->
 <script src="<?= $url('/assets/js/app.js') ?>"></script>
+
+<!-- Script specifico del Calendario (Chiamate API e render griglia) -->
+<script src="<?= $url('/assets/js/calendar.js') ?>"></script>

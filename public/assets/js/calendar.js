@@ -1,0 +1,691 @@
+// ==========================================
+// VARIABILI GLOBALI E STATO DEL CALENDARIO
+// ==========================================
+const basePath = window.APP_BASE_PATH || '';
+
+let dataRiferimento = new Date();
+let haFattoAutoAvanzamento = false;
+
+// Dati dinamici dal Cloud
+let corsiDaNascondere = []; 
+let eventiPersonaliCloud = []; 
+let eventiSettimana = [];
+let indiceEvidenza = 0;
+
+// ==========================================
+// ICONE SVG (Design System)
+// ==========================================
+const icnOra = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+const icnAula = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+const icnProf = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+const icnData = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
+const icnPartizione = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
+
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
+function estraiPartizione(evento) {
+    let part = null;
+    if (evento.evento && evento.evento.dettagliDidattici && evento.evento.dettagliDidattici.length > 0) {
+        part = evento.evento.dettagliDidattici[0].partizione;
+    }
+    if (!part && evento.fattoreDiPartizione && evento.fattoreDiPartizione.length > 0) {
+        if (evento.fattoreDiPartizione[0].partizioni && evento.fattoreDiPartizione[0].partizioni.length > 0) {
+            part = evento.fattoreDiPartizione[0].partizioni[0];
+        }
+    }
+    return part;
+}
+
+function getColoreHue(titolo) {
+    let hash = 0;
+    for (let i = 0; i < titolo.length; i++) hash = titolo.charCodeAt(i) + ((hash << 5) - hash);
+    let hue = Math.abs(hash % 360);
+    if (hue >= 140 && hue <= 200) hue = (hue + 100) % 360; 
+    return hue; 
+}
+
+function formattaTitolo(titolo) {
+    if (!titolo) return "Lezione";
+    return titolo.toLowerCase().split(' ').map(word => {
+        if (word.length < 3 && !['ii', 'iii', 'iv'].includes(word)) return word;
+        return word.charAt(0).toUpperCase() + word.slice(1);
+    }).join(' ');
+}
+
+function ottieniLunedi(d) {
+    const data = new Date(d);
+    const giorno = data.getDay();
+    const diff = data.getDate() - giorno + (giorno === 0 ? -6 : 1);
+    return new Date(data.setDate(diff));
+}
+
+function isAulaVarese(aula) {
+    if (!aula) return false;
+    const nomeAula = (aula.descrizione || "").toLowerCase();
+    const edificio = (aula.edificio && aula.edificio.descrizione) ? aula.edificio.descrizione.toLowerCase() : "";
+    
+    const paroleComo = [
+        'como', 'valleggio', 'sant\'abbondio', 'castelnuovo', 'cavaliere',
+        'va1', 'va2', 'va3', 'va4', 'va5', 'va6', 'va7', 'va8'
+    ];
+    
+    for (let parola of paroleComo) {
+        if (nomeAula.includes(parola) || edificio.includes(parola)) return false;
+    }
+    return true; 
+}
+
+// ==========================================
+// CORE DEL CALENDARIO: CARICAMENTO DATI
+// ==========================================
+async function caricaDatiUtente() {
+    try {
+        const resCorsi = await fetch(`${basePath}/api/corsi-nascosti`);
+        if(resCorsi.ok) corsiDaNascondere = await resCorsi.json();
+
+        const resEventi = await fetch(`${basePath}/api/eventi-personali`);
+        if(resEventi.ok) eventiPersonaliCloud = await resEventi.json();
+    } catch (e) {
+        console.warn("Errore caricamento preferenze in Cloud, uso default.", e);
+    }
+}
+
+async function caricaSettimana(dataRif) {
+    const labelSettimana = document.getElementById('label-settimana');
+    const lunedi = ottieniLunedi(dataRif);
+    lunedi.setHours(0, 0, 0, 0);
+    const domenica = new Date(lunedi);
+    domenica.setDate(lunedi.getDate() + 6);
+    domenica.setHours(23, 59, 59, 999);
+
+    if (labelSettimana) {
+        labelSettimana.textContent = `${lunedi.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })} - ${domenica.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    }
+
+    mostraSkeleton();
+    await caricaDatiUtente();
+
+    const urlProxy = `${basePath}/api/calendario?inizio=${encodeURIComponent(lunedi.toISOString())}&fine=${encodeURIComponent(domenica.toISOString())}`;
+    let datiCacheText = null;
+
+    try {
+        if ('caches' in window) {
+            const cacheResponse = await caches.match(urlProxy);
+            if (cacheResponse) {
+                datiCacheText = await cacheResponse.text();
+                const eventiGrezzi = JSON.parse(datiCacheText);
+                renderizzaCalendario(eventiGrezzi, lunedi, true);
+            }
+        }
+    } catch (e) {
+        console.warn("Nessuna cache trovata:", e);
+    }
+
+    try {
+        const response = await fetch(urlProxy);
+        if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
+        
+        const datiReteText = await response.text();
+
+        if (datiReteText !== datiCacheText) {
+            const lunediCheck = ottieniLunedi(dataRiferimento);
+            lunediCheck.setHours(0, 0, 0, 0);
+            if (lunedi.getTime() !== lunediCheck.getTime()) return; 
+            
+            const eventiGrezzi = JSON.parse(datiReteText);
+            renderizzaCalendario(eventiGrezzi, lunedi, datiCacheText === null); 
+        }
+    } catch (error) {
+        if (!datiCacheText) {
+            document.getElementById('calendario-container').innerHTML = `<div class="errore" style="color:red; padding:20px; text-align:center;">⚠️ Errore di connessione al calendario. Riprova.</div>`;
+        }
+    }
+}
+
+// ==========================================
+// RENDERING UI
+// ==========================================
+function mostraSkeleton() {
+    const container = document.getElementById('calendario-container');
+    if (!container) return;
+    container.innerHTML = `
+        <div class="skeleton-box skeleton" style="height: 150px; border-radius: var(--radius-lg); margin-bottom: 20px;"></div>
+        <div class="calendario-main-container" style="opacity: 0.5;">
+            <div class="angolo-vuoto"></div>
+            ${'<div class="header-colonna skeleton" style="height:20px; margin:5px;"></div>'.repeat(5)}
+            <div class="orari-colonna"></div>
+            ${'<div class="giorno-colonna"><div class="skeleton-card skeleton" style="top:45px; height:90px;"></div></div>'.repeat(5)}
+        </div>
+    `;
+}
+
+function posizionaSuOggi() {
+    const container = document.querySelector('.calendario-main-container');
+    const colonnaOggi = document.getElementById('colonna-oggi');
+    if (!container || !colonnaOggi) return; 
+    
+    const scrollX = colonnaOggi.offsetLeft - 55; 
+    container.scrollTo({ left: scrollX, behavior: 'smooth' });
+}
+
+function gestisciSovrapposizioni(lezioni) {
+    let clusters = [];
+    let lastClusterEnd = null;
+
+    lezioni.sort((a, b) => new Date(a.dataInizio) - new Date(b.dataInizio)).forEach(lezione => {
+        let start = new Date(lezione.dataInizio).getTime();
+        let end = new Date(lezione.dataFine).getTime();
+
+        if (lastClusterEnd === null || start >= lastClusterEnd) {
+            clusters.push([lezione]);
+            lastClusterEnd = end;
+        } else {
+            clusters[clusters.length - 1].push(lezione);
+            lastClusterEnd = Math.max(lastClusterEnd, end);
+        }
+    });
+
+    clusters.forEach(cluster => {
+        let colonne = [];
+        cluster.forEach(lezione => {
+            let posizionata = false;
+            for (let c = 0; c < colonne.length; c++) {
+                let ultima = colonne[c][colonne[c].length - 1];
+                if (new Date(ultima.dataFine).getTime() <= new Date(lezione.dataInizio).getTime()) {
+                    colonne[c].push(lezione);
+                    lezione.colIndex = c;
+                    posizionata = true;
+                    break;
+                }
+            }
+            if (!posizionata) {
+                lezione.colIndex = colonne.length;
+                colonne.push([lezione]);
+            }
+        });
+
+        let numColonne = colonne.length;
+        cluster.forEach(lezione => {
+            if (numColonne <= 2) {
+                lezione.widthCSS = `calc(${100 / numColonne}% - 4px)`;
+                lezione.leftCSS = `calc(${lezione.colIndex * (100 / numColonne)}% + 2px)`;
+                lezione.zIndex = 10;
+            } else {
+                let cardWidth = 65; 
+                let offset = (100 - cardWidth) / (numColonne - 1); 
+                lezione.widthCSS = `calc(${cardWidth}% - 4px)`;
+                lezione.leftCSS = `calc(${lezione.colIndex * offset}% + 2px)`;
+                lezione.zIndex = 10 + lezione.colIndex;
+            }
+        });
+    });
+}
+
+function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
+    const container = document.getElementById('calendario-container');
+    if (!container) return;
+
+    let eventi = [];
+    if (eventiGrezzi && eventiGrezzi.length > 0) {
+        if(Array.isArray(eventiGrezzi)) {
+            eventi = eventiGrezzi.filter(evento => {
+                if (evento.stato === 'A') return false; 
+                const nomeCorso = (evento.nome || "").toUpperCase();
+                return !corsiDaNascondere.some(c => nomeCorso.includes(c.toUpperCase()));
+            });
+        }
+    }
+
+    const domenica = new Date(lunedi);
+    domenica.setDate(lunedi.getDate() + 6);
+    domenica.setHours(23, 59, 59, 999);
+    
+    const personaliSettimana = eventiPersonaliCloud.filter(e => {
+        const d = new Date(e.dataInizio);
+        return d >= lunedi && d <= domenica;
+    });
+    
+    eventi = eventi.concat(personaliSettimana);
+    eventiSettimana = eventi.sort((a, b) => new Date(a.dataInizio) - new Date(b.dataInizio));
+    
+    const adesso = new Date();
+    const lunediReale = ottieniLunedi(adesso);
+    lunediReale.setHours(0, 0, 0, 0);
+    const lunediRender = new Date(lunedi);
+    lunediRender.setHours(0, 0, 0, 0);
+
+    if (lunediRender.getTime() === lunediReale.getTime() && !haFattoAutoAvanzamento) {
+        const ciSonoEventi = eventiSettimana.length > 0;
+        const tuttiTerminati = ciSonoEventi && eventiSettimana.every(e => new Date(e.dataFine) < adesso);
+        const weekendSenzaEventi = !ciSonoEventi && (adesso.getDay() === 0 || adesso.getDay() === 6);
+
+        if (tuttiTerminati || weekendSenzaEventi) {
+            haFattoAutoAvanzamento = true; 
+            setTimeout(() => cambiaSettimana(7), 50); 
+            return; 
+        }
+    }
+
+    indiceEvidenza = eventiSettimana.findIndex(e => new Date(e.dataFine) > adesso);
+    if (indiceEvidenza === -1) indiceEvidenza = 0;
+    
+    container.innerHTML = ''; 
+
+    if (eventiSettimana.length > 0) {
+        const boxEvidenza = document.createElement('div');
+        boxEvidenza.id = 'box-evidenza-main';
+        boxEvidenza.className = 'highlight-box';
+        boxEvidenza.innerHTML = `<div id="highlight-content"></div>`;
+        container.appendChild(boxEvidenza);
+        aggiornaBoxEvidenza();
+    } else {
+        container.innerHTML = `<div style="padding: 3rem; text-align: center; color: var(--text-secondary); background: var(--surface); border-radius: var(--radius-lg); margin-top: 20px;">Nessuna lezione in programma per questa settimana 🎉</div>`;
+        return;
+    }
+
+    let maxGiorni = 5;
+    eventiSettimana.forEach(evento => {
+        const dataInizio = new Date(evento.dataInizio);
+        const giornoSettimana = dataInizio.getDay(); 
+        if (giornoSettimana === 6) maxGiorni = Math.max(maxGiorni, 6); 
+        if (giornoSettimana === 0) maxGiorni = 7; 
+    });
+
+    const giorniLavorativi = [];
+    for (let i = 0; i < maxGiorni; i++) {
+        const giorno = new Date(lunedi);
+        giorno.setDate(lunedi.getDate() + i);
+        giorniLavorativi.push({
+            dataOggetto: giorno,
+            dataTesto: giorno.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric' }),
+            lezioni: []
+        });
+    }
+
+    eventiSettimana.forEach(evento => {
+        const dInizio = new Date(evento.dataInizio);
+        const gTrovato = giorniLavorativi.find(g => g.dataOggetto.getDate() === dInizio.getDate());
+        if (gTrovato) gTrovato.lezioni.push(evento);
+    });
+
+    const oraInizioCalendario = 8;
+    const oraFineCalendario = 20; 
+    const altezzaOra = 60; // Aumentato leggermente per estetica Campusly
+    const fattoreScala = altezzaOra / 60; 
+    const altezzaTotale = (oraFineCalendario - oraInizioCalendario) * altezzaOra;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'calendario-main-container';
+    wrapper.style.position = 'relative';
+    wrapper.style.display = 'flex';
+    wrapper.style.marginTop = '20px';
+    wrapper.style.overflowX = 'auto';
+    wrapper.style.backgroundColor = 'var(--surface)';
+    wrapper.style.borderRadius = 'var(--radius-lg)';
+    wrapper.style.border = '1px solid var(--border-color)';
+    wrapper.style.setProperty('--num-giorni', maxGiorni);
+    
+    // Header e griglia di base integrati inline se il CSS esterno non li gestisce
+    const orariCol = document.createElement('div');
+    orariCol.className = 'orari-colonna';
+    orariCol.style.position = 'relative';
+    orariCol.style.width = '60px';
+    orariCol.style.flexShrink = '0';
+    orariCol.style.borderRight = '1px solid var(--border-color)';
+    orariCol.style.height = `${altezzaTotale + 50}px`;
+
+    // Intestazione vuota per allineamento
+    orariCol.innerHTML += `<div style="height: 50px; border-bottom: 1px solid var(--border-color);"></div>`;
+
+    for (let h = oraInizioCalendario; h <= oraFineCalendario; h++) {
+        const topPx = ((h - oraInizioCalendario) * altezzaOra) + 50;
+        orariCol.innerHTML += `<div class="orario-label" style="position: absolute; top: ${topPx - 10}px; right: 10px; font-size: 0.8rem; color: var(--text-muted);">${h}:00</div>`;
+    }
+    wrapper.appendChild(orariCol);
+
+    giorniLavorativi.forEach(giorno => {
+        const colonnaWrapper = document.createElement('div');
+        colonnaWrapper.style.flex = '1';
+        colonnaWrapper.style.minWidth = '140px';
+        colonnaWrapper.style.borderRight = '1px solid var(--border-color)';
+        
+        const isOggi = adesso.getDate() === giorno.dataOggetto.getDate() && adesso.getMonth() === giorno.dataOggetto.getMonth();
+        
+        // Header Colonna
+        const headerColonna = document.createElement('div');
+        headerColonna.style.height = '50px';
+        headerColonna.style.display = 'flex';
+        headerColonna.style.alignItems = 'center';
+        headerColonna.style.justifyContent = 'center';
+        headerColonna.style.borderBottom = '1px solid var(--border-color)';
+        headerColonna.style.fontWeight = isOggi ? '700' : '500';
+        headerColonna.style.color = isOggi ? 'var(--uni-primary, var(--primary-color))' : 'var(--text-primary)';
+        headerColonna.textContent = giorno.dataTesto;
+        colonnaWrapper.appendChild(headerColonna);
+
+        // Corpo Colonna
+        const colonna = document.createElement('div');
+        colonna.className = 'giorno-colonna';
+        colonna.style.position = 'relative';
+        colonna.style.height = `${altezzaTotale}px`;
+        
+        if (isOggi) colonna.id = 'colonna-oggi';
+
+        if (isOggi && adesso.getHours() >= oraInizioCalendario && adesso.getHours() < oraFineCalendario) {
+            const topPx = (((adesso.getHours() - oraInizioCalendario) * 60) + adesso.getMinutes()) * fattoreScala;
+            colonna.innerHTML += `<div class="time-indicator" style="position: absolute; top: ${topPx}px; left: 0; width: 100%; height: 2px; background: #ef4444; z-index: 50;"></div>`;
+        }
+
+        gestisciSovrapposizioni(giorno.lezioni);
+
+        giorno.lezioni.forEach(evento => {
+            const dataInizio = new Date(evento.dataInizio);
+            const dataFine = new Date(evento.dataFine);
+
+            const topPx = (((dataInizio.getHours() - oraInizioCalendario) * 60) + dataInizio.getMinutes()) * fattoreScala;
+            const altezzaPx = ((dataFine.getTime() - dataInizio.getTime()) / 60000) * fattoreScala;
+
+            const card = document.createElement('div');
+            card.className = 'lezione-card';
+            card.style.position = 'absolute';
+            card.style.top = `${topPx}px`;
+            card.style.height = `${altezzaPx}px`;
+            card.style.width = evento.widthCSS;
+            card.style.left = evento.leftCSS;
+            card.style.zIndex = evento.zIndex;
+            card.style.cursor = 'pointer'; 
+            
+            // Stile Card Inline (Sicurezza)
+            card.style.backgroundColor = evento.isPersonale ? 'var(--brand-fuchsia)' : 'var(--uni-primary, var(--primary-color))';
+            card.style.color = '#fff';
+            card.style.borderRadius = 'var(--radius-md)';
+            card.style.padding = '6px';
+            card.style.fontSize = '0.8rem';
+            card.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+            card.style.overflow = 'hidden';
+            card.style.border = '1px solid rgba(255,255,255,0.2)';
+            
+            card.addEventListener('click', () => apriModaleDettagli(evento));
+            
+            let titolo = formattaTitolo(evento.nome);
+            const orario = `${dataInizio.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })} - ${dataFine.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })}`;
+            
+            card.innerHTML = `
+                <div style="font-weight: 700; line-height: 1.1; margin-bottom: 2px;">${titolo}</div>
+                <div style="opacity: 0.9; font-size: 0.75rem;">${orario}</div>
+            `;
+            colonna.appendChild(card);
+        });
+        
+        colonnaWrapper.appendChild(colonna);
+        wrapper.appendChild(colonnaWrapper);
+    });
+
+    container.appendChild(wrapper);
+
+    if (faiScroll) {
+        setTimeout(posizionaSuOggi, 100);
+    }
+}
+
+// ==========================================
+// HIGHLIGHT BOX & EXPORT
+// ==========================================
+function aggiornaBoxEvidenza() {
+    const box = document.getElementById('highlight-content');
+    if (!box || eventiSettimana.length === 0) return;
+
+    const evento = eventiSettimana[indiceEvidenza];
+    const dataInizio = new Date(evento.dataInizio);
+    const dataFine = new Date(evento.dataFine);
+
+    const orario = `${dataInizio.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} - ${dataFine.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+    const dataTesto = dataInizio.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    let aule = [];
+    if (evento.risorse) {
+        evento.risorse.forEach(r => { 
+            if (r.aula && isAulaVarese(r.aula)) aule.push(r.aula.descrizione);
+        });
+    }
+    const auleTesto = aule.length > 0 ? aule.join(', ') : (evento.luogo || "Da definire");
+
+    let docenti = [];
+    if (evento.risorse) evento.risorse.forEach(r => { if (r.docente && r.docente.cognome) docenti.push(r.docente.cognome); });
+    const docentiTesto = docenti.length > 0 ? docenti.join(', ') : "Non assegnato";
+
+    const adesso = new Date();
+    let badgeTesto = "Prossima Lezione";
+    let badgeColor = "var(--uni-primary, var(--primary-color))"; 
+    
+    if (adesso > dataFine) {
+        badgeTesto = "Completato";
+        badgeColor = "var(--text-muted)";
+    } else if (adesso >= dataInizio && adesso <= dataFine) {
+        badgeTesto = "In Corso Ora!";
+        badgeColor = "#ef4444";
+    }
+
+    const titoloFormattato = formattaTitolo(evento.nome);
+
+    box.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <span style="background: ${badgeColor}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 700;">${badgeTesto}</span>
+            <div style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary);">
+                <button onclick="window.cambiaEvidenza(-1)" ${indiceEvidenza === 0 ? 'disabled' : ''} style="background:transparent; border:none; cursor:pointer;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <span style="font-size: 0.9rem;">${indiceEvidenza + 1} / ${eventiSettimana.length}</span>
+                <button onclick="window.cambiaEvidenza(1)" ${indiceEvidenza === eventiSettimana.length - 1 ? 'disabled' : ''} style="background:transparent; border:none; cursor:pointer;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+        </div>
+        <h2 style="margin: 0 0 16px 0; font-size: 1.4rem; color: var(--text-primary);">${titoloFormattato}</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 0.9rem; color: var(--text-secondary);">
+            <div style="display:flex; align-items:center; gap:8px;">${icnData} <span>${dataTesto.charAt(0).toUpperCase() + dataTesto.slice(1)}</span></div>
+            <div style="display:flex; align-items:center; gap:8px;">${icnOra} <strong>${orario}</strong></div>
+            <div style="display:flex; align-items:center; gap:8px;">${icnAula} <span>${auleTesto}</span></div>
+            ${!evento.isPersonale ? `<div style="display:flex; align-items:center; gap:8px;">${icnProf} <span>Prof.${docentiTesto}</span></div>` : ''}
+        </div>
+    `;
+}
+
+window.cambiaEvidenza = function(direzione) {
+    indiceEvidenza += direzione;
+    aggiornaBoxEvidenza();
+};
+
+function esportaSettimanaICS() {
+    if (!eventiSettimana || eventiSettimana.length === 0) {
+        alert("Non ci sono lezioni in questa settimana da esportare.");
+        return;
+    }
+
+    let icsContent = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Campusly//IT\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n";
+
+    eventiSettimana.forEach(evento => {
+        const dataInizio = new Date(evento.dataInizio);
+        const dataFine = new Date(evento.dataFine);
+        
+        const startStr = dataInizio.toISOString().replace(/[-:]/g, '').split('.')[0] + "Z";
+        const endStr = dataFine.toISOString().replace(/[-:]/g, '').split('.')[0] + "Z";
+        
+        let titolo = formattaTitolo(evento.nome);
+        icsContent += "BEGIN:VEVENT\r\n";
+        icsContent += `SUMMARY:${titolo}\r\n`;
+        icsContent += `DTSTART:${startStr}\r\n`;
+        icsContent += `DTEND:${endStr}\r\n`;
+        icsContent += `LOCATION:${evento.luogo || 'Da definire'}\r\n`;
+        icsContent += "END:VEVENT\r\n";
+    });
+
+    icsContent += "END:VCALENDAR\r\n";
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const strDataFile = ottieniLunedi(dataRiferimento).toISOString().split('T')[0];
+    
+    link.href = url;
+    link.setAttribute('download', `Campusly_${strDataFile}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// ==========================================
+// MODALI E AZIONI CLOUD
+// ==========================================
+function apriModaleDettagli(evento) {
+    const modale = document.getElementById('modale-dettagli');
+    const modaleBody = document.getElementById('modale-body');
+    
+    const dataInizio = new Date(evento.dataInizio);
+    const dataFine = new Date(evento.dataFine);
+    const orario = `${dataInizio.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} - ${dataFine.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+    const dataTesto = dataInizio.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    
+    const titoloFormattato = formattaTitolo(evento.nome);
+    const tipoLezione = evento.tipoAbbreviazione || (evento.isPersonale ? "Evento Personale" : "Lezione");
+    
+    let auleHtml = `<span style='margin-left: 8px;'>${evento.luogo || 'Da definire'}</span>`;
+    let docentiTesto = "Non assegnato";
+
+    if (evento.risorse) {
+        let infoAule = [];
+        let infoDocenti = [];
+        evento.risorse.forEach(r => {
+            if (r.aula && isAulaVarese(r.aula)) infoAule.push(`<li><strong>${r.aula.descrizione}</strong></li>`);
+            if (r.docente) infoDocenti.push(`${r.docente.nome || ""} ${r.docente.cognome || ""}`.trim());
+        });
+        if (infoAule.length > 0) auleHtml = `<ul style="padding-left:24px; margin:4px 0;">${infoAule.join('')}</ul>`;
+        if (infoDocenti.length > 0) docentiTesto = infoDocenti.join(', ');
+    }
+
+    const isHidden = corsiDaNascondere.some(c => (evento.nome || "").toUpperCase().includes(c));
+    const toggleBtnText = isHidden ? "👁️ Mostra di nuovo" : "🚫 Nascondi corso";
+    const toggleBtnColor = isHidden ? "#10b981" : "#ef4444";
+
+    modaleBody.innerHTML = `
+        <span style="display:inline-block; padding: 4px 10px; background: var(--uni-primary, var(--primary-color)); color: white; border-radius: 12px; font-size: 0.8rem; font-weight: 700; margin-bottom: 16px;">${tipoLezione}</span>
+        <h2 style="margin: 0 0 20px 0; font-size: 1.4rem; color: var(--text-primary);">${titoloFormattato}</h2>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem; color: var(--text-secondary);">
+            <div style="display:flex; align-items:center; gap:8px;">${icnData} <span style="text-transform: capitalize;">${dataTesto}</span></div>
+            <div style="display:flex; align-items:center; gap:8px;">${icnOra} <strong>${orario}</strong></div>
+            ${!evento.isPersonale ? `<div style="display:flex; align-items:center; gap:8px;">${icnProf} <span><strong>Docente:</strong>${docentiTesto}</span></div>` : ''}
+            <div style="display:flex; align-items:flex-start; gap:8px;">
+                <div style="margin-top: 2px;">${icnAula}</div>
+                <div><strong>Luogo:</strong> ${auleHtml}</div>
+            </div>
+        </div>
+    `;
+
+    if (!evento.isPersonale) {
+        const nomeCorsoSafe = (evento.nome || "").replace(/'/g, "\\'");
+        modaleBody.innerHTML += `
+            <button onclick="window.toggleCorsoNascosto('${nomeCorsoSafe}')" style="margin-top: 24px; width: 100%; padding: 14px; background: ${toggleBtnColor}; color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 700; transition: opacity 0.2s;">
+                ${toggleBtnText}
+            </button>
+        `;
+    } else {
+        modaleBody.innerHTML += `
+            <button onclick="window.eliminaEventoPersonale('${evento.idPersonale}')" style="margin-top: 24px; width: 100%; padding: 14px; background: #ef4444; color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 700;">
+                🗑️ Elimina Evento Personale
+            </button>
+        `;
+    }
+    
+    modale.style.display = 'flex';
+}
+
+window.toggleCorsoNascosto = async function(nomeCorso) {
+    if(!nomeCorso) return;
+    try {
+        const response = await fetch(`${basePath}/api/corsi-nascosti/toggle`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ course_name: nomeCorso })
+        });
+        if (response.ok) {
+            document.getElementById('modale-dettagli').style.display = 'none';
+            caricaSettimana(dataRiferimento);
+        }
+    } catch (error) {
+        alert("Impossibile aggiornare l'impostazione in Cloud.");
+    }
+};
+
+window.eliminaEventoPersonale = async function(id) {
+    if(confirm("Vuoi davvero eliminare questo evento personale?")) {
+        try {
+            await fetch(`${basePath}/api/eventi-personali/delete/${id}`);
+            document.getElementById('modale-dettagli').style.display = 'none';
+            caricaSettimana(dataRiferimento);
+        } catch (error) {
+            alert("Errore durante l'eliminazione dell'evento dal Cloud");
+        }
+    }
+};
+
+// ==========================================
+// INIZIALIZZAZIONE EVENT LISTENERS
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    
+    function cambiaSettimana(giorni) {
+        dataRiferimento.setDate(dataRiferimento.getDate() + giorni);
+        caricaSettimana(dataRiferimento);
+    }
+
+    const btnPrec = document.getElementById('btn-prec');
+    const btnSucc = document.getElementById('btn-succ');
+    const btnExport = document.getElementById('btn-export');
+    
+    if(btnPrec) btnPrec.addEventListener('click', () => cambiaSettimana(-7));
+    if(btnSucc) btnSucc.addEventListener('click', () => cambiaSettimana(7));
+    if(btnExport) btnExport.addEventListener('click', esportaSettimanaICS);
+
+    // Form Eventi Personali
+    const modaleForm = document.getElementById('modale-form-evento');
+    const btnAdd = document.getElementById('btn-add-evento');
+    const form = document.getElementById('form-nuovo-evento');
+
+    if(btnAdd && modaleForm) btnAdd.addEventListener('click', () => modaleForm.style.display = 'flex');
+
+    if(form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const titolo = document.getElementById('form-titolo').value;
+            const data = document.getElementById('form-data').value;
+            const inizio = document.getElementById('form-inizio').value;
+            const fine = document.getElementById('form-fine').value;
+            const luogo = document.getElementById('form-luogo').value;
+
+            const payload = {
+                nome: titolo,
+                dataInizio: new Date(`${data}T${inizio}:00`).toISOString(),
+                dataFine: new Date(`${data}T${fine}:00`).toISOString(),
+                luogo: luogo || "Luogo non specificato"
+            };
+
+            try {
+                await fetch(`${basePath}/api/eventi-personali`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                modaleForm.style.display = 'none';
+                form.reset();
+                caricaSettimana(dataRiferimento);
+            } catch (error) {
+                alert("Errore durante il salvataggio in Cloud dell'evento");
+            }
+        });
+    }
+
+    // Caricamento iniziale
+    caricaSettimana(dataRiferimento);
+});
