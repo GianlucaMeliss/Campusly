@@ -144,6 +144,7 @@ class AuthController
         // Passiamo le università alla View
         \App\Core\View::render('pages/onboarding', [
             'pageTitle' => 'Configurazione - Campusly',
+            'pageCss' => 'onboarding',
             'universities' => $universities
         ]);
     }

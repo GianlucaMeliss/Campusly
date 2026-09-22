@@ -1,0 +1,143 @@
+/* =========================================
+   WIZARD ONBOARDING
+   ========================================= */
+.wizard-container {
+    overflow: hidden;
+    position: relative;
+    min-height: 400px;
+}
+
+.wizard-step {
+    display: none;
+    animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.wizard-step.active {
+    display: block;
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Griglia Università */
+.uni-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.uni-card {
+    background: var(--surface);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-speed);
+}
+
+.uni-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 8px 24px rgba(232, 62, 140, 0.15);
+    transform: translateY(-2px);
+}
+
+.uni-card img {
+    height: 48px;
+    object-fit: contain;
+    margin-bottom: 10px;
+}
+
+.uni-card span {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Ricerca Corsi */
+.search-bar {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.search-bar input {
+    padding-left: 45px;
+    font-size: 1.1rem;
+}
+
+.search-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+}
+
+.course-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.course-item {
+    padding: 16px;
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.course-item:hover {
+    background: var(--surface);
+    border-color: var(--primary-color);
+}
+
+/* Selezione a bottoni (Anno/Sede) */
+.toggle-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.toggle-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 12px;
+    text-align: center;
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.toggle-btn.selected {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.wizard-nav {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+}
+.btn-ghost:hover { color: var(--text-primary); }
