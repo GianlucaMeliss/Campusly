@@ -7,6 +7,8 @@ $url = static function (string $path = '/') use ($basePath): string {
 };
 
 $isLoggedIn = isset($_SESSION['user_id']);
+// Usiamo $pageCss (impostato nel controller) per capire in che pagina siamo
+$activePage = $pageCss ?? 'home'; 
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -15,20 +17,19 @@ $isLoggedIn = isset($_SESSION['user_id']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title><?= htmlspecialchars($pageTitle ?? 'Campusly') ?></title>
     
-    <!-- PWA e Colori di Sistema aggiornati all'identità Campusly -->
     <meta name="theme-color" content="#F8F7FA">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     
-    <!-- Percorsi dinamici per loghi e manifest -->
+    <!-- Percorsi Immagini Corretti (assets/img) -->
     <link rel="icon" href="<?= htmlspecialchars($url('/assets/img/icon-192.png')) ?>">
     <link rel="apple-touch-icon" href="<?= htmlspecialchars($url('/assets/img/icon-192.png')) ?>">
-    <link rel="manifest" href="<?= htmlspecialchars($url('/assets/manifest.json')) ?>">
+    <link rel="manifest" href="<?= htmlspecialchars($url('/manifest.json')) ?>">
     
     <!-- Fogli di stile -->
-    <link rel="stylesheet" href="<?= htmlspecialchars($url('/assets/css/style.css')) ?>?v=3">
+    <link rel="stylesheet" href="<?= htmlspecialchars($url('/assets/css/style.css')) ?>?v=4">
     <?php if (!empty($pageCss)): ?>
-        <link rel="stylesheet" href="<?= htmlspecialchars($url('/assets/css/' . $pageCss . '.css')) ?>?v=3">
+        <link rel="stylesheet" href="<?= htmlspecialchars($url('/assets/css/' . $pageCss . '.css')) ?>?v=4">
     <?php endif; ?>
 </head>
 <body>
@@ -41,12 +42,12 @@ $isLoggedIn = isset($_SESSION['user_id']);
 
             <nav class="site-nav">
                 <?php if ($isLoggedIn): ?>
-                    <a href="<?= htmlspecialchars($url('/dashboard')) ?>">Calendario</a>
-                    <a href="<?= htmlspecialchars($url('/profilo')) ?>">Profilo</a>
+                    <a href="<?= htmlspecialchars($url('/dashboard')) ?>" class="<?= $activePage === 'calendar' ? 'active-link' : '' ?>">Calendario</a>
+                    <a href="<?= htmlspecialchars($url('/profilo')) ?>" class="<?= $activePage === 'profile' ? 'active-link' : '' ?>">Profilo</a>
                     <a href="<?= htmlspecialchars($url('/logout')) ?>">Esci</a>
                 <?php else: ?>
                     <a href="<?= htmlspecialchars($url('/login')) ?>">Accedi</a>
-                    <a href="<?= htmlspecialchars($url('/register')) ?>" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.9rem;">Inizia ora</a>
+                    <a href="<?= htmlspecialchars($url('/register')) ?>" class="btn btn-primary btn-sm">Inizia ora</a>
                 <?php endif; ?>
             </nav>
         </div>

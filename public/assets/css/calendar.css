@@ -1,494 +1,183 @@
 /* =========================================
-   1. VARIABILI E TEMA INSUBRIA (Corretto)
+   TOOLBAR CALENDARIO
    ========================================= */
-:root {
-    --bg-main: #f2f7f6; /* Sfondo neutro con una leggerissima nota di verde acqua */
-    --surface: #ffffff;
-    --text-primary: #111827;
-    --text-secondary: #4b5563;
-    --text-muted: #9ca3af;
-    --border-color: #d8e5e3; 
-    --primary-color: #007161; /* VERDE INSUBRIA UFFICIALE (#007161) */
-    --header-bg: #007161;
-    --shadow-soft: 0 2px 8px rgba(0, 113, 97, 0.08);
-    --shadow-medium: 0 4px 15px rgba(0, 113, 97, 0.12);
-    --skeleton-base: #d8e5e3;
-    --skeleton-shine: #ebf2f1;
+.toolbar-calendario {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 0;
+    position: sticky;
+    top: 76px; /* Offset esatto per agganciarsi sotto all'header di 76px */
+    z-index: 99;
+    box-shadow: 0 4px 12px -4px rgba(0,0,0,0.05);
 }
 
-/* ZERO BLU: Grigi scurissimi e neutri, leggermente virati al verde foresta */
-.dark-mode {
-    --bg-main: #0c1210; /* Nero/Verde scurissimo (niente blu!) */
-    --surface: #151e1b; /* Grigio foresta scuro per i riquadri */
-    --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1;
-    --text-muted: #64748b;
-    --border-color: #23332e; /* Bordi scuri neutri */
-    --primary-color: #2dd4bf; /* Verde menta/ottanio brillante per la Dark Mode */
-    --header-bg: #0c1210; /* L'header si fonde con lo sfondo nero */
-    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.5);
-    --skeleton-base: #23332e;
-    --skeleton-shine: #2f453e;
-}
-
-/* =========================================
-   2. IMPOSTAZIONI BASE E HEADER
-   ========================================= */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-main);
-    color: var(--text-primary);
-    margin: 0; padding: 0;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-header {
-    background-color: var(--header-bg); color: white;
-    padding: 15px 20px;
-    position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    transition: background-color 0.3s;
-}
-/* Allineamento del logo e testo */
-.brand-container {
+.toolbar-inner {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 12px;
 }
 
-.brand-logo {
-    height: 38px;
-    width: auto;
-    object-fit: contain;
-}
-
-/* --- LOGICA DI SCAMBIO LOGO --- */
-/* Di default (Light Mode) mostriamo il logo ottanio e nascondiamo quello verde scuro */
-.logo-light { display: block; }
-.logo-dark { display: none; }
-
-/* Quando il body ha la classe .dark-mode, invertiamo la visibilità! */
-.dark-mode .logo-light { display: none; }
-.dark-mode .logo-dark { display: block; }
-
-.header-top { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; }
-header h1 { 
-    margin: 0; 
-    font-size: 18px; 
-    font-weight: 600; 
-    line-height: 1.1;
-    text-align: left; 
-}
-header p { margin: 4px 0 0; font-size: 13px; opacity: 0.9; }
-
-/* Pulsante Tema */
-.theme-btn {
-    background: rgba(255,255,255,0.15); border: none; color: white;
-    width: 40px; height: 40px; border-radius: 50%;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: 0.2s;
-}
-.theme-btn:hover { background: rgba(255,255,255,0.3); }
-
-/* Correzione visiva del bottone in Dark Mode per non averlo "bianco" */
-.dark-mode .theme-btn { background: rgba(45, 212, 191, 0.15); color: var(--primary-color); }
-.dark-mode .theme-btn:hover { background: rgba(45, 212, 191, 0.25); }
-
-main { padding: 15px; max-width: 1200px; margin: 0 auto; }
-svg { width: 14px; height: 14px; flex-shrink: 0; }
-.hl-riga svg { width: 16px; height: 16px; color: var(--text-muted); }
-
-/* Navigazione */
 .settimana-nav {
-    display: flex; align-items: center; justify-content: center; gap: 15px; 
-    margin-top: 15px; background: rgba(255,255,255,0.15);
-    padding: 8px; border-radius: 8px; max-width: 450px; margin-inline: auto; /* max-width aumentato a 450px */
-}
-.dark-mode .settimana-nav { background: var(--surface); border: 1px solid var(--border-color); }
-
-.settimana-nav button {
-    background: var(--surface); color: var(--primary-color); 
-    border: none; border-radius: 50%; width: 36px; height: 36px; 
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    box-shadow: var(--shadow-soft); transition: background-color 0.3s;
-}
-.dark-mode .settimana-nav button { background: var(--border-color); color: var(--text-primary); }
-
-#label-settimana { font-size: 15px; font-weight: 500; margin: 0; min-width: 160px; text-align: center; }
-
-/* =========================================
-   3. BOX IN EVIDENZA E SKELETON LOADER
-   ========================================= */
-.highlight-box {
-    background-color: var(--surface); border-radius: 12px;
-    padding: 16px 24px; margin-bottom: 24px;
-    box-shadow: var(--shadow-medium); 
-    border-left: 6px solid hsl(var(--card-hue, 0), 75%, 45%);
-    transition: background-color 0.3s, border-color 0.3s;
-}
-.dark-mode .highlight-box { 
-    border-left-color: hsl(var(--card-hue, 0), 75%, 65%); 
-}
-
-.hl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.hl-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-
-.badge-future { background: rgba(0, 113, 97, 0.1); color: var(--primary-color); }
-.badge-past { background: rgba(107, 114, 128, 0.1); color: var(--text-muted); }
-.badge-now { background: rgba(220, 38, 38, 0.1); color: #ef4444; }
-.dark-mode .badge-future { background: rgba(45, 212, 191, 0.15); color: var(--primary-color); }
-
-.hl-nav { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-secondary); }
-.hl-nav button { background: transparent; border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;}
-.hl-nav button:hover:not(:disabled) { background: var(--bg-main); }
-.hl-nav button:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.hl-titolo { margin: 0 0 14px 0; font-size: 22px; font-weight: 600; }
-.hl-dettagli { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.hl-riga { font-size: 14px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
-
-/* SKELETON ANIMATION */
-@keyframes pulse {
-    0% { background-color: var(--skeleton-base); }
-    50% { background-color: var(--skeleton-shine); }
-    100% { background-color: var(--skeleton-base); }
-}
-.skeleton { animation: pulse 1.5s infinite ease-in-out; border-radius: 8px; }
-.skeleton-box { height: 160px; margin-bottom: 24px; background-color: var(--surface); }
-.skeleton-card { position: absolute; left: 2px; right: 2px; border-left: 4px solid var(--skeleton-shine); }
-
-/* =========================================
-   4. LA GRIGLIA UNIFICATA COMPRESSA
-   ========================================= */
-/* 4. LA GRIGLIA UNIFICATA COMPRESSA */
-.calendario-main-container {
-    display: grid; 
-    /* Usiamo var(--num-giorni) con 5 come valore di default di sicurezza */
-    grid-template-columns: 55px repeat(var(--num-giorni, 5), 1fr);
-    grid-template-rows: auto 1fr; gap: 12px 8px; width: 100%;
-}
-.angolo-vuoto { grid-column: 1; grid-row: 1; }
-.header-colonna {
-    text-align: center; font-weight: 600; color: var(--text-secondary);
-    padding: 8px 0; border-bottom: 2px solid var(--border-color);
-    font-size: 14px; text-transform: capitalize;
-}
-.header-oggi { color: var(--primary-color); border-bottom-color: var(--primary-color); }
-
-.orari-colonna { grid-column: 1; grid-row: 2; position: relative; }
-.orario-label {
-    position: absolute; width: 100%; text-align: right; padding-right: 10px; 
-    font-size: 12px; color: var(--text-muted); font-weight: 500;
-    transform: translateY(-50%); box-sizing: border-box;
-}
-
-.giorno-colonna {
-    grid-row: 2; position: relative;
-    background-color: var(--surface); border-radius: 8px;
-    background-image: linear-gradient(var(--border-color) 1px, transparent 1px);
-    background-size: 100% 45px; 
-    transition: background-color 0.3s;
-}
-
-/* =========================================
-   5. LINEA DEL TEMPO E CARD
-   ========================================= */
-.time-indicator {
-    position: absolute; left: 0; width: 100%; height: 2px;
-    background-color: #ef4444; z-index: 10; pointer-events: none;
-}
-.time-indicator::before {
-    content: ''; position: absolute;
-    left: -4px; top: -4px; width: 10px; height: 10px;
-    background-color: #ef4444; border-radius: 50%;
-}
-
-.lezione-card {
-    position: absolute;
-    border-radius: 6px;
-    
-    /* RIPRISTINATI I COLORI DINAMICI! 🎉 */
-    border-left: 4px solid hsl(var(--card-hue, 180), 70%, 45%);
-    background-color: hsl(var(--card-hue, 180), 85%, 92%);
-    
-    box-shadow: var(--shadow-soft);
-    padding: 6px;
-    box-sizing: border-box;
-    /* REGOLE ANTI-ROTTURA TESTO */
-    overflow: hidden !important; 
-    display: flex;
-    flex-direction: column;
-    /* Transizione morbida per l'effetto hover */
-    transition: transform 0.2s ease, z-index 0s, box-shadow 0.2s ease;
-}
-
-/* Ripristiniamo la variante scura dinamica per la Dark Mode */
-.dark-mode .lezione-card {
-    background-color: hsl(var(--card-hue, 180), 40%, 18%);
-    border-left-color: hsl(var(--card-hue, 180), 60%, 55%);
-}
-
-/* Quando l'utente clicca o tiene premuto su una card nascosta */
-.lezione-card:hover, .lezione-card:active {
-    z-index: 100 !important;
-    transform: scale(1.03);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-}
-
-.lezione-titolo {
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: var(--text-primary);
-    margin-bottom: 4px;
-    line-height: 1.2;
-    /* Magia CSS: taglia il titolo coi puntini (...) se supera le 2 righe */
-    display: -webkit-box;
-    -webkit-line-clamp: 2; 
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.lezione-orario, .lezione-dettaglio {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
     display: flex;
     align-items: center;
-    gap: 4px;
-    margin-top: 2px;
-    /* Magia CSS: costringe su una sola riga coi puntini (...) */
-    white-space: nowrap; 
-    overflow: hidden;
-    text-overflow: ellipsis;
+    gap: 16px;
 }
 
-/* Evita che le iconcine SVG vengano schiacciate se lo spazio scarseggia */
-.lezione-orario svg, .lezione-dettaglio svg {
-    flex-shrink: 0; 
-    width: 12px;
-    height: 12px;
+.settimana-nav h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    min-width: 160px;
+    text-align: center;
+    margin: 0;
+    color: var(--text-primary);
 }
 
-/* =========================================
-   6. RESPONSIVE MOBILE E SCROLL SNAP
-   ========================================= */
-@media (max-width: 768px) {
-    main { padding: 8px; }
-    .highlight-box { padding: 16px; margin-bottom: 16px; }
-    .hl-titolo { font-size: 18px; }
-    .brand-logo { height: 28px; }
-    header h1 { font-size: 15px; }
-    .hl-dettagli { grid-template-columns: 1fr; gap: 8px; }
-    
-    .calendario-main-container {
-        overflow-x: auto; -webkit-overflow-scrolling: touch;
-        scroll-snap-type: x mandatory; padding-bottom: 10px;
-        /* Anche qui lo rendiamo dinamico per la versione mobile: */
-        grid-template-columns: 50px repeat(var(--num-giorni, 5), minmax(240px, 1fr));
-    }
-    
-    .header-colonna, .giorno-colonna { scroll-snap-align: start; scroll-margin-left: 40px; }
-    .orario-label { font-size: 11px; padding-right: 6px; }
-    
-    .lezione-card { padding: 4px 6px; border-left-width: 4px; }
-    .lezione-titolo { font-size: 11px; }
-    .lezione-orario, .lezione-dettaglio { font-size: 9px; }
+.toolbar-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
 }
 
 /* =========================================
-   7. MODALE DETTAGLI LEZIONE
+   CONTENITORE CALENDARIO E AZIONI
    ========================================= */
-.modale-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
-    z-index: 1000; display: flex; align-items: center; justify-content: center;
-    opacity: 0; animation: fadeIn 0.3s forwards;
-}
-.modale-content {
-    position: relative; width: 90%; max-width: 500px;
-    max-height: 90vh; overflow-y: auto;
-    margin: 0; /* Sovrascrive il margin di highlight-box */
-}
-.modale-close {
-    position: absolute; top: 12px; right: 15px;
-    background: transparent; border: none; font-size: 28px;
-    color: var(--text-secondary); cursor: pointer; line-height: 1;
-}
-.modale-close:hover { color: var(--text-primary); }
-.modale-badge { display: inline-block; margin-bottom: 12px; }
-
-/* Stile per la lista delle aule nel popup */
-.lista-aule { margin: 5px 0 0 0; padding-left: 20px; font-size: 13px; color: var(--text-primary); }
-.lista-aule li { margin-bottom: 6px; }
-.lista-aule small { color: var(--text-muted); display: block; margin-top: 2px;}
-
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-/* Allarga la colonna di sinistra per far stare gli orari a doppia cifra (10:00, 11:00...) */
-.angolo-vuoto,
-.orari-colonna {
-    width: 55px !important; /* Prima era più stretta (circa 40/45px) */
-    min-width: 55px !important;
+.calendario-wrapper {
+    padding-top: 24px;
+    padding-bottom: 80px;
 }
 
-/* Assicuriamoci che l'orario non tocchi le righe e stia ben allineato */
-.orario-label {
-    width: 100%;
-    text-align: right;
-    padding-right: 8px !important; /* Diamo respiro tra il numero e la linea */
-    box-sizing: border-box;
+.loading-text {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
 }
 
-/* Aggiustamento per schermi molto piccoli (Mobile) */
-@media (max-width: 768px) {
-    .angolo-vuoto,
-    .orari-colonna {
-        width: 50px !important; 
-        min-width: 50px !important;
-    }
-    .orario-label {
-        font-size: 11px;
-        padding-right: 6px !important;
-    }
+.hidden {
+    display: none !important;
 }
 
-/* Pulsante Aggiungi Evento Personale */
+/* =========================================
+   OVERRIDE TEMA UNIVERSITÀ (Colori Dinamici)
+   ========================================= */
+/* Usa la variabile iniettata via style nel div wrapper */
+.uni-theme .btn-uni {
+    background-color: var(--uni-primary);
+    color: #ffffff;
+    border: none;
+}
+
+.uni-theme .btn-uni:hover {
+    background-color: var(--uni-primary-hover);
+}
+
+/* Tasto Flottante per Aggiungere Eventi */
 .fab-add {
+    background-color: var(--uni-primary);
+    color: #ffffff;
     position: fixed;
     bottom: 24px;
     right: 24px;
     width: 56px;
     height: 56px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
     border-radius: 50%;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    cursor: pointer;
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    border: none;
+    cursor: pointer;
     z-index: 1000;
-    transition: transform 0.2s, background-color 0.3s;
+    transition: transform 0.2s, background-color 0.2s;
 }
+
 .fab-add:hover {
     transform: scale(1.05);
+    background-color: var(--uni-primary-hover);
 }
-.fab-add svg {
-    width: 24px;
-    height: 24px;
-}
-.dark-mode .fab-add {
-    background-color: var(--primary-color);
-    color: var(--bg-main);
-}
+
 /* =========================================
-   STILI FORM EVENTI PERSONALI (Ottimizzato)
+   PULSANTI ICONA (Toolbar)
    ========================================= */
-.form-personale {
+.btn-icon {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: 8px;
     display: flex;
-    flex-direction: column;
-    gap: 16px; /* Più respiro tra i campi */
-    margin-top: 15px;
+    justify-content: center;
+    align-items: center;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-icon:hover {
+    background: var(--surface);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* =========================================
+   MODALI E FORM
+   ========================================= */
+.modale-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modale-content {
+    position: relative;
+    width: 90%;
+    max-width: 450px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modale-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: color 0.2s;
+}
+
+.modale-close:hover {
+    color: var(--text-primary);
+}
+
+.form-title {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: var(--text-primary);
 }
 
 .input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    text-align: left;
+    margin-bottom: 16px;
 }
 
-.input-group label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin-left: 4px;
-}
-
-/* Stile base per TUTTI gli input */
-.form-personale input {
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-main);
-    color: var(--text-primary);
-    font-size: 16px; /* FONDAMENTALE: blocca lo zoom su iOS */
-    box-sizing: border-box;
-    font-family: inherit;
-    min-height: 48px; /* Altezza minima comoda per il tocco (Apple Guidelines) */
-    
-    /* Disattiva lo stile schiacciato nativo di iOS Safari */
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-/* Forza Safari a far espandere i campi data/ora */
-.form-personale input[type="date"],
-.form-personale input[type="time"] {
-    display: block;
-    align-items: center;
-}
-
-.form-personale input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(0, 113, 97, 0.15);
-}
-
-.form-orari-row {
+.form-row {
     display: flex;
     gap: 12px;
-    align-items: flex-end; /* Allinea i campi in basso se le etichette hanno altezze diverse */
 }
 
-.btn-salva {
-    padding: 15px;
-    border: none;
-    border-radius: 8px;
-    background: var(--primary-color);
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 12px;
-    box-shadow: var(--shadow-soft);
-    transition: opacity 0.2s, transform 0.1s;
+.form-row .input-group {
+    flex: 1;
 }
 
-.btn-salva:active {
-    transform: scale(0.98);
-}
-
-/* Adattamento per la Dark Mode */
-.dark-mode .form-personale input {
-    background-color: var(--surface);
-    border-color: var(--border-color);
-}
-
-/* =========================================
-   OTTIMIZZAZIONI MOBILE (Sotto i 768px)
-   ========================================= */
-@media (max-width: 768px) {
-    /* Riduciamo leggermente il pulsante flottante per non infastidire il tap */
-    .fab-add {
-        width: 50px;
-        height: 50px;
-        bottom: 16px;
-        right: 16px;
-    }
-    .fab-add svg {
-        width: 22px;
-        height: 22px;
-    }
-    
-    /* Su schermi DAVVERO piccoli, impiliamo gli orari invece di affiancarli */
-    @media (max-width: 380px) {
-        .form-orari-row {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-        }
-    }
+.form-submit {
+    width: 100%;
+    margin-top: 8px;
 }
