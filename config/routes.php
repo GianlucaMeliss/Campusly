@@ -79,6 +79,13 @@ $router->get('/', function (): void {
     (new HomeController())->index();
 });
 
+$router->get('/', function (): void {
+    \App\Core\View::render('pages/home', [
+        'pageTitle' => 'Campusly - Il tuo Calendario Universitario',
+        'pageCss' => 'home' 
+    ]);
+});
+
 $router->get('/chi-siamo', function (): void {
     (new PageController())->about();
 });
