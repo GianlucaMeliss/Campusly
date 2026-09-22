@@ -1,61 +1,62 @@
 /* =========================================
-   1. VARIABILI DI SISTEMA (Design Tokens)
+   1. CAMPUSLY DESIGN TOKENS (Light Mode)
    ========================================= */
 :root {
-    /* Palette Chiara (Moderna e pulita) */
-    --bg-main: #f8fafc;
-    --surface: #ffffff;
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #94a3b8;
-    --border-color: #e2e8f0; 
+    /* Colori Base (Modern iOS feel) */
+    --bg-main: #F8F7FA;
+    --surface: #FFFFFF;
+    --text-primary: #171525; /* Navy scuro */
+    --text-secondary: #8B8894; /* Grigio testo secondario */
+    --border-color: #E5E3EB; 
     
-    /* Colori Brand (Ispirati al Verde Insubria) */
-    --primary-color: #007161; 
-    --primary-hover: #005a4d;
-    --header-bg: #007161;
+    /* Colori Brand Campusly */
+    --brand-fuchsia: #E83E8C;
+    --brand-purple: #7C4DFF;
+    --primary-color: var(--brand-fuchsia); 
+    --primary-hover: #D02B78;
     
-    /* Utilità */
-    --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    --shadow-medium: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
-    --transition-speed: 0.2s;
-}
-
-/* Modalità Scura (Profonda e riposante per gli occhi) */
-body.dark-mode {
-    --bg-main: #0c1210; 
-    --surface: #151e1b; 
-    --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1;
-    --text-muted: #64748b;
-    --border-color: #23332e; 
+    /* Gradienti e Accenti */
+    --gradient-brand: linear-gradient(135deg, var(--brand-fuchsia) 0%, var(--brand-purple) 100%);
+    --header-bg: rgba(255, 255, 255, 0.85); /* Effetto vetro iOS */
     
-    /* Verde acceso per risaltare sul nero */
-    --primary-color: #2dd4bf; 
-    --primary-hover: #14b8a6;
-    --header-bg: #151e1b; 
-    
-    --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    /* Geometrie e Spazi (Minimalisti e ariosi) */
+    --shadow-soft: 0 12px 32px -4px rgba(23, 21, 37, 0.05), 0 4px 12px -2px rgba(23, 21, 37, 0.03);
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 24px; /* Card molto arrotondate */
+    --transition-speed: 0.25s;
 }
 
 /* =========================================
-   2. RESET E BASE
+   CAMPUSLY DARK MODE (Navy profondo)
    ========================================= */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+body.dark-mode {
+    --bg-main: #171525; /* Il Navy scuro diventa lo sfondo */
+    --surface: #221F36; /* Leggermente più chiaro per le card */
+    --text-primary: #F8F7FA;
+    --text-secondary: #A3A0B3;
+    --border-color: #353252; 
+    
+    /* Il fucsia in dark mode deve essere leggermente più luminoso per contrasto */
+    --primary-color: #FF70B5; 
+    --primary-hover: #E83E8C;
+    --header-bg: rgba(34, 31, 54, 0.85);
+    
+    --shadow-soft: 0 12px 32px -4px rgba(0, 0, 0, 0.3);
 }
 
+/* =========================================
+   2. TYPOGRAPHY E RESET
+   ========================================= */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--bg-main);
     color: var(--text-primary);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -65,51 +66,43 @@ a {
     transition: color var(--transition-speed);
 }
 
-a:hover {
-    color: var(--primary-hover);
-}
+a:hover { color: var(--primary-hover); }
 
 /* =========================================
-   3. STRUTTURA E LAYOUT
+   3. STRUTTURA E LAYOUT (Spazio arioso)
    ========================================= */
 .container {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 24px;
 }
 
-.container.narrow {
-    max-width: 800px;
-}
-
-.section {
-    padding: 40px 0;
-}
+.container.narrow { max-width: 600px; }
+.section { padding: 60px 0; }
 
 /* =========================================
-   4. COMPONENTI UI (Le fondamenta)
+   4. COMPONENTI UI (Card e Superfici)
    ========================================= */
-
-/* Box in evidenza (Usati in Profilo, Form, Home) */
 .highlight-box {
     background-color: var(--surface);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-xl);
-    padding: 24px;
+    padding: 32px;
     box-shadow: var(--shadow-soft);
-    transition: background-color 0.3s, border-color 0.3s;
+    transition: background-color 0.3s, border-color 0.3s, transform 0.3s;
 }
 
 /* =========================================
-   5. FORMS (Login, Registrazione, Profilo)
+   5. FORMS (Stile iOS, larghi e smussati)
    ========================================= */
 label {
     display: block;
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--text-secondary);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
 }
 
 input[type="text"],
@@ -119,83 +112,80 @@ input[type="date"],
 input[type="time"],
 select {
     width: 100%;
-    padding: 12px 16px;
+    padding: 16px 20px;
     background-color: var(--bg-main);
-    border: 1px solid var(--border-color);
+    border: 2px solid transparent;
     border-radius: var(--radius-lg);
     color: var(--text-primary);
-    font-size: 16px; /* Importante: blocca lo zoom su iOS */
+    font-size: 16px; 
+    font-weight: 500;
     font-family: inherit;
-    transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
-    appearance: none; /* Rimuove stili nativi brutti sui select */
+    transition: all var(--transition-speed);
+    appearance: none; 
 }
 
 input:focus,
 select:focus {
     outline: none;
+    background-color: var(--surface);
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(0, 113, 97, 0.15);
-}
-
-body.dark-mode input:focus,
-body.dark-mode select:focus {
-    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15);
+    box-shadow: 0 8px 20px rgba(232, 62, 140, 0.1);
 }
 
 /* =========================================
-   6. BOTTONI GLOBALI
+   6. BOTTONI GLOBALI (Il tocco Fucsia/Viola)
    ========================================= */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 12px 24px;
+    padding: 16px 28px;
     border-radius: var(--radius-lg);
-    font-weight: 600;
-    font-size: 1rem;
+    font-weight: 700;
+    font-size: 1.05rem;
     cursor: pointer;
     border: none;
-    transition: transform 0.15s ease, opacity 0.2s, background-color 0.2s;
+    transition: transform 0.15s ease, opacity 0.2s, box-shadow 0.2s;
     text-align: center;
+    letter-spacing: 0.3px;
 }
 
-.btn:active {
-    transform: scale(0.97); /* Effetto tap tipico delle app native */
-}
+.btn:active { transform: scale(0.96); }
 
+/* Bottone Principale: Usa il gradiente Campusly */
 .btn-primary {
-    background-color: var(--primary-color);
+    background: var(--gradient-brand);
     color: #ffffff !important;
+    box-shadow: 0 8px 20px rgba(232, 62, 140, 0.25);
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-hover);
+    box-shadow: 0 12px 28px rgba(232, 62, 140, 0.35);
+    opacity: 0.95;
 }
 
-/* In Dark Mode invertiamo i colori per massima leggibilità */
-body.dark-mode .btn-primary {
-    color: #0c1210 !important; 
+.btn-secondary {
+    background-color: transparent;
+    color: var(--primary-color) !important;
+    border: 2px solid var(--border-color);
 }
 
-.btn-danger {
-    background-color: #ef4444;
-    color: white !important;
-}
-
-.btn-danger:hover {
-    background-color: #dc2626;
+.btn-secondary:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(232, 62, 140, 0.05);
 }
 
 /* =========================================
-   7. NAVBAR (Header Globale)
+   7. NAVBAR GLOBALE (Header Glassmorphism)
    ========================================= */
 .site-header {
     background-color: var(--header-bg);
-    color: white;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color);
     position: sticky;
     top: 0;
     z-index: 1000;
-    box-shadow: var(--shadow-soft);
     transition: background-color 0.3s ease;
 }
 
@@ -203,53 +193,38 @@ body.dark-mode .btn-primary {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 70px;
+    height: 76px;
 }
 
 .site-brand {
     display: flex;
     align-items: center;
     gap: 12px;
-    color: white !important;
+    color: var(--text-primary) !important;
 }
 
-.site-brand img {
-    height: 36px;
-    border-radius: 8px;
+/* Il gradiente applicato al testo del logo */
+.site-brand span {
+    font-weight: 800;
+    font-size: 1.4rem;
+    background: var(--gradient-brand);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
 }
 
 .site-nav {
     display: flex;
-    gap: 20px;
+    gap: 24px;
     align-items: center;
 }
 
 .site-nav a {
-    color: rgba(255, 255, 255, 0.9) !important;
-    font-weight: 500;
+    color: var(--text-secondary) !important;
+    font-weight: 600;
     font-size: 0.95rem;
 }
 
 .site-nav a:hover {
-    color: white !important;
-}
-
-body.dark-mode .site-nav a {
-    color: var(--text-secondary) !important;
-}
-body.dark-mode .site-nav a:hover {
     color: var(--primary-color) !important;
-}
-
-/* Menu Mobile (Semplificato per schermi piccoli) */
-@media (max-width: 600px) {
-    .site-nav {
-        gap: 12px;
-    }
-    .site-nav a {
-        font-size: 0.9rem;
-    }
-    .site-brand span {
-        display: none; /* Nasconde il testo "Campusly", lascia solo il logo */
-    }
 }
