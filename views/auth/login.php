@@ -10,7 +10,8 @@
                 </div>
             <?php endif; ?>
 
-            <form action="<?= htmlspecialchars($url('/login')) ?>" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
+            <!-- Modificato $url('/login') con $route('/login') -->
+            <form action="<?= htmlspecialchars($route('/login')) ?>" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <label for="email" style="font-size: 0.9rem; font-weight: 600;">Email universitaria</label>
                     <input type="email" name="email" id="email" required style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
@@ -30,7 +31,8 @@
             </form>
 
             <p style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem;">
-                Non hai un account? <a href="<?= htmlspecialchars($url('/register')) ?>" style="color: var(--primary-color); font-weight: bold;">Registrati</a>
+                <!-- Modificato $url('/register') con $route('/register') -->
+                Non hai un account? <a href="<?= htmlspecialchars($route('/register')) ?>" style="color: var(--primary-color); font-weight: bold;">Registrati</a>
             </p>
         </div>
     </div>

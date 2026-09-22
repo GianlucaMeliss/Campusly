@@ -3,7 +3,8 @@
         <div class="highlight-box" style="padding: 2rem;">
             <h1 style="text-align: center; color: var(--primary-color);">Crea Account</h1>
             
-            <form action="<?= htmlspecialchars($url('/register')) ?>" method="POST" style="display: flex; flex-direction: column; gap: 15px; margin-top: 2rem;">
+            <!-- Modificato $url('/register') con $route('/register') -->
+            <form action="<?= htmlspecialchars($route('/register')) ?>" method="POST" style="display: flex; flex-direction: column; gap: 15px; margin-top: 2rem;">
                 <div style="display: flex; gap: 10px;">
                     <div style="display: flex; flex-direction: column; gap: 5px; flex: 1;">
                         <label for="first_name" style="font-size: 0.9rem; font-weight: 600;">Nome</label>

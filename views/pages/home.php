@@ -1,6 +1,4 @@
 <<?php
-// Usiamo la costante di sistema per percorsi sicuri
-$basePath = defined('BASE_PATH') ? BASE_PATH : '/Campusly';
 $isLoggedIn = isset($_SESSION['user_id']);
 ?>
 
@@ -19,12 +17,12 @@ $isLoggedIn = isset($_SESSION['user_id']);
                 
                 <div class="hero-cta">
                     <?php if ($isLoggedIn): ?>
-                        <!-- Rotta Dashboard -->
-                        <a href="<?= htmlspecialchars($basePath . '/dashboard') ?>" class="btn btn-primary">Apri il tuo Calendario</a>
+                        <!-- Aggiornato con $route() -->
+                        <a href="<?= htmlspecialchars($route('/dashboard')) ?>" class="btn btn-primary">Apri il tuo Calendario</a>
                     <?php else: ?>
-                        <!-- Rotte Auth -->
-                        <a href="<?= htmlspecialchars($basePath . '/register') ?>" class="btn btn-primary">Inizia gratis</a>
-                        <a href="<?= htmlspecialchars($basePath . '/login') ?>" class="btn btn-secondary">Accedi</a>
+                        <!-- Aggiornato con $route() -->
+                        <a href="<?= htmlspecialchars($route('/register')) ?>" class="btn btn-primary">Inizia gratis</a>
+                        <a href="<?= htmlspecialchars($route('/login')) ?>" class="btn btn-secondary">Accedi</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -85,5 +83,5 @@ $isLoggedIn = isset($_SESSION['user_id']);
     </section>
 </div>
 
-<!-- Script specifico per le animazioni della Home -->
+<!-- Manteniamo $url() per lo script JS così il cache-busting continua a funzionare! -->
 <script src="<?= htmlspecialchars($url('/assets/js/home.js')) ?>"></script>
