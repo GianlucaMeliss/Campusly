@@ -1,8 +1,10 @@
-    </main>
+</main>
 
-    <footer class="site-footer">
+    <footer style="padding: 40px 20px; text-align: center; border-top: 1px solid var(--border-color); margin-top: 60px;">
         <div class="container">
-            <p>&copy; <?= date('Y') ?> <?= htmlspecialchars($app['site']['name'] ?? 'Project Starter') ?>. Template base per progetti web.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 500;">
+                &copy; <?= date('Y') ?> Campusly. Progettato per gli studenti.
+            </p>
         </div>
     </footer>
 </body>
