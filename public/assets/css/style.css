@@ -288,3 +288,160 @@ select:focus {
         padding: 0 10px; /* Recupera un po' di spazio ai lati */
     }
 }
+
+/* =========================================
+   UTILITIES PER FORM E PANNELLI (Onboarding & Profilo)
+   ========================================= */
+.page-title {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    font-size: 1.8rem;
+    text-align: center;
+}
+
+.page-subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    text-align: center;
+    font-size: 1rem;
+}
+
+.section-title {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.section-subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+}
+
+/* Struttura form flessibile */
+.campusly-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.form-row .form-group {
+    flex: 1;
+    min-width: 200px; /* Evita che su mobile i campi si schiaccino troppo prima di andare a capo */
+}
+
+/* Box Guida (es. Info Cineca) */
+.guide-box {
+    background: rgba(45, 212, 191, 0.1);
+    padding: 20px;
+    border-radius: var(--radius-md);
+    border-left: 4px solid #10b981;
+}
+
+.guide-box h3 {
+    margin-top: 0;
+    font-size: 1.05rem;
+    color: #059669;
+    margin-bottom: 12px;
+}
+
+body.dark-mode .guide-box h3 { color: #34d399; }
+
+.guide-box ol {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.guide-box code {
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
+/* Messaggi Alert (es. Successo aggiornamento) */
+.alert {
+    padding: 16px;
+    border-radius: var(--radius-md);
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 24px;
+}
+
+.alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+body.dark-mode .alert-success { color: #34d399; }
+
+/* Lista Corsi Nascosti (Profilo) */
+.profile-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.hidden-courses-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hidden-course-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-main);
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.hidden-course-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
+}
+
+.course-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+/* Bottone Ripristina specifico */
+.btn-restore {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: bold;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.btn-restore:hover { background: #059669; }
+.btn-restore:active { transform: scale(0.95); }
