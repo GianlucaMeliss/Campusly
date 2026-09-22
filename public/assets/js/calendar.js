@@ -1,7 +1,6 @@
 // ==========================================
 // VARIABILI GLOBALI E STATO DEL CALENDARIO
 // ==========================================
-// Rinominiamo la variabile per evitare il conflitto fatale con app.js!
 const API_BASE_PATH = window.APP_BASE_PATH || '';
 
 let dataRiferimento = new Date();
@@ -23,7 +22,7 @@ const icnData = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const icnPartizione = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
 
 // ==========================================
-// HELPER FUNCTIONS
+// HELPER FUNCTIONS (Da vecchio JS)
 // ==========================================
 function estraiPartizione(evento) {
     let part = null;
@@ -65,12 +64,7 @@ function isAulaVarese(aula) {
     if (!aula) return false;
     const nomeAula = (aula.descrizione || "").toLowerCase();
     const edificio = (aula.edificio && aula.edificio.descrizione) ? aula.edificio.descrizione.toLowerCase() : "";
-    
-    const paroleComo = [
-        'como', 'valleggio', 'sant\'abbondio', 'castelnuovo', 'cavaliere',
-        'va1', 'va2', 'va3', 'va4', 'va5', 'va6', 'va7', 'va8'
-    ];
-    
+    const paroleComo = ['como', 'valleggio', 'sant\'abbondio', 'castelnuovo', 'cavaliere', 'va1', 'va2', 'va3', 'va4', 'va5', 'va6', 'va7', 'va8'];
     for (let parola of paroleComo) {
         if (nomeAula.includes(parola) || edificio.includes(parola)) return false;
     }
@@ -166,7 +160,6 @@ function posizionaSuOggi() {
     const container = document.querySelector('.calendario-main-container');
     const colonnaOggi = document.getElementById('colonna-oggi');
     if (!container || !colonnaOggi) return; 
-    
     const scrollX = colonnaOggi.offsetLeft - 55; 
     container.scrollTo({ left: scrollX, behavior: 'smooth' });
 }
@@ -314,65 +307,41 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
     const oraInizioCalendario = 8;
     const oraFineCalendario = 20; 
     const altezzaOra = 45; 
-    const fattoreScala = altezzaOra / 45; 
+    const fattoreScala = altezzaOra / 60; 
     const altezzaTotale = (oraFineCalendario - oraInizioCalendario) * altezzaOra;
 
     const wrapper = document.createElement('div');
     wrapper.className = 'calendario-main-container';
-    wrapper.style.position = 'relative';
-    wrapper.style.display = 'flex';
-    wrapper.style.marginTop = '20px';
-    wrapper.style.overflowX = 'auto';
-    wrapper.style.backgroundColor = 'var(--surface)';
-    wrapper.style.borderRadius = 'var(--radius-lg)';
-    wrapper.style.border = '1px solid var(--border-color)';
+    wrapper.innerHTML += `<div class="angolo-vuoto"></div>`;
     wrapper.style.setProperty('--num-giorni', maxGiorni);
     
+    giorniLavorativi.forEach(giorno => {
+        const isOggi = adesso.getDate() === giorno.dataOggetto.getDate() && adesso.getMonth() === giorno.dataOggetto.getMonth();
+        const classeOggi = isOggi ? 'header-oggi' : '';
+        wrapper.innerHTML += `<div class="header-colonna ${classeOggi}">${giorno.dataTesto}</div>`;
+    });
+
     const orariCol = document.createElement('div');
     orariCol.className = 'orari-colonna';
-    orariCol.style.position = 'relative';
-    orariCol.style.width = '60px';
-    orariCol.style.flexShrink = '0';
-    orariCol.style.borderRight = '1px solid var(--border-color)';
-    orariCol.style.height = `${altezzaTotale + 50}px`;
-
-    orariCol.innerHTML += `<div style="height: 50px; border-bottom: 1px solid var(--border-color);"></div>`;
-
+    orariCol.style.height = `${altezzaTotale}px`;
     for (let h = oraInizioCalendario; h <= oraFineCalendario; h++) {
-        const topPx = ((h - oraInizioCalendario) * altezzaOra) + 50;
-        orariCol.innerHTML += `<div class="orario-label" style="position: absolute; top: ${topPx - 10}px; right: 10px; font-size: 0.8rem; color: var(--text-muted);">${h}:00</div>`;
+        const topPx = (h - oraInizioCalendario) * altezzaOra;
+        orariCol.innerHTML += `<div class="orario-label" style="top: ${topPx}px">${h}:00</div>`;
     }
     wrapper.appendChild(orariCol);
 
     giorniLavorativi.forEach(giorno => {
-        const colonnaWrapper = document.createElement('div');
-        colonnaWrapper.style.flex = '1';
-        colonnaWrapper.style.minWidth = '140px';
-        colonnaWrapper.style.borderRight = '1px solid var(--border-color)';
-        
-        const isOggi = adesso.getDate() === giorno.dataOggetto.getDate() && adesso.getMonth() === giorno.dataOggetto.getMonth();
-        
-        const headerColonna = document.createElement('div');
-        headerColonna.style.height = '50px';
-        headerColonna.style.display = 'flex';
-        headerColonna.style.alignItems = 'center';
-        headerColonna.style.justifyContent = 'center';
-        headerColonna.style.borderBottom = '1px solid var(--border-color)';
-        headerColonna.style.fontWeight = isOggi ? '700' : '500';
-        headerColonna.style.color = isOggi ? 'var(--uni-primary, var(--primary-color))' : 'var(--text-primary)';
-        headerColonna.textContent = giorno.dataTesto;
-        colonnaWrapper.appendChild(headerColonna);
-
         const colonna = document.createElement('div');
         colonna.className = 'giorno-colonna';
-        colonna.style.position = 'relative';
         colonna.style.height = `${altezzaTotale}px`;
+
+        const isOggi = adesso.getDate() === giorno.dataOggetto.getDate() && adesso.getMonth() === giorno.dataOggetto.getMonth();
         
         if (isOggi) colonna.id = 'colonna-oggi';
 
         if (isOggi && adesso.getHours() >= oraInizioCalendario && adesso.getHours() < oraFineCalendario) {
-            const topPx = (((adesso.getHours() - oraInizioCalendario) * 45) + adesso.getMinutes()) * fattoreScala;
-            colonna.innerHTML += `<div class="time-indicator" style="position: absolute; top: ${topPx}px; left: 0; width: 100%; height: 2px; background: #ef4444; z-index: 50;"></div>`;
+            const topPx = (((adesso.getHours() - oraInizioCalendario) * 60) + adesso.getMinutes()) * fattoreScala;
+            colonna.innerHTML += `<div class="time-indicator" style="top: ${topPx}px"></div>`;
         }
 
         gestisciSovrapposizioni(giorno.lezioni);
@@ -381,12 +350,11 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
             const dataInizio = new Date(evento.dataInizio);
             const dataFine = new Date(evento.dataFine);
 
-            const topPx = (((dataInizio.getHours() - oraInizioCalendario) * 45) + dataInizio.getMinutes()) * fattoreScala;
+            const topPx = (((dataInizio.getHours() - oraInizioCalendario) * 60) + dataInizio.getMinutes()) * fattoreScala;
             const altezzaPx = ((dataFine.getTime() - dataInizio.getTime()) / 60000) * fattoreScala;
 
             const card = document.createElement('div');
             card.className = 'lezione-card';
-            card.style.position = 'absolute';
             card.style.top = `${topPx}px`;
             card.style.height = `${altezzaPx}px`;
             card.style.width = evento.widthCSS;
@@ -394,29 +362,45 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
             card.style.zIndex = evento.zIndex;
             card.style.cursor = 'pointer'; 
             
-            card.style.backgroundColor = evento.isPersonale ? 'var(--brand-fuchsia)' : 'var(--uni-primary, var(--primary-color))';
-            card.style.color = '#fff';
-            card.style.borderRadius = 'var(--radius-md)';
-            card.style.padding = '6px';
-            card.style.fontSize = '0.8rem';
-            card.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
-            card.style.overflow = 'hidden';
-            card.style.border = '1px solid rgba(255,255,255,0.2)';
-            
             card.addEventListener('click', () => window.apriModaleDettagli(evento));
             
             let titolo = formattaTitolo(evento.nome);
+            const partizione = estraiPartizione(evento);
+            if (partizione && partizione.descrizione) {
+                const descShort = partizione.descrizione.replace(/cognomi\s*/i, "").trim();
+                titolo += ` <span style="font-size: 0.85em; opacity: 0.9;">(${descShort})</span>`;
+            }
+
             const orario = `${dataInizio.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })} - ${dataFine.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })}`;
             
+            let aule = [];
+            if (evento.risorse) {
+                evento.risorse.forEach(r => { 
+                    if (r.aula && isAulaVarese(r.aula)) {
+                        aule.push(r.aula.descrizione);
+                    } 
+                });
+            }
+            const auleTesto = aule.length > 0 ? aule.join(', ') : "?";
+
+            const hueMateria = getColoreHue(evento.nome || "");
+            card.style.setProperty('--card-hue', hueMateria);
+
+            // Stile per Eventi Personali Cloud
+            if(evento.isPersonale) {
+                card.style.backgroundColor = 'var(--brand-fuchsia)';
+                card.style.color = '#fff';
+            }
+
             card.innerHTML = `
-                <div style="font-weight: 700; line-height: 1.1; margin-bottom: 2px;">${titolo}</div>
-                <div style="opacity: 0.9; font-size: 0.75rem;">${orario}</div>
+                <div class="lezione-titolo">${titolo}</div>
+                <div class="lezione-orario">${icnOra} ${orario}</div>
+                <div class="lezione-dettaglio">${icnAula} ${evento.isPersonale ? (evento.luogo || 'Personale') : auleTesto}</div>
             `;
             colonna.appendChild(card);
         });
         
-        colonnaWrapper.appendChild(colonna);
-        wrapper.appendChild(colonnaWrapper);
+        wrapper.appendChild(colonna);
     });
 
     container.appendChild(wrapper);
@@ -454,39 +438,62 @@ function aggiornaBoxEvidenza() {
 
     const adesso = new Date();
     let badgeTesto = "Prossima Lezione";
-    let badgeColor = "var(--uni-primary, var(--primary-color))"; 
+    let badgeClass = "badge-future"; 
     
     if (adesso > dataFine) {
         badgeTesto = "Completato";
-        badgeColor = "var(--text-muted)";
+        badgeClass = "badge-past";
     } else if (adesso >= dataInizio && adesso <= dataFine) {
         badgeTesto = "In Corso Ora!";
-        badgeColor = "#ef4444";
+        badgeClass = "badge-now";
+    }
+
+    const haSovrapposizioni = eventiSettimana.some((altroEvento, index) => {
+        if (index === indiceEvidenza) return false; 
+        const altroInizio = new Date(altroEvento.dataInizio);
+        const altraFine = new Date(altroEvento.dataFine);
+        return (dataInizio < altraFine && dataFine > altroInizio);
+    });
+
+    let overlapBadgeHtml = "";
+    if (haSovrapposizioni) {
+        overlapBadgeHtml = `<span class="hl-badge" style="background: #f59e0b; color: #fff; border: none; display: inline-block; width: fit-content; max-width: 100%; white-space: normal; text-align: left; font-size: 0.85em; line-height: 1.3; box-sizing: border-box;">⚠️ Altre lezioni in corso</span>`;
     }
 
     const titoloFormattato = formattaTitolo(evento.nome);
+    const hueMateria = getColoreHue(evento.nome || "");
+    let partizioneHtml = "";
+    const partizione = estraiPartizione(evento);
+    if (partizione && partizione.descrizione) {
+        partizioneHtml = `<div class="hl-riga">${icnPartizione} <span>${partizione.codice ? partizione.codice + ' - ' : ''}${partizione.descrizione}</span></div>`;
+    }
 
     box.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <span style="background: ${badgeColor}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 700;">${badgeTesto}</span>
-            <div style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary);">
-                <button onclick="window.cambiaEvidenza(-1)" ${indiceEvidenza === 0 ? 'disabled' : ''} style="background:transparent; border:none; cursor:pointer;">
-                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        <div class="hl-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: nowrap;">
+            <div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-width: 0;">
+                <span class="hl-badge ${badgeClass}" style="width: fit-content;">${badgeTesto}</span>
+                ${overlapBadgeHtml}
+            </div>
+            <div class="hl-nav" style="flex: 0 0 auto; display: flex; align-items: center; white-space: nowrap;">
+                <button onclick="window.cambiaEvidenza(-1)" ${indiceEvidenza === 0 ? 'disabled' : ''}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
                 </button>
-                <span style="font-size: 0.9rem;">${indiceEvidenza + 1} / ${eventiSettimana.length}</span>
-                <button onclick="window.cambiaEvidenza(1)" ${indiceEvidenza === eventiSettimana.length - 1 ? 'disabled' : ''} style="background:transparent; border:none; cursor:pointer;">
-                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <span>${indiceEvidenza + 1} di ${eventiSettimana.length}</span>
+                <button onclick="window.cambiaEvidenza(1)" ${indiceEvidenza === eventiSettimana.length - 1 ? 'disabled' : ''}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
             </div>
         </div>
-        <h2 style="margin: 0 0 16px 0; font-size: 1.4rem; color: var(--text-primary);">${titoloFormattato}</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 0.9rem; color: var(--text-secondary);">
-            <div style="display:flex; align-items:center; gap:8px;">${icnData} <span>${dataTesto.charAt(0).toUpperCase() + dataTesto.slice(1)}</span></div>
-            <div style="display:flex; align-items:center; gap:8px;">${icnOra} <strong>${orario}</strong></div>
-            <div style="display:flex; align-items:center; gap:8px;">${icnAula} <span>${auleTesto}</span></div>
-            ${!evento.isPersonale ? `<div style="display:flex; align-items:center; gap:8px;">${icnProf} <span>Prof.${docentiTesto}</span></div>` : ''}
+        <h2 class="hl-titolo">${titoloFormattato}</h2>
+        <div class="hl-dettagli">
+            <div class="hl-riga">${icnData} <span>${dataTesto.charAt(0).toUpperCase() + dataTesto.slice(1)}</span></div>
+            <div class="hl-riga">${icnOra} <strong>${orario}</strong></div>
+            ${partizioneHtml}
+            <div class="hl-riga">${icnAula} <span>${auleTesto}</span></div>
+            ${!evento.isPersonale ? `<div class="hl-riga">${icnProf} <span>Prof.${docentiTesto}</span></div>` : ''}
         </div>
     `;
+    document.getElementById('box-evidenza-main').style.setProperty('--card-hue', hueMateria);
 }
 
 function esportaSettimanaICS() {
@@ -494,32 +501,42 @@ function esportaSettimanaICS() {
         alert("Non ci sono lezioni in questa settimana da esportare.");
         return;
     }
-
     let icsContent = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Campusly//IT\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n";
-
     eventiSettimana.forEach(evento => {
         const dataInizio = new Date(evento.dataInizio);
         const dataFine = new Date(evento.dataFine);
-        
         const startStr = dataInizio.toISOString().replace(/[-:]/g, '').split('.')[0] + "Z";
         const endStr = dataFine.toISOString().replace(/[-:]/g, '').split('.')[0] + "Z";
-        
         let titolo = formattaTitolo(evento.nome);
+        const partizione = estraiPartizione(evento);
+        if (partizione && partizione.descrizione) {
+            const descShort = partizione.descrizione.replace(/cognomi\s*/i, "").trim();
+            titolo += ` (${descShort})`;
+        }
+        
+        let infoAule = [];
+        if (evento.risorse) {
+            evento.risorse.forEach(r => {
+                if (r.aula && isAulaVarese(r.aula)) {
+                    const edificio = (r.aula.edificio && r.aula.edificio.descrizione) ? ` (${r.aula.edificio.descrizione})` : "";
+                    infoAule.push(r.aula.descrizione + edificio);
+                }
+            });
+        }
+        const luogo = infoAule.length > 0 ? infoAule.join(', ') : "Varese (Aula da definire)";
+
         icsContent += "BEGIN:VEVENT\r\n";
         icsContent += `SUMMARY:${titolo}\r\n`;
         icsContent += `DTSTART:${startStr}\r\n`;
         icsContent += `DTEND:${endStr}\r\n`;
-        icsContent += `LOCATION:${evento.luogo || 'Da definire'}\r\n`;
+        icsContent += `LOCATION:${evento.isPersonale ? (evento.luogo || '') : luogo}\r\n`;
         icsContent += "END:VEVENT\r\n";
     });
-
     icsContent += "END:VCALENDAR\r\n";
-
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     const strDataFile = ottieniLunedi(dataRiferimento).toISOString().split('T')[0];
-    
     link.href = url;
     link.setAttribute('download', `Campusly_${strDataFile}.ics`);
     document.body.appendChild(link);
@@ -533,7 +550,6 @@ function esportaSettimanaICS() {
 window.apriModaleDettagli = function(evento) {
     const modale = document.getElementById('modale-dettagli');
     const modaleBody = document.getElementById('modale-body');
-    
     if(!modale || !modaleBody) return;
 
     const dataInizio = new Date(evento.dataInizio);
@@ -542,35 +558,51 @@ window.apriModaleDettagli = function(evento) {
     const dataTesto = dataInizio.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     
     const titoloFormattato = formattaTitolo(evento.nome);
-    const tipoLezione = evento.tipoAbbreviazione || (evento.isPersonale ? "Evento Personale" : "Lezione");
+    const hueMateria = getColoreHue(evento.nome || "");
     
-    let auleHtml = `<span style='margin-left: 8px;'>${evento.luogo || 'Da definire'}</span>`;
-    let docentiTesto = "Non assegnato";
-
+    let infoAule = [];
+    let infoDocenti = [];
+    
     if (evento.risorse) {
-        let infoAule = [];
-        let infoDocenti = [];
         evento.risorse.forEach(r => {
-            if (r.aula && isAulaVarese(r.aula)) infoAule.push(`<li><strong>${r.aula.descrizione}</strong></li>`);
-            if (r.docente) infoDocenti.push(`${r.docente.nome || ""} ${r.docente.cognome || ""}`.trim());
+            if (r.aula && isAulaVarese(r.aula)) {
+                const nomeAula = r.aula.descrizione || "Aula non specificata";
+                const edificio = (r.aula.edificio && r.aula.edificio.descrizione) ? r.aula.edificio.descrizione : "Padiglione non specificato";
+                const capienza = r.aula.capienza ? `Capienza: ${r.aula.capienza} posti` : "Capienza ignota";
+                infoAule.push(`<li><strong>${nomeAula}</strong><small>${edificio} • ${capienza}</small></li>`);
+            }
+            if (r.docente) {
+                infoDocenti.push(`${r.docente.nome || ""} ${r.docente.cognome || ""}`.trim());
+            }
         });
-        if (infoAule.length > 0) auleHtml = `<ul style="padding-left:24px; margin:4px 0;">${infoAule.join('')}</ul>`;
-        if (infoDocenti.length > 0) docentiTesto = infoDocenti.join(', ');
+    }
+    
+    const auleHtml = infoAule.length > 0 ? `<ul class="lista-aule" style="padding-left:24px; margin:4px 0;">${infoAule.join('')}</ul>` : `<span style='margin-left: 8px;'>${evento.luogo || 'Da definire'}</span>`;
+    const docentiTesto = infoDocenti.length > 0 ? infoDocenti.join(', ') : "Non assegnato";
+    const tipoLezione = evento.tipoAbbreviazione || (evento.isPersonale ? "Evento Personale" : "Lezione");
+    const stato = evento.stato === "A" ? " - ANNULLATA" : "";
+    
+    let partizioneHtml = "";
+    const partizione = estraiPartizione(evento);
+    if (partizione && partizione.descrizione) {
+        partizioneHtml = `<div class="hl-riga">${icnPartizione} <span><strong>Partizione:</strong> ${partizione.codice ? partizione.codice + ' - ' : ''}${partizione.descrizione}</span></div>`;
     }
 
+    document.querySelector('.modale-content').style.setProperty('--card-hue', hueMateria);
     const isHidden = corsiDaNascondere.some(c => (evento.nome || "").toUpperCase().includes(c));
     const toggleBtnText = isHidden ? "👁️ Mostra di nuovo" : "🚫 Nascondi corso";
     const toggleBtnColor = isHidden ? "#10b981" : "#ef4444";
 
     modaleBody.innerHTML = `
-        <span style="display:inline-block; padding: 4px 10px; background: var(--uni-primary, var(--primary-color)); color: white; border-radius: 12px; font-size: 0.8rem; font-weight: 700; margin-bottom: 16px;">${tipoLezione}</span>
-        <h2 style="margin: 0 0 20px 0; font-size: 1.4rem; color: var(--text-primary);">${titoloFormattato}</h2>
+        <span class="hl-badge ${evento.stato === 'A' ? 'badge-now' : 'badge-future'} modale-badge">${tipoLezione}${stato}</span>
+        <h2 class="hl-titolo" style="margin-top: 0;">${titoloFormattato}</h2>
         
-        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem; color: var(--text-secondary);">
-            <div style="display:flex; align-items:center; gap:8px;">${icnData} <span style="text-transform: capitalize;">${dataTesto}</span></div>
-            <div style="display:flex; align-items:center; gap:8px;">${icnOra} <strong>${orario}</strong></div>
-            ${!evento.isPersonale ? `<div style="display:flex; align-items:center; gap:8px;">${icnProf} <span><strong>Docente:</strong>${docentiTesto}</span></div>` : ''}
-            <div style="display:flex; align-items:flex-start; gap:8px;">
+        <div class="hl-dettagli" style="grid-template-columns: 1fr; gap: 16px;">
+            <div class="hl-riga">${icnData} <span style="text-transform: capitalize;">${dataTesto}</span></div>
+            <div class="hl-riga">${icnOra} <strong>${orario}</strong></div>
+            ${partizioneHtml}
+            ${!evento.isPersonale ? `<div class="hl-riga">${icnProf} <span><strong>Docente:</strong>${docentiTesto}</span></div>` : ''}
+            <div class="hl-riga" style="align-items: flex-start;">
                 <div style="margin-top: 2px;">${icnAula}</div>
                 <div><strong>Luogo:</strong> ${auleHtml}</div>
             </div>
@@ -580,18 +612,17 @@ window.apriModaleDettagli = function(evento) {
     if (!evento.isPersonale) {
         const nomeCorsoSafe = (evento.nome || "").replace(/'/g, "\\'");
         modaleBody.innerHTML += `
-            <button onclick="window.toggleCorsoNascosto('${nomeCorsoSafe}')" style="margin-top: 24px; width: 100%; padding: 14px; background: ${toggleBtnColor}; color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 700; transition: opacity 0.2s;">
+            <button onclick="window.toggleCorsoNascosto('${nomeCorsoSafe}')" style="margin-top: 24px; width: 100%; padding: 14px; background: ${toggleBtnColor}; color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 700;">
                 ${toggleBtnText}
             </button>
         `;
     } else {
         modaleBody.innerHTML += `
             <button onclick="window.eliminaEventoPersonale('${evento.idPersonale}')" style="margin-top: 24px; width: 100%; padding: 14px; background: #ef4444; color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 700;">
-                🗑️ Elimina Evento Personale
+                🗑️ Elimina Evento
             </button>
         `;
     }
-    
     modale.style.display = 'flex';
 };
 
@@ -607,9 +638,7 @@ window.toggleCorsoNascosto = async function(nomeCorso) {
             document.getElementById('modale-dettagli').style.display = 'none';
             caricaSettimana(dataRiferimento);
         }
-    } catch (error) {
-        alert("Impossibile aggiornare l'impostazione in Cloud.");
-    }
+    } catch (error) { alert("Impossibile aggiornare l'impostazione in Cloud."); }
 };
 
 window.eliminaEventoPersonale = async function(id) {
@@ -618,9 +647,7 @@ window.eliminaEventoPersonale = async function(id) {
             await fetch(`${API_BASE_PATH}/api/eventi-personali/delete/${id}`);
             document.getElementById('modale-dettagli').style.display = 'none';
             caricaSettimana(dataRiferimento);
-        } catch (error) {
-            alert("Errore durante l'eliminazione dell'evento dal Cloud");
-        }
+        } catch (error) { alert("Errore durante l'eliminazione dell'evento"); }
     }
 };
 
@@ -640,7 +667,6 @@ window.cambiaEvidenza = function(direzione) {
 // INIZIALIZZAZIONE EVENT LISTENERS
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    
     const btnPrec = document.getElementById('btn-prec');
     const btnSucc = document.getElementById('btn-succ');
     const btnExport = document.getElementById('btn-export');
@@ -649,7 +675,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnSucc) btnSucc.addEventListener('click', () => window.cambiaSettimana(7));
     if(btnExport) btnExport.addEventListener('click', esportaSettimanaICS);
 
-    // Form Eventi Personali
     const modaleForm = document.getElementById('modale-form-evento');
     const btnAdd = document.getElementById('btn-add-evento');
     const form = document.getElementById('form-nuovo-evento');
@@ -659,19 +684,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if(form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const titolo = document.getElementById('form-titolo').value;
-            const data = document.getElementById('form-data').value;
-            const inizio = document.getElementById('form-inizio').value;
-            const fine = document.getElementById('form-fine').value;
-            const luogo = document.getElementById('form-luogo').value;
-
             const payload = {
-                nome: titolo,
-                dataInizio: new Date(`${data}T${inizio}:00`).toISOString(),
-                dataFine: new Date(`${data}T${fine}:00`).toISOString(),
-                luogo: luogo || "Luogo non specificato"
+                nome: document.getElementById('form-titolo').value,
+                dataInizio: new Date(`${document.getElementById('form-data').value}T${document.getElementById('form-inizio').value}:00`).toISOString(),
+                dataFine: new Date(`${document.getElementById('form-data').value}T${document.getElementById('form-fine').value}:00`).toISOString(),
+                luogo: document.getElementById('form-luogo').value || "Luogo non specificato"
             };
-
             try {
                 await fetch(`${API_BASE_PATH}/api/eventi-personali`, {
                     method: 'POST',
@@ -681,12 +699,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 modaleForm.style.display = 'none';
                 form.reset();
                 caricaSettimana(dataRiferimento);
-            } catch (error) {
-                alert("Errore durante il salvataggio in Cloud dell'evento");
-            }
+            } catch (error) { alert("Errore durante il salvataggio in Cloud dell'evento"); }
         });
     }
-
-    // Caricamento iniziale
     caricaSettimana(dataRiferimento);
 });
