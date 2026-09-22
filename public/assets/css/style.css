@@ -1,0 +1,255 @@
+/* =========================================
+   1. VARIABILI DI SISTEMA (Design Tokens)
+   ========================================= */
+:root {
+    /* Palette Chiara (Moderna e pulita) */
+    --bg-main: #f8fafc;
+    --surface: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --border-color: #e2e8f0; 
+    
+    /* Colori Brand (Ispirati al Verde Insubria) */
+    --primary-color: #007161; 
+    --primary-hover: #005a4d;
+    --header-bg: #007161;
+    
+    /* Utilità */
+    --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-medium: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --transition-speed: 0.2s;
+}
+
+/* Modalità Scura (Profonda e riposante per gli occhi) */
+body.dark-mode {
+    --bg-main: #0c1210; 
+    --surface: #151e1b; 
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #64748b;
+    --border-color: #23332e; 
+    
+    /* Verde acceso per risaltare sul nero */
+    --primary-color: #2dd4bf; 
+    --primary-hover: #14b8a6;
+    --header-bg: #151e1b; 
+    
+    --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* =========================================
+   2. RESET E BASE
+   ========================================= */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color var(--transition-speed);
+}
+
+a:hover {
+    color: var(--primary-hover);
+}
+
+/* =========================================
+   3. STRUTTURA E LAYOUT
+   ========================================= */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.container.narrow {
+    max-width: 800px;
+}
+
+.section {
+    padding: 40px 0;
+}
+
+/* =========================================
+   4. COMPONENTI UI (Le fondamenta)
+   ========================================= */
+
+/* Box in evidenza (Usati in Profilo, Form, Home) */
+.highlight-box {
+    background-color: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    box-shadow: var(--shadow-soft);
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* =========================================
+   5. FORMS (Login, Registrazione, Profilo)
+   ========================================= */
+label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+input[type="time"],
+select {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
+    font-size: 16px; /* Importante: blocca lo zoom su iOS */
+    font-family: inherit;
+    transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+    appearance: none; /* Rimuove stili nativi brutti sui select */
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 113, 97, 0.15);
+}
+
+body.dark-mode input:focus,
+body.dark-mode select:focus {
+    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15);
+}
+
+/* =========================================
+   6. BOTTONI GLOBALI
+   ========================================= */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.15s ease, opacity 0.2s, background-color 0.2s;
+    text-align: center;
+}
+
+.btn:active {
+    transform: scale(0.97); /* Effetto tap tipico delle app native */
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: #ffffff !important;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+/* In Dark Mode invertiamo i colori per massima leggibilità */
+body.dark-mode .btn-primary {
+    color: #0c1210 !important; 
+}
+
+.btn-danger {
+    background-color: #ef4444;
+    color: white !important;
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
+}
+
+/* =========================================
+   7. NAVBAR (Header Globale)
+   ========================================= */
+.site-header {
+    background-color: var(--header-bg);
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: var(--shadow-soft);
+    transition: background-color 0.3s ease;
+}
+
+.site-header__inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 70px;
+}
+
+.site-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: white !important;
+}
+
+.site-brand img {
+    height: 36px;
+    border-radius: 8px;
+}
+
+.site-nav {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.site-nav a {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.site-nav a:hover {
+    color: white !important;
+}
+
+body.dark-mode .site-nav a {
+    color: var(--text-secondary) !important;
+}
+body.dark-mode .site-nav a:hover {
+    color: var(--primary-color) !important;
+}
+
+/* Menu Mobile (Semplificato per schermi piccoli) */
+@media (max-width: 600px) {
+    .site-nav {
+        gap: 12px;
+    }
+    .site-nav a {
+        font-size: 0.9rem;
+    }
+    .site-brand span {
+        display: none; /* Nasconde il testo "Campusly", lascia solo il logo */
+    }
+}
