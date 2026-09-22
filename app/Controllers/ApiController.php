@@ -242,8 +242,26 @@ class ApiController
         exit;
     }
 
-    // Aggiungi queste use in alto nel file ApiController.php
-    // use App\Models\PersonalEventModel;
+    public function getCoursesByUniversity(string $uniId): void
+    {
+        header("Content-Type: application/json; charset=UTF-8");
+        
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Non autenticato']);
+            exit;
+        }
+
+        // Sfruttiamo il Singleton del DB già presente nel core
+        $db = \App\Core\Database::getInstance();
+        $stmt = $db->prepare("SELECT id, name FROM courses WHERE university_id = :uni_id ORDER BY name ASC");
+        $stmt->execute(['uni_id' => (int)$uniId]);
+        
+        $courses = $stmt->fetchAll();
+
+        echo json_encode($courses);
+        exit;
+    }
 
     public function getPersonalEvents(): void
     {

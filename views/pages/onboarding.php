@@ -153,11 +153,22 @@
                 <p class="page-subtitle">Seleziona l'ateneo per scaricare il catalogo dei corsi.</p>
                 
                 <div class="uni-grid">
-                    <!-- In futuro questi arriveranno dal DB -->
-                    <div class="uni-card" onclick="selezionaUni(1, 'Università dell\'Insubria')">
-                        <img src="<?= htmlspecialchars($url('/assets/img/icon-192.png')) ?>" alt="Insubria">
-                        <span>Università dell'Insubria</span>
-                    </div>
+                    <?php if (!empty($universities)): ?>
+                        <?php foreach ($universities as $uni): ?>
+                            <?php 
+                            // Fallback al logo di default se non è impostato nel DB
+                            $logo = !empty($uni['logo_path']) ? $uni['logo_path'] : '/assets/img/icon-192.png'; 
+                            ?>
+                            <div class="uni-card" onclick="selezionaUni(<?= $uni['id'] ?>, '<?= htmlspecialchars(addslashes($uni['name'])) ?>')">
+                                <img src="<?= htmlspecialchars($url($logo)) ?>" alt="<?= htmlspecialchars($uni['name']) ?>">
+                                <span><?= htmlspecialchars($uni['name']) ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p style="color: var(--text-secondary); grid-column: 1 / -1; text-align: center;">
+                            Nessuna università attiva trovata.
+                        </p>
+                    <?php endif; ?>
                 </div>
                 
                 <div style="text-align: center; margin-top: 30px;">
@@ -256,7 +267,9 @@
 </section>
 
 <script>
-// Stato dell'onboarding
+// Aggiungiamo il base path dinamico
+window.APP_BASE_PATH = '<?= htmlspecialchars($basePath ?? '') ?>';
+
 let wizardData = {
     uniId: null,
     courseName: null,
@@ -264,30 +277,49 @@ let wizardData = {
     anno: null
 };
 
-// Dati mockati (In futuro da rimpiazzare con una fetch() al DB)
-const corsiMock = [
-    "Informatica", "Ostetricia", "Fisioterapia", "Ingegneria Ambientale", 
-    "Economia e Management", "Scienze della Comunicazione", "Giurisprudenza"
-];
-
 function vaiAStep(stepNum) {
     document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
     document.getElementById('step-' + stepNum).classList.add('active');
 }
 
-function selezionaUni(id, nome) {
+async function selezionaUni(id, nome) {
     wizardData.uniId = id;
     document.getElementById('subtitle-uni-name').textContent = nome;
     document.getElementById('input-uni-id').value = id;
     
-    // Popola lista corsi (Mock)
+    // Mostriamo un feedback di caricamento
     const list = document.getElementById('course-list');
-    list.innerHTML = '';
-    corsiMock.forEach(corso => {
-        list.innerHTML += `<div class="course-item" onclick="selezionaCorso('${corso}')">${corso}</div>`;
-    });
+    list.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-secondary);">Caricamento corsi...</div>';
     
+    // Andiamo allo Step 2 mentre i dati caricano in background
     vaiAStep(2);
+
+    try {
+        // Fetch dinamica al nuovo endpoint API
+        const response = await fetch(`${window.APP_BASE_PATH}/api/universita/${id}/corsi`);
+        if (!response.ok) throw new Error("Errore API");
+        
+        const corsi = await response.json();
+        list.innerHTML = '';
+        
+        if (corsi.length > 0) {
+            corsi.forEach(corso => {
+                // Gestiamo gli apici singoli nei nomi dei corsi (es. "Scienze dell'Educazione")
+                const nomeSafe = corso.name.replace(/'/g, "\\'");
+                list.innerHTML += `<div class="course-item" onclick="selezionaCorso('${nomeSafe}')">${corso.name}</div>`;
+            });
+        } else {
+            // Se il DB per questa uni è vuoto, mostriamo subito il bottone richiesta
+            list.innerHTML = `
+                <div id="no-results-btn" style="text-align:center; padding: 20px;">
+                    <p style="color: var(--text-secondary); margin-bottom: 10px;">Nessun corso presente per questa università.</p>
+                    <button class="btn btn-secondary" onclick="apriRichiesta('course')">Richiedi inserimento</button>
+                </div>
+            `;
+        }
+    } catch (error) {
+        list.innerHTML = '<div style="text-align:center; padding: 20px; color: #ef4444;">Errore di connessione. Riprova.</div>';
+    }
 }
 
 function filtraCorsi() {
@@ -304,7 +336,6 @@ function filtraCorsi() {
         }
     });
 
-    // Se non ci sono risultati, mostra il bottone per richiedere il corso
     const noResultsId = 'no-results-btn';
     let btn = document.getElementById(noResultsId);
     
@@ -330,29 +361,24 @@ function selezionaCorso(nomeCorso) {
 }
 
 function selezionaToggle(element, type, value) {
-    // Rimuovi classe selected dagli altri bottoni dello stesso gruppo
     const siblings = element.parentElement.querySelectorAll('.toggle-btn');
     siblings.forEach(el => el.classList.remove('selected'));
     
-    // Aggiungi classe a quello cliccato
     element.classList.add('selected');
-    
-    // Aggiorna stato
     wizardData[type] = value;
     document.getElementById('input-' + type).value = value;
 
-    // Controlla se possiamo abilitare il submit
     if (wizardData.sede && wizardData.anno) {
         document.getElementById('btn-submit').removeAttribute('disabled');
     }
 }
 
-function apriRichiesta(tipo) {
+async function apriRichiesta(tipo) {
     const msg = tipo === 'uni' ? "la tua Università" : "il tuo Corso";
     const request = prompt(`Come si chiama ${msg}? Lo aggiungeremo il prima possibile!`);
     
-    if (request) {
-        // Qui andrebbe una fetch() a un nuovo endpoint API per salvare in 'onboarding_requests'
+    if (request && request.trim() !== '') {
+        // In futuro collegherai questo payload a un endpoint POST per popolare `onboarding_requests`
         alert("Richiesta inviata con successo! Il nostro team la valuterà a breve.");
     }
 }
