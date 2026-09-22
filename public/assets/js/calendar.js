@@ -1,7 +1,8 @@
 // ==========================================
 // VARIABILI GLOBALI E STATO DEL CALENDARIO
 // ==========================================
-const basePath = window.APP_BASE_PATH || '';
+// Rinominiamo la variabile per evitare il conflitto fatale con app.js!
+const API_BASE_PATH = window.APP_BASE_PATH || '';
 
 let dataRiferimento = new Date();
 let haFattoAutoAvanzamento = false;
@@ -81,10 +82,10 @@ function isAulaVarese(aula) {
 // ==========================================
 async function caricaDatiUtente() {
     try {
-        const resCorsi = await fetch(`${basePath}/api/corsi-nascosti`);
+        const resCorsi = await fetch(`${API_BASE_PATH}/api/corsi-nascosti`);
         if(resCorsi.ok) corsiDaNascondere = await resCorsi.json();
 
-        const resEventi = await fetch(`${basePath}/api/eventi-personali`);
+        const resEventi = await fetch(`${API_BASE_PATH}/api/eventi-personali`);
         if(resEventi.ok) eventiPersonaliCloud = await resEventi.json();
     } catch (e) {
         console.warn("Errore caricamento preferenze in Cloud, uso default.", e);
@@ -106,7 +107,7 @@ async function caricaSettimana(dataRif) {
     mostraSkeleton();
     await caricaDatiUtente();
 
-    const urlProxy = `${basePath}/api/calendario?inizio=${encodeURIComponent(lunedi.toISOString())}&fine=${encodeURIComponent(domenica.toISOString())}`;
+    const urlProxy = `${API_BASE_PATH}/api/calendario?inizio=${encodeURIComponent(lunedi.toISOString())}&fine=${encodeURIComponent(domenica.toISOString())}`;
     let datiCacheText = null;
 
     try {
@@ -138,7 +139,8 @@ async function caricaSettimana(dataRif) {
         }
     } catch (error) {
         if (!datiCacheText) {
-            document.getElementById('calendario-container').innerHTML = `<div class="errore" style="color:red; padding:20px; text-align:center;">⚠️ Errore di connessione al calendario. Riprova.</div>`;
+            const container = document.getElementById('calendario-container');
+            if (container) container.innerHTML = `<div class="errore" style="color:red; padding:20px; text-align:center;">⚠️ Errore di connessione al calendario. Riprova.</div>`;
         }
     }
 }
@@ -262,7 +264,7 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
 
         if (tuttiTerminati || weekendSenzaEventi) {
             haFattoAutoAvanzamento = true; 
-            setTimeout(() => window.cambiaSettimana(7), 50);
+            setTimeout(() => window.cambiaSettimana(7), 50); 
             return; 
         }
     }
@@ -311,7 +313,7 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
 
     const oraInizioCalendario = 8;
     const oraFineCalendario = 20; 
-    const altezzaOra = 60; // Aumentato leggermente per estetica Campusly
+    const altezzaOra = 60; 
     const fattoreScala = altezzaOra / 60; 
     const altezzaTotale = (oraFineCalendario - oraInizioCalendario) * altezzaOra;
 
@@ -326,7 +328,6 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
     wrapper.style.border = '1px solid var(--border-color)';
     wrapper.style.setProperty('--num-giorni', maxGiorni);
     
-    // Header e griglia di base integrati inline se il CSS esterno non li gestisce
     const orariCol = document.createElement('div');
     orariCol.className = 'orari-colonna';
     orariCol.style.position = 'relative';
@@ -335,7 +336,6 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
     orariCol.style.borderRight = '1px solid var(--border-color)';
     orariCol.style.height = `${altezzaTotale + 50}px`;
 
-    // Intestazione vuota per allineamento
     orariCol.innerHTML += `<div style="height: 50px; border-bottom: 1px solid var(--border-color);"></div>`;
 
     for (let h = oraInizioCalendario; h <= oraFineCalendario; h++) {
@@ -352,7 +352,6 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
         
         const isOggi = adesso.getDate() === giorno.dataOggetto.getDate() && adesso.getMonth() === giorno.dataOggetto.getMonth();
         
-        // Header Colonna
         const headerColonna = document.createElement('div');
         headerColonna.style.height = '50px';
         headerColonna.style.display = 'flex';
@@ -364,7 +363,6 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
         headerColonna.textContent = giorno.dataTesto;
         colonnaWrapper.appendChild(headerColonna);
 
-        // Corpo Colonna
         const colonna = document.createElement('div');
         colonna.className = 'giorno-colonna';
         colonna.style.position = 'relative';
@@ -396,7 +394,6 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
             card.style.zIndex = evento.zIndex;
             card.style.cursor = 'pointer'; 
             
-            // Stile Card Inline (Sicurezza)
             card.style.backgroundColor = evento.isPersonale ? 'var(--brand-fuchsia)' : 'var(--uni-primary, var(--primary-color))';
             card.style.color = '#fff';
             card.style.borderRadius = 'var(--radius-md)';
@@ -406,7 +403,7 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
             card.style.overflow = 'hidden';
             card.style.border = '1px solid rgba(255,255,255,0.2)';
             
-            card.addEventListener('click', () => apriModaleDettagli(evento));
+            card.addEventListener('click', () => window.apriModaleDettagli(evento));
             
             let titolo = formattaTitolo(evento.nome);
             const orario = `${dataInizio.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })} - ${dataFine.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })}`;
@@ -492,11 +489,6 @@ function aggiornaBoxEvidenza() {
     `;
 }
 
-window.cambiaEvidenza = function(direzione) {
-    indiceEvidenza += direzione;
-    aggiornaBoxEvidenza();
-};
-
 function esportaSettimanaICS() {
     if (!eventiSettimana || eventiSettimana.length === 0) {
         alert("Non ci sono lezioni in questa settimana da esportare.");
@@ -538,10 +530,12 @@ function esportaSettimanaICS() {
 // ==========================================
 // MODALI E AZIONI CLOUD
 // ==========================================
-function apriModaleDettagli(evento) {
+window.apriModaleDettagli = function(evento) {
     const modale = document.getElementById('modale-dettagli');
     const modaleBody = document.getElementById('modale-body');
     
+    if(!modale || !modaleBody) return;
+
     const dataInizio = new Date(evento.dataInizio);
     const dataFine = new Date(evento.dataFine);
     const orario = `${dataInizio.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} - ${dataFine.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
@@ -599,12 +593,12 @@ function apriModaleDettagli(evento) {
     }
     
     modale.style.display = 'flex';
-}
+};
 
 window.toggleCorsoNascosto = async function(nomeCorso) {
     if(!nomeCorso) return;
     try {
-        const response = await fetch(`${basePath}/api/corsi-nascosti/toggle`, {
+        const response = await fetch(`${API_BASE_PATH}/api/corsi-nascosti/toggle`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ course_name: nomeCorso })
@@ -621,7 +615,7 @@ window.toggleCorsoNascosto = async function(nomeCorso) {
 window.eliminaEventoPersonale = async function(id) {
     if(confirm("Vuoi davvero eliminare questo evento personale?")) {
         try {
-            await fetch(`${basePath}/api/eventi-personali/delete/${id}`);
+            await fetch(`${API_BASE_PATH}/api/eventi-personali/delete/${id}`);
             document.getElementById('modale-dettagli').style.display = 'none';
             caricaSettimana(dataRiferimento);
         } catch (error) {
@@ -631,28 +625,28 @@ window.eliminaEventoPersonale = async function(id) {
 };
 
 // ==========================================
-// FUNZIONI DI NAVIGAZIONE (Globali)
+// FUNZIONI DI NAVIGAZIONE GLOBALI
 // ==========================================
-function cambiaSettimana(giorni) {
+window.cambiaSettimana = function(giorni) {
     dataRiferimento.setDate(dataRiferimento.getDate() + giorni);
     caricaSettimana(dataRiferimento);
-}
-
-// Essendo globale ora può essere chiamata dall'HTML o da altre funzioni
-window.cambiaSettimana = cambiaSettimana;
+};
+window.cambiaEvidenza = function(direzione) {
+    indiceEvidenza += direzione;
+    aggiornaBoxEvidenza();
+};
 
 // ==========================================
 // INIZIALIZZAZIONE EVENT LISTENERS
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     
-    // Tasti Navigazione Settimana
     const btnPrec = document.getElementById('btn-prec');
     const btnSucc = document.getElementById('btn-succ');
     const btnExport = document.getElementById('btn-export');
     
-    if(btnPrec) btnPrec.addEventListener('click', () => cambiaSettimana(-7));
-    if(btnSucc) btnSucc.addEventListener('click', () => cambiaSettimana(7));
+    if(btnPrec) btnPrec.addEventListener('click', () => window.cambiaSettimana(-7));
+    if(btnSucc) btnSucc.addEventListener('click', () => window.cambiaSettimana(7));
     if(btnExport) btnExport.addEventListener('click', esportaSettimanaICS);
 
     // Form Eventi Personali
@@ -679,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                await fetch(`${basePath}/api/eventi-personali`, {
+                await fetch(`${API_BASE_PATH}/api/eventi-personali`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
