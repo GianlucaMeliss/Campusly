@@ -5,55 +5,83 @@ $url = $url ?? function(string $path = '/') use ($basePath): string {
 $isLoggedIn = isset($_SESSION['user_id']);
 ?>
 
-<div class="home-layout fade-in">
-    <div class="container narrow" style="max-width: 800px; padding: 40px 20px;">
-        
-        <header style="text-align: center; margin-bottom: 50px;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: var(--primary-color); border-radius: 16px; margin-bottom: 20px; color: white;">
-                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+<div class="campusly-home fade-in">
+    <!-- Hero Section Principale -->
+    <section class="hero-section">
+        <div class="container hero-grid">
+            
+            <!-- Colonna Testo -->
+            <div class="hero-text">
+                <div class="hero-badge">✨ Il tuo nuovo calendario</div>
+                <h1 class="hero-title">L'orario universitario,<br><span class="text-gradient">senza il caos.</span></h1>
+                <p class="hero-subtitle">
+                    Campusly trasforma i portali lenti e i PDF illeggibili in un'agenda smart, sempre in tasca. Nascondi le materie che non segui, aggiungi i tuoi esami e sincronizza tutto in cloud.
+                </p>
+                
+                <div class="hero-cta">
+                    <?php if ($isLoggedIn): ?>
+                        <a href="<?= htmlspecialchars($url('/dashboard')) ?>" class="btn btn-primary">Apri il tuo Calendario</a>
+                    <?php else: ?>
+                        <a href="<?= htmlspecialchars($url('/register')) ?>" class="btn btn-primary">Inizia gratis</a>
+                        <a href="<?= htmlspecialchars($url('/login')) ?>" class="btn btn-secondary">Accedi</a>
+                    <?php endif; ?>
+                </div>
             </div>
-            <h1 style="font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 800; color: var(--text-primary); line-height: 1.1; margin-bottom: 16px;">
-                L'orario universitario,<br>ma senza impazzire.
-            </h1>
-            <p style="font-size: 1.1rem; color: var(--text-secondary); line-height: 1.6; max-width: 600px; margin: 0 auto;">
-                Basta scorrere PDF infiniti. Scegli il tuo corso, togli le materie che non frequenti e aggiungi le tue ore di studio. Tutto sempre aggiornato sul tuo telefono.
-            </p>
-        </header>
+            
+            <!-- Colonna Visiva (Mockup fatto in CSS) -->
+            <div class="hero-visual">
+                <div class="floating-card card-1">
+                    <div class="fc-icon" style="background: var(--gradient-brand);">📅</div>
+                    <div class="fc-content">
+                        <h4>Esame di Analisi</h4>
+                        <span>Oggi, 10:00 - Aula Magna</span>
+                    </div>
+                </div>
+                
+                <div class="floating-card card-2 highlight-box">
+                    <div class="fc-icon" style="background: #10b981;">📚</div>
+                    <div class="fc-content">
+                        <h4>Gruppo di Studio</h4>
+                        <span>Domani, 14:30 - Biblioteca</span>
+                    </div>
+                </div>
+                
+                <div class="floating-card card-3">
+                    <div class="fc-icon" style="background: var(--text-muted);">👁️</div>
+                    <div class="fc-content">
+                        <h4 style="color: var(--text-muted); text-decoration: line-through;">Fisica (Non frequentato)</h4>
+                        <span>Nascosto dal calendario</span>
+                    </div>
+                </div>
+            </div>
 
-        <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 60px; flex-wrap: wrap;">
-            <?php if ($isLoggedIn): ?>
-                <a href="<?= htmlspecialchars($url('/dashboard')) ?>" class="btn-custom btn-fill">Apri il mio Calendario</a>
-            <?php else: ?>
-                <a href="<?= htmlspecialchars($url('/register')) ?>" class="btn-custom btn-fill">Crea il tuo profilo</a>
-                <a href="<?= htmlspecialchars($url('/login')) ?>" class="btn-custom btn-ghost">Accedi</a>
-            <?php endif; ?>
         </div>
+    </section>
 
-        <!-- Riprendiamo lo stile delle tue card evidenziate -->
-        <div style="display: grid; gap: 20px;">
-            <div class="highlight-box" style="border-left-color: #3b82f6;">
-                <h3 style="margin: 0 0 8px 0; font-size: 1.1rem; color: var(--text-primary);">Togli il rumore</h3>
-                <p style="margin: 0; font-size: 0.95rem; color: var(--text-secondary);">
-                    Non segui un esame a scelta? Nascondilo dal calendario con un click. Vedrai solo le lezioni in cui devi davvero essere presente.
-                </p>
-            </div>
-
-            <div class="highlight-box" style="border-left-color: #10b981;">
-                <h3 style="margin: 0 0 8px 0; font-size: 1.1rem; color: var(--text-primary);">Eventi personali</h3>
-                <p style="margin: 0; font-size: 0.95rem; color: var(--text-secondary);">
-                    Gruppi di studio, esami, o un caffè in pausa. Inserisci i tuoi appuntamenti direttamente tra una lezione ufficiale e l'altra.
-                </p>
-            </div>
-
-            <div class="highlight-box" style="border-left-color: #8b5cf6;">
-                <h3 style="margin: 0 0 8px 0; font-size: 1.1rem; color: var(--text-primary);">Fatto per gli studenti</h3>
-                <p style="margin: 0; font-size: 0.95rem; color: var(--text-secondary);">
-                    Il progetto è nato per necessità. Se imposti la Dark Mode o cambi telefono, il tuo account si ricorderà tutto.
-                </p>
+    <!-- Sezione Features (Sotto la Hero) -->
+    <section class="features-section">
+        <div class="container">
+            <div class="features-grid">
+                <div class="highlight-box feature-box">
+                    <div class="feature-icon-wrapper" style="color: var(--brand-fuchsia); background: rgba(232, 62, 140, 0.1);">📱</div>
+                    <h3>Multi-dispositivo</h3>
+                    <p>Inizia su PC, continua su smartphone. Il tuo account salva preferenze, colori e appuntamenti in cloud.</p>
+                </div>
+                
+                <div class="highlight-box feature-box">
+                    <div class="feature-icon-wrapper" style="color: var(--brand-purple); background: rgba(124, 77, 255, 0.1);">🎯</div>
+                    <h3>Zero distrazioni</h3>
+                    <p>Non segui un corso a scelta? Spegnilo dal calendario con un click. Vedi solo quello che conta davvero.</p>
+                </div>
+                
+                <div class="highlight-box feature-box">
+                    <div class="feature-icon-wrapper" style="color: #10b981; background: rgba(16, 185, 129, 0.1);">☕</div>
+                    <h3>La tua vita</h3>
+                    <p>Inserisci i tuoi impegni personali, pause caffè o turni di lavoro direttamente tra una lezione ufficiale e l'altra.</p>
+                </div>
             </div>
         </div>
-        
-    </div>
+    </section>
 </div>
 
 <!-- Script specifico per le animazioni della Home -->
