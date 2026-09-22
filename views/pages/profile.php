@@ -48,7 +48,8 @@
                         <li class="hidden-course-item">
                             <span class="course-name"><?= htmlspecialchars($hc) ?></span>
                             <!-- La funzione JS è globale, funziona perfettamente -->
-                            <button onclick="toggleCorsoNascosto('<?= htmlspecialchars(addslashes($hc)) ?>'); setTimeout(() => location.reload(), 500);" class="btn-restore">
+                            <!-- Sostituisci il <button> esistente dei corsi nascosti con questo: -->
+                            <button onclick="ripristinaCorso('<?= htmlspecialchars(addslashes($hc)) ?>')" class="btn-restore">
                                 Ripristina
                             </button>
                         </li>
@@ -63,5 +64,26 @@
 <!-- Necessario per far funzionare il bottone ripristina (che chiama l'API JSON) -->
 <script>window.APP_BASE_PATH = '<?= htmlspecialchars($basePath ?? '') ?>';</script>
 
-<!-- Manteniamo $url qui per garantire il cache-busting sull'asset statico -->
+<!-- Metti questo a fondo pagina in profile.php, PRIMA dell'inclusione di app.js -->
+<script>
+    window.APP_BASE_PATH = '<?= htmlspecialchars($basePath ?? '') ?>';
+
+    // Nuova funzione indipendente per la pagina Profilo
+    window.ripristinaCorso = async function(nomeCorso) {
+        try {
+            const response = await fetch(window.APP_BASE_PATH + '/api/corsi-nascosti/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ course_name: nomeCorso })
+            });
+            if (response.ok) {
+                // Ricarica la pagina automaticamente per mostrare l'aggiornamento
+                location.reload(); 
+            }
+        } catch (error) { 
+            alert("Errore di connessione al Cloud. Riprova."); 
+        }
+    };
+</script>
+
 <script src="<?= htmlspecialchars($url('/assets/js/app.js')) ?>"></script>

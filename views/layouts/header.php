@@ -27,7 +27,7 @@ $route = function (string $path) use ($basePath): string {
 };
 
 $isLoggedIn = isset($_SESSION['user_id']);
-$activePage = $pageCss ?? 'home'; 
+$activePage = $activeMenu ?? ($pageCss ?? 'home');
 ?>
 <!DOCTYPE html>
 <html lang="it">

@@ -14,12 +14,12 @@
             <form action="<?= htmlspecialchars($route('/login')) ?>" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <label for="email" style="font-size: 0.9rem; font-weight: 600;">Email universitaria</label>
-                    <input type="email" name="email" id="email" required style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                    <input type="email" name="email" id="email" placeholder="es. m.rossi@studenti.uninsubria.it" required style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <label for="password" style="font-size: 0.9rem; font-weight: 600;">Password</label>
-                    <input type="password" name="password" id="password" required style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                    <input type="password" name="password" id="password" placeholder="Inserisci la tua password" required style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
                 </div>
 
                 <div style="display: flex; align-items: center; gap: 8px;">

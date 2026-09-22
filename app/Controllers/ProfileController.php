@@ -22,18 +22,15 @@ class ProfileController
     {
         $userId = (int)$_SESSION['user_id'];
         
-        // Recuperiamo i dati attuali del corso
         $courseConfig = $this->userModel->getUserCourseConfig($userId);
         $extConfig = $courseConfig ? json_decode($courseConfig['external_course_id'], true) : [];
-        
-        // Recuperiamo i corsi nascosti
         $hiddenCourses = $this->hiddenCourseModel->getHiddenCourses($userId);
 
         View::render('pages/profile', [
             'pageTitle' => 'Il Mio Profilo - Campusly',
+            'activeMenu' => 'profile',
             'user' => [
                 'name' => $_SESSION['user_name'],
-                // In un'app reale prenderemmo anche l'email dal DB
             ],
             'course' => [
                 'name' => $courseConfig['name'] ?? '',
