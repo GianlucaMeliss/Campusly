@@ -313,8 +313,8 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
 
     const oraInizioCalendario = 8;
     const oraFineCalendario = 20; 
-    const altezzaOra = 60; 
-    const fattoreScala = altezzaOra / 60; 
+    const altezzaOra = 45; 
+    const fattoreScala = altezzaOra / 45; 
     const altezzaTotale = (oraFineCalendario - oraInizioCalendario) * altezzaOra;
 
     const wrapper = document.createElement('div');
@@ -371,7 +371,7 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
         if (isOggi) colonna.id = 'colonna-oggi';
 
         if (isOggi && adesso.getHours() >= oraInizioCalendario && adesso.getHours() < oraFineCalendario) {
-            const topPx = (((adesso.getHours() - oraInizioCalendario) * 60) + adesso.getMinutes()) * fattoreScala;
+            const topPx = (((adesso.getHours() - oraInizioCalendario) * 45) + adesso.getMinutes()) * fattoreScala;
             colonna.innerHTML += `<div class="time-indicator" style="position: absolute; top: ${topPx}px; left: 0; width: 100%; height: 2px; background: #ef4444; z-index: 50;"></div>`;
         }
 
@@ -381,7 +381,7 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
             const dataInizio = new Date(evento.dataInizio);
             const dataFine = new Date(evento.dataFine);
 
-            const topPx = (((dataInizio.getHours() - oraInizioCalendario) * 60) + dataInizio.getMinutes()) * fattoreScala;
+            const topPx = (((dataInizio.getHours() - oraInizioCalendario) * 45) + dataInizio.getMinutes()) * fattoreScala;
             const altezzaPx = ((dataFine.getTime() - dataInizio.getTime()) / 60000) * fattoreScala;
 
             const card = document.createElement('div');

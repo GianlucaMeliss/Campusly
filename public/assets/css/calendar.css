@@ -1,353 +1,186 @@
 /* =========================================
-   1. TOOLBAR CALENDARIO (Sticky Bar)
+   1. NAVIGAZIONE SETTIMANA
    ========================================= */
-.toolbar-calendario {
-    background-color: var(--header-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border-color);
-    padding: 12px 0;
-    position: sticky;
-    top: 76px; /* Altezza esatta dell'header di Campusly */
-    z-index: 99;
-}
-
-.toolbar-inner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
 .settimana-nav {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.settimana-nav h2 {
-    font-size: 1.05rem;
-    font-weight: 700;
-    min-width: 180px;
-    text-align: center;
-    color: var(--text-primary);
-    margin: 0;
-}
-
-.toolbar-actions {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-}
-
-/* Pulsanti Icona (Freccette, Export, Tema) */
-.btn-icon {
+    display: flex; align-items: center; justify-content: center; gap: 15px; 
+    margin-top: 15px; 
     background: var(--surface);
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    border-radius: var(--radius-md);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 8px;
-    cursor: pointer;
-    transition: all var(--transition-speed);
-}
-
-.btn-icon:hover {
-    color: var(--uni-primary, var(--primary-color));
-    border-color: var(--uni-primary, var(--primary-color));
+    padding: 8px; border-radius: 12px; max-width: 450px; margin-inline: auto; /* Ripreso dal vecchio stile[cite: 1] */
     box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-color);
+}
+
+.settimana-nav button {
+    background: var(--bg-main); color: var(--primary-color); 
+    border: none; border-radius: 50%; width: 36px; height: 36px; 
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background-color 0.3s, transform 0.1s;
+}
+
+.settimana-nav button:hover {
+    background: rgba(232, 62, 140, 0.1);
+    transform: scale(1.05);
+}
+
+#label-settimana { font-size: 15px; font-weight: 600; margin: 0; min-width: 160px; text-align: center; }
+
+/* =========================================
+   2. BOX IN EVIDENZA E SKELETON
+   ========================================= */
+.highlight-box {
+    background-color: var(--surface); border-radius: var(--radius-xl);
+    padding: 20px 24px; margin-bottom: 24px;
+    box-shadow: var(--shadow-soft); 
+    border: 1px solid var(--border-color);
+    border-left: 6px solid hsl(var(--card-hue, 330), 85%, 60%); /* Usa la tonalità generata dal JS[cite: 1] */
+    transition: background-color 0.3s, border-color 0.3s;
+}
+body.dark-mode .highlight-box { 
+    border-left-color: hsl(var(--card-hue, 330), 80%, 65%); /* Modificato per la dark mode[cite: 1] */
+}
+
+.hl-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: nowrap; margin-bottom: 16px; } /* Layout flessibile[cite: 1] */
+.hl-badge { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; } /* Stile badge[cite: 1] */
+
+.badge-future { background: rgba(232, 62, 140, 0.1); color: var(--brand-fuchsia); }
+.badge-past { background: rgba(139, 136, 148, 0.1); color: var(--text-muted); }
+.badge-now { background: rgba(220, 38, 38, 0.1); color: #ef4444; animation: pulseBadge 2s infinite; }
+
+@keyframes pulseBadge { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+.hl-nav { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-secondary); }
+.hl-nav button { background: transparent; border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+.hl-nav button:hover:not(:disabled) { background: var(--border-color); }
+.hl-nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.hl-titolo { margin: 0 0 16px 0; font-size: 24px; font-weight: 800; line-height: 1.2; letter-spacing: -0.5px; }
+.hl-dettagli { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } /* Griglia a due colonne[cite: 1] */
+.hl-riga { font-size: 14px; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 8px; font-weight: 500; }
+.hl-riga svg { width: 16px; height: 16px; color: var(--primary-color); flex-shrink: 0; margin-top: 2px; } /* Dimensione fissa icone[cite: 1] */
+
+/* SKELETON ANIMATION */
+@keyframes pulseSkeleton { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+.skeleton { animation: pulseSkeleton 1.5s infinite ease-in-out; border-radius: 8px; background-color: var(--border-color); }
+.skeleton-box { height: 160px; margin-bottom: 24px; }
+.skeleton-card { position: absolute; left: 2px; right: 2px; }
+
+/* =========================================
+   3. LA GRIGLIA UNIFICATA
+   ========================================= */
+.calendario-main-container {
+    display: grid; 
+    grid-template-columns: 55px repeat(var(--num-giorni, 5), 1fr); /* Griglia dinamica giorni[cite: 1] */
+    grid-template-rows: auto 1fr; gap: 12px 8px; width: 100%;
+}
+.angolo-vuoto, .orari-colonna { width: 55px !important; min-width: 55px !important; } /* Colonna sinistra orari[cite: 1] */
+
+.header-colonna {
+    text-align: center; font-weight: 700; color: var(--text-secondary);
+    padding: 12px 0; border-bottom: 2px solid var(--border-color);
+    font-size: 14px; text-transform: capitalize;
+}
+.header-oggi { color: var(--primary-color); border-bottom-color: var(--primary-color); } /* Evidenzia oggi[cite: 1] */
+
+.orari-colonna { grid-column: 1; grid-row: 2; position: relative; }
+.orario-label {
+    position: absolute; width: 100%; text-align: right; padding-right: 8px !important; 
+    font-size: 12px; color: var(--text-muted); font-weight: 600;
+    transform: translateY(-50%); box-sizing: border-box; /* Allineamento testo[cite: 1] */
+}
+
+.giorno-colonna {
+    grid-row: 2; position: relative;
+    background-color: var(--surface); border-radius: 12px;
+    background-image: linear-gradient(var(--border-color) 1px, transparent 1px);
+    background-size: 100% 45px; /* IMPORTANTE: Deve corrispondere a altezzaOra = 45 nel JS[cite: 1] */
+    transition: background-color 0.3s;
+    border: 1px solid var(--border-color);
 }
 
 /* =========================================
-   2. TEMA DINAMICO UNIVERSITÀ
+   4. LINEA DEL TEMPO E CARD EVENTO
    ========================================= */
-/* Usa la variabile passata dal PHP, se non c'è usa il fucsia base */
-.uni-theme .btn-uni {
-    background-color: var(--uni-primary, var(--primary-color));
+.time-indicator {
+    position: absolute; left: 0; width: 100%; height: 2px;
+    background-color: #ef4444; z-index: 10; pointer-events: none; /* Linea rossa orario attuale[cite: 1] */
+}
+.time-indicator::before {
+    content: ''; position: absolute; left: -4px; top: -4px; width: 10px; height: 10px;
+    background-color: #ef4444; border-radius: 50%;
+}
+
+.lezione-card {
+    position: absolute;
+    border-radius: 8px;
+    border-left: 4px solid hsl(var(--card-hue, 330), 85%, 60%); /* Stile card con tonalità var[cite: 1] */
+    background-color: hsl(var(--card-hue, 330), 95%, 95%); 
+    color: var(--text-primary);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    padding: 8px;
+    box-sizing: border-box;
+    overflow: hidden !important; 
+    display: flex; flex-direction: column;
+    transition: transform 0.2s ease, z-index 0s, box-shadow 0.2s ease; /* Transizioni[cite: 1] */
+}
+
+body.dark-mode .lezione-card {
+    background-color: hsl(var(--card-hue, 330), 40%, 20%); /* Card scura in dark mode[cite: 1] */
+    border-left-color: hsl(var(--card-hue, 330), 75%, 65%);
     color: #ffffff;
-    border: none;
 }
 
-.uni-theme .btn-uni:hover {
-    background-color: var(--uni-primary-hover, var(--primary-hover));
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+.lezione-card:hover, .lezione-card:active {
+    z-index: 100 !important;
+    transform: scale(1.02);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.15); /* Effetto hover[cite: 1] */
 }
+
+.lezione-titolo {
+    font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; line-height: 1.2;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; text-overflow: ellipsis; /* Taglio testo su due righe[cite: 1] */
+}
+
+.lezione-orario, .lezione-dettaglio {
+    font-size: 0.75rem; opacity: 0.85; display: flex; align-items: center; gap: 4px; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* Costringe su una riga[cite: 1] */
+}
+
+.lezione-orario svg, .lezione-dettaglio svg { flex-shrink: 0; width: 12px; height: 12px; } /* Salvaguardia icone[cite: 1] */
 
 /* =========================================
-   3. CONTENITORE PRINCIPALE & CARICAMENTO
+   5. RESPONSIVE MOBILE & SCROLL SNAP
    ========================================= */
-.calendario-wrapper {
-    padding-top: 24px;
-    padding-bottom: 120px; /* Spazio in basso per non coprire eventi con il FAB */
+@media (max-width: 768px) {
+    .highlight-box { padding: 16px; margin-bottom: 16px; }
+    .hl-titolo { font-size: 20px; }
+    .hl-dettagli { grid-template-columns: 1fr; gap: 8px; } /* Una colonna su mobile[cite: 1] */
+    
+    .calendario-main-container {
+        overflow-x: auto; -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory; padding-bottom: 10px; /* Scroll snap[cite: 1] */
+        grid-template-columns: 45px repeat(var(--num-giorni, 5), minmax(260px, 1fr)); /* Colonne più larghe[cite: 1] */
+    }
+    
+    .angolo-vuoto, .orari-colonna { width: 45px !important; min-width: 45px !important; }
+    .header-colonna, .giorno-colonna { scroll-snap-align: start; scroll-margin-left: 45px; } /* Allineamento snap[cite: 1] */
+    .orario-label { font-size: 11px; padding-right: 6px !important; } /* Margini ridotti[cite: 1] */
+    
+    .lezione-card { padding: 6px; border-left-width: 4px; } /* Padding ridotto[cite: 1] */
 }
-
-.loading-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 0;
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid var(--border-color);
-    border-top-color: var(--uni-primary, var(--primary-color));
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 16px;
-}
-
-@keyframes spin { 100% { transform: rotate(360deg); } }
-
-.hidden { display: none !important; }
 
 /* =========================================
-   4. TASTO FLOTTANTE (FAB)
+   6. PULSANTE FLOTTANTE (FAB) E MODALI
    ========================================= */
 .fab-add {
-    background-color: var(--uni-primary, var(--primary-color));
-    color: #ffffff;
-    position: fixed;
-    bottom: 32px;
-    right: 32px;
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-    border: none;
-    cursor: pointer;
-    z-index: 1000;
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s;
+    position: fixed; bottom: 24px; right: 24px;
+    width: 60px; height: 60px; background-color: var(--primary-color); color: white;
+    border: none; border-radius: 50%; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    z-index: 1000; transition: transform 0.2s, box-shadow 0.2s; /* FAB base[cite: 1] */
 }
+.fab-add:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); }
 
-.fab-add:hover {
-    transform: scale(1.08);
-    background-color: var(--uni-primary-hover, var(--primary-hover));
-}
-
-/* =========================================
-   5. MODALI (Overlay e Contenuto)
-   ========================================= */
-.modale-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(23, 21, 37, 0.6); /* Sfondo Navy semi-trasparente */
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-}
-
-.modale-content {
-    position: relative;
-    width: 90%;
-    max-width: 480px;
-    max-height: 90vh;
-    overflow-y: auto;
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(30px) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.modale-close {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    background: var(--bg-main);
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: none;
-    font-size: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    color: var(--text-secondary);
-    transition: all 0.2s;
-}
-
-.modale-close:hover {
-    background: var(--border-color);
-    color: var(--text-primary);
-}
-
-/* Form interno ai modali */
-.form-title {
-    margin-top: 0;
-    margin-bottom: 24px;
-    color: var(--text-primary);
-    font-size: 1.5rem;
-    font-weight: 800;
-}
-
-.input-group {
-    margin-bottom: 20px;
-}
-
-.form-row {
-    display: flex;
-    gap: 16px;
-}
-
-.form-row .input-group {
-    flex: 1;
-}
-
-.form-submit {
-    width: 100%;
-    margin-top: 12px;
-    padding: 16px;
-}
-
-/* =========================================
-   6. RESPONSIVE MOBILE
-   ========================================= */
 @media (max-width: 768px) {
-    .toolbar-inner {
-        flex-direction: column;
-        gap: 12px;
-    }
-    .settimana-nav h2 {
-        min-width: auto;
-        font-size: 1rem;
-    }
-    .fab-add {
-        bottom: 24px;
-        right: 24px;
-        width: 56px;
-        height: 56px;
-    }
-    .toolbar-calendario {
-        padding: 16px 20px;
-    }
-}
-
-/* =========================================
-   7. GRIGLIA CALENDARIO E LEZIONI
-   (Ripristino degli stili generati da app.js)
-   ========================================= */
-
-/* Il contenitore principale generato dal JS */
-.calendario-grid {
-    display: grid;
-    grid-template-columns: 60px repeat(auto-fit, minmax(150px, 1fr));
-    gap: 16px;
-    margin-top: 20px;
-    align-items: start;
-}
-
-/* Disposizione su mobile (lista verticale invece di griglia) */
-@media (max-width: 768px) {
-    .calendario-grid {
-        grid-template-columns: 1fr;
-        gap: 24px;
-    }
-}
-
-/* Le colonne dei giorni */
-.colonna-giorno {
-    background: var(--surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: 16px;
-    min-height: 200px;
-}
-
-/* Intestazione del giorno (es. "Lunedì 14") */
-.giorno-header {
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: var(--text-primary);
-    margin-bottom: 16px;
-    text-align: center;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--bg-main);
-}
-
-/* Singolo Evento / Lezione generato dal JS */
-.evento {
-    background-color: var(--uni-primary, var(--primary-color));
-    color: #ffffff;
-    padding: 12px;
-    border-radius: var(--radius-md);
-    margin-bottom: 12px;
-    font-size: 0.9rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    border-left: 4px solid rgba(255, 255, 255, 0.3);
-}
-
-.evento:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
-}
-
-/* Stili specifici per i testi dentro l'evento */
-.evento-titolo {
-    font-weight: 700;
-    margin-bottom: 4px;
-    display: block;
-    line-height: 1.2;
-}
-
-.evento-orario {
-    font-weight: 600;
-    font-size: 0.85rem;
-    opacity: 0.9;
-    margin-bottom: 4px;
-    display: block;
-}
-
-.evento-luogo {
-    font-size: 0.8rem;
-    opacity: 0.8;
-}
-
-/* Eventi Passati (leggermente sbiaditi) */
-.evento.passato {
-    opacity: 0.6;
-    background-color: var(--text-secondary) !important;
-}
-
-/* Eventi Personali (Stile diverso per distinguerli) */
-.evento.personale {
-    background: var(--gradient-brand) !important;
-    border-left: 4px solid var(--brand-fuchsia);
-}
-
-/* Badge interno al modale dettagli */
-.modale-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    margin-bottom: 12px;
-    color: white;
-}
-.badge-now { background-color: #ef4444; animation: pulse 2s infinite; }
-.badge-future { background-color: var(--uni-primary, var(--primary-color)); }
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.6; }
-    100% { opacity: 1; }
+    .fab-add { width: 52px; height: 52px; bottom: 16px; right: 16px; } /* FAB mobile[cite: 1] */
 }
