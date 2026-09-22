@@ -1,46 +1,96 @@
 /* =========================================
-   1. NAVIGAZIONE SETTIMANA
+   1. TOOLBAR CALENDARIO (Sticky Bar)
    ========================================= */
+.toolbar-calendario {
+    background-color: var(--header-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 0;
+    position: sticky;
+    top: 76px; /* Altezza esatta dell'header di Campusly */
+    z-index: 99;
+}
+
+.toolbar-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .settimana-nav {
-    display: flex; align-items: center; justify-content: center; gap: 15px; 
-    margin-top: 15px; 
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.settimana-nav h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    min-width: 180px;
+    text-align: center;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.toolbar-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Pulsanti Icona (Freccette, Export, Tema) */
+.btn-icon {
     background: var(--surface);
-    padding: 8px; border-radius: 12px; max-width: 450px; margin-inline: auto; /* Ripreso dal vecchio stile[cite: 1] */
-    box-shadow: var(--shadow-soft);
     border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px;
+    cursor: pointer;
+    transition: all var(--transition-speed);
 }
 
-.settimana-nav button {
-    background: var(--bg-main); color: var(--primary-color); 
-    border: none; border-radius: 50%; width: 36px; height: 36px; 
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: background-color 0.3s, transform 0.1s;
+.btn-icon:hover {
+    color: var(--uni-primary, var(--primary-color));
+    border-color: var(--uni-primary, var(--primary-color));
+    box-shadow: var(--shadow-soft);
 }
-
-.settimana-nav button:hover {
-    background: rgba(232, 62, 140, 0.1);
-    transform: scale(1.05);
-}
-
-#label-settimana { font-size: 15px; font-weight: 600; margin: 0; min-width: 160px; text-align: center; }
 
 /* =========================================
-   2. BOX IN EVIDENZA E SKELETON
+   2. BOX IN EVIDENZA (Highlight)
    ========================================= */
-.highlight-box {
-    background-color: var(--surface); border-radius: var(--radius-xl);
-    padding: 20px 24px; margin-bottom: 24px;
-    box-shadow: var(--shadow-soft); 
-    border: 1px solid var(--border-color);
-    border-left: 6px solid hsl(var(--card-hue, 330), 85%, 60%); /* Usa la tonalità generata dal JS[cite: 1] */
-    transition: background-color 0.3s, border-color 0.3s;
-}
-body.dark-mode .highlight-box { 
-    border-left-color: hsl(var(--card-hue, 330), 80%, 65%); /* Modificato per la dark mode[cite: 1] */
+.calendario-wrapper {
+    padding-top: 24px;
+    padding-bottom: 120px; /* Spazio per non far coprire l'ultima riga dal FAB */
 }
 
-.hl-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: nowrap; margin-bottom: 16px; } /* Layout flessibile[cite: 1] */
-.hl-badge { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; } /* Stile badge[cite: 1] */
+.highlight-box {
+    background-color: var(--surface);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-color);
+    /* Bordo laterale colorato in base all'algoritmo JS della materia */
+    border-left: 6px solid hsl(var(--card-hue, 330), 85%, 60%);
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+body.dark-mode .highlight-box { 
+    border-left-color: hsl(var(--card-hue, 330), 80%, 65%); 
+}
+
+.hl-header { 
+    display: flex; justify-content: space-between; align-items: flex-start; 
+    gap: 10px; margin-bottom: 16px; 
+}
+.hl-badge { 
+    padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; 
+    text-transform: uppercase; letter-spacing: 0.5px; 
+}
 
 .badge-future { background: rgba(232, 62, 140, 0.1); color: var(--brand-fuchsia); }
 .badge-past { background: rgba(139, 136, 148, 0.1); color: var(--text-muted); }
@@ -49,60 +99,73 @@ body.dark-mode .highlight-box {
 @keyframes pulseBadge { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
 .hl-nav { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-secondary); }
-.hl-nav button { background: transparent; border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+.hl-nav button { 
+    background: transparent; border: 1px solid var(--border-color); 
+    border-radius: 8px; color: var(--text-primary); cursor: pointer; 
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; 
+    transition: background 0.2s; 
+}
 .hl-nav button:hover:not(:disabled) { background: var(--border-color); }
 .hl-nav button:disabled { opacity: 0.3; cursor: not-allowed; }
 
 .hl-titolo { margin: 0 0 16px 0; font-size: 24px; font-weight: 800; line-height: 1.2; letter-spacing: -0.5px; }
-.hl-dettagli { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } /* Griglia a due colonne[cite: 1] */
+.hl-dettagli { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .hl-riga { font-size: 14px; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 8px; font-weight: 500; }
-.hl-riga svg { width: 16px; height: 16px; color: var(--primary-color); flex-shrink: 0; margin-top: 2px; } /* Dimensione fissa icone[cite: 1] */
-
-/* SKELETON ANIMATION */
-@keyframes pulseSkeleton { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-.skeleton { animation: pulseSkeleton 1.5s infinite ease-in-out; border-radius: 8px; background-color: var(--border-color); }
-.skeleton-box { height: 160px; margin-bottom: 24px; }
-.skeleton-card { position: absolute; left: 2px; right: 2px; }
+.hl-riga svg { width: 16px; height: 16px; color: var(--primary-color); flex-shrink: 0; margin-top: 2px; }
 
 /* =========================================
-   3. LA GRIGLIA UNIFICATA
+   3. GRIGLIA CALENDARIO E ORARI
    ========================================= */
 .calendario-main-container {
     display: grid; 
-    grid-template-columns: 55px repeat(var(--num-giorni, 5), 1fr); /* Griglia dinamica giorni[cite: 1] */
-    grid-template-rows: auto 1fr; gap: 12px 8px; width: 100%;
+    /* La larghezza delle colonne si adatta dinamicamente tramite var(--num-giorni) */
+    grid-template-columns: 55px repeat(var(--num-giorni, 5), 1fr);
+    grid-template-rows: auto 1fr; 
+    gap: 12px 8px; 
+    width: 100%;
 }
-.angolo-vuoto, .orari-colonna { width: 55px !important; min-width: 55px !important; } /* Colonna sinistra orari[cite: 1] */
+
+.angolo-vuoto, .orari-colonna { 
+    width: 55px !important; min-width: 55px !important; 
+}
 
 .header-colonna {
     text-align: center; font-weight: 700; color: var(--text-secondary);
     padding: 12px 0; border-bottom: 2px solid var(--border-color);
     font-size: 14px; text-transform: capitalize;
 }
-.header-oggi { color: var(--primary-color); border-bottom-color: var(--primary-color); } /* Evidenzia oggi[cite: 1] */
 
-.orari-colonna { grid-column: 1; grid-row: 2; position: relative; }
+/* Evidenzia il giorno corrente */
+.header-oggi { 
+    color: var(--uni-primary, var(--primary-color)); 
+    border-bottom-color: var(--uni-primary, var(--primary-color)); 
+}
+
+.orari-colonna { 
+    grid-column: 1; grid-row: 2; position: relative; 
+}
+
 .orario-label {
     position: absolute; width: 100%; text-align: right; padding-right: 8px !important; 
     font-size: 12px; color: var(--text-muted); font-weight: 600;
-    transform: translateY(-50%); box-sizing: border-box; /* Allineamento testo[cite: 1] */
+    transform: translateY(-50%); box-sizing: border-box;
 }
 
 .giorno-colonna {
     grid-row: 2; position: relative;
     background-color: var(--surface); border-radius: 12px;
+    /* Disegna le righe della griglia ogni 45px (uguale a altezzaOra nel JS) */
     background-image: linear-gradient(var(--border-color) 1px, transparent 1px);
-    background-size: 100% 45px; /* IMPORTANTE: Deve corrispondere a altezzaOra = 45 nel JS[cite: 1] */
-    transition: background-color 0.3s;
+    background-size: 100% 45px; 
     border: 1px solid var(--border-color);
 }
 
 /* =========================================
-   4. LINEA DEL TEMPO E CARD EVENTO
+   4. CARD DELLE LEZIONI
    ========================================= */
 .time-indicator {
     position: absolute; left: 0; width: 100%; height: 2px;
-    background-color: #ef4444; z-index: 10; pointer-events: none; /* Linea rossa orario attuale[cite: 1] */
+    background-color: #ef4444; z-index: 50; pointer-events: none;
 }
 .time-indicator::before {
     content: ''; position: absolute; left: -4px; top: -4px; width: 10px; height: 10px;
@@ -112,7 +175,8 @@ body.dark-mode .highlight-box {
 .lezione-card {
     position: absolute;
     border-radius: 8px;
-    border-left: 4px solid hsl(var(--card-hue, 330), 85%, 60%); /* Stile card con tonalità var[cite: 1] */
+    /* Usa la sfumatura di colore univoca calcolata dal JS per la materia */
+    border-left: 4px solid hsl(var(--card-hue, 330), 85%, 60%); 
     background-color: hsl(var(--card-hue, 330), 95%, 95%); 
     color: var(--text-primary);
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
@@ -120,67 +184,138 @@ body.dark-mode .highlight-box {
     box-sizing: border-box;
     overflow: hidden !important; 
     display: flex; flex-direction: column;
-    transition: transform 0.2s ease, z-index 0s, box-shadow 0.2s ease; /* Transizioni[cite: 1] */
+    transition: transform 0.2s ease, box-shadow 0.2s ease; 
 }
 
 body.dark-mode .lezione-card {
-    background-color: hsl(var(--card-hue, 330), 40%, 20%); /* Card scura in dark mode[cite: 1] */
+    background-color: hsl(var(--card-hue, 330), 40%, 20%); 
     border-left-color: hsl(var(--card-hue, 330), 75%, 65%);
     color: #ffffff;
+}
+
+/* Override colori se l'evento è personale (classe applicabile via JS o stile inline) */
+.lezione-card[style*="var(--brand-fuchsia)"] {
+    border-left: 4px solid #fff !important;
 }
 
 .lezione-card:hover, .lezione-card:active {
     z-index: 100 !important;
     transform: scale(1.02);
-    box-shadow: 0 12px 25px rgba(0,0,0,0.15); /* Effetto hover[cite: 1] */
+    box-shadow: 0 12px 25px rgba(0,0,0,0.15); 
 }
 
 .lezione-titolo {
     font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; line-height: 1.2;
+    /* Taglia testo lungo su massimo 2 righe con puntini di sospensione */
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-    overflow: hidden; text-overflow: ellipsis; /* Taglio testo su due righe[cite: 1] */
+    overflow: hidden; text-overflow: ellipsis; 
 }
 
 .lezione-orario, .lezione-dettaglio {
     font-size: 0.75rem; opacity: 0.85; display: flex; align-items: center; gap: 4px; margin-top: 2px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* Costringe su una riga[cite: 1] */
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
 }
 
-.lezione-orario svg, .lezione-dettaglio svg { flex-shrink: 0; width: 12px; height: 12px; } /* Salvaguardia icone[cite: 1] */
+.lezione-orario svg, .lezione-dettaglio svg { 
+    flex-shrink: 0; width: 12px; height: 12px; 
+}
 
 /* =========================================
-   5. RESPONSIVE MOBILE & SCROLL SNAP
+   5. SKELETON LOADER
+   ========================================= */
+@keyframes pulseSkeleton { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+.skeleton { 
+    animation: pulseSkeleton 1.5s infinite ease-in-out; 
+    border-radius: 8px; 
+    background-color: var(--border-color); 
+}
+.skeleton-box { height: 160px; margin-bottom: 24px; }
+.skeleton-card { position: absolute; left: 2px; right: 2px; }
+
+/* =========================================
+   6. RESPONSIVE MOBILE
    ========================================= */
 @media (max-width: 768px) {
+    .toolbar-inner { flex-direction: column; gap: 12px; }
+    
     .highlight-box { padding: 16px; margin-bottom: 16px; }
     .hl-titolo { font-size: 20px; }
-    .hl-dettagli { grid-template-columns: 1fr; gap: 8px; } /* Una colonna su mobile[cite: 1] */
+    .hl-dettagli { grid-template-columns: 1fr; gap: 8px; } 
     
     .calendario-main-container {
-        overflow-x: auto; -webkit-overflow-scrolling: touch;
-        scroll-snap-type: x mandatory; padding-bottom: 10px; /* Scroll snap[cite: 1] */
-        grid-template-columns: 45px repeat(var(--num-giorni, 5), minmax(260px, 1fr)); /* Colonne più larghe[cite: 1] */
+        /* Abilita lo scorrimento orizzontale nativo tipo iOS */
+        overflow-x: auto; 
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory; 
+        padding-bottom: 10px;
+        /* Ogni giorno occupa almeno 260px, costringendo lo scroll */
+        grid-template-columns: 45px repeat(var(--num-giorni, 5), minmax(260px, 1fr)); 
     }
     
     .angolo-vuoto, .orari-colonna { width: 45px !important; min-width: 45px !important; }
-    .header-colonna, .giorno-colonna { scroll-snap-align: start; scroll-margin-left: 45px; } /* Allineamento snap[cite: 1] */
-    .orario-label { font-size: 11px; padding-right: 6px !important; } /* Margini ridotti[cite: 1] */
+    .header-colonna, .giorno-colonna { scroll-snap-align: start; scroll-margin-left: 45px; } 
+    .orario-label { font-size: 11px; padding-right: 6px !important; } 
     
-    .lezione-card { padding: 6px; border-left-width: 4px; } /* Padding ridotto[cite: 1] */
+    .lezione-card { padding: 6px; border-left-width: 4px; } 
 }
 
 /* =========================================
-   6. PULSANTE FLOTTANTE (FAB) E MODALI
+   7. MODALI (Dettagli ed Eventi Personali)
+   ========================================= */
+.modale-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(23, 21, 37, 0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    display: flex; justify-content: center; align-items: center; z-index: 2000;
+}
+
+.modale-content {
+    position: relative; width: 90%; max-width: 480px; max-height: 90vh;
+    overflow-y: auto; margin: 0; 
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modale-close {
+    position: absolute; top: 16px; right: 16px;
+    background: var(--bg-main); width: 32px; height: 32px; border-radius: 50%;
+    border: none; font-size: 20px; display: flex; justify-content: center; align-items: center;
+    cursor: pointer; color: var(--text-secondary); transition: all 0.2s;
+}
+.modale-close:hover { background: var(--border-color); color: var(--text-primary); }
+
+.lista-aule { margin: 5px 0 0 0; font-size: 14px; color: var(--text-primary); }
+.lista-aule li { margin-bottom: 6px; }
+.lista-aule small { color: var(--text-muted); display: block; margin-top: 2px; }
+
+/* Stili del form nuovo evento */
+.form-personale { display: flex; flex-direction: column; gap: 16px; margin-top: 15px; }
+.form-orari-row { display: flex; gap: 12px; }
+.form-orari-row .input-group { flex: 1; }
+
+/* =========================================
+   8. TASTO FLOTTANTE (FAB)
    ========================================= */
 .fab-add {
-    position: fixed; bottom: 24px; right: 24px;
-    width: 60px; height: 60px; background-color: var(--primary-color); color: white;
-    border: none; border-radius: 50%; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    z-index: 1000; transition: transform 0.2s, box-shadow 0.2s; /* FAB base[cite: 1] */
+    background-color: var(--uni-primary, var(--primary-color));
+    color: #ffffff;
+    position: fixed; bottom: 32px; right: 32px;
+    width: 64px; height: 64px; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    border: none; cursor: pointer; z-index: 1000;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s;
 }
-.fab-add:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); }
+
+.fab-add:hover {
+    transform: scale(1.08);
+    background-color: var(--uni-primary-hover, var(--primary-hover));
+}
 
 @media (max-width: 768px) {
-    .fab-add { width: 52px; height: 52px; bottom: 16px; right: 16px; } /* FAB mobile[cite: 1] */
+    .fab-add { width: 56px; height: 56px; bottom: 24px; right: 24px; }
+    .form-orari-row { flex-direction: column; align-items: stretch; gap: 12px; }
 }
