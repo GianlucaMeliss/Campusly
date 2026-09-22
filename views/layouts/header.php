@@ -21,9 +21,9 @@ $isLoggedIn = isset($_SESSION['user_id']);
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     
     <!-- Percorsi dinamici per loghi e manifest -->
-    <link rel="icon" href="<?= htmlspecialchars($url('/img/icon-192.png')) ?>">
-    <link rel="apple-touch-icon" href="<?= htmlspecialchars($url('/img/icon-192.png')) ?>">
-    <link rel="manifest" href="<?= htmlspecialchars($url('/manifest.json')) ?>">
+    <link rel="icon" href="<?= htmlspecialchars($url('/assets/img/icon-192.png')) ?>">
+    <link rel="apple-touch-icon" href="<?= htmlspecialchars($url('/assets/img/icon-192.png')) ?>">
+    <link rel="manifest" href="<?= htmlspecialchars($url('/assets/manifest.json')) ?>">
     
     <!-- Fogli di stile -->
     <link rel="stylesheet" href="<?= htmlspecialchars($url('/assets/css/style.css')) ?>?v=3">
@@ -35,7 +35,7 @@ $isLoggedIn = isset($_SESSION['user_id']);
     <header class="site-header">
         <div class="container site-header__inner">
             <a href="<?= htmlspecialchars($url('/')) ?>" class="site-brand">
-                <img src="<?= htmlspecialchars($url('/img/icon-192.png')) ?>" alt="Campusly Logo">
+                <img src="<?= htmlspecialchars($url('/assets/img/icon-192.png')) ?>" alt="Campusly Logo">
                 <span>Campusly</span>
             </a>
 
