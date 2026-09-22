@@ -3,7 +3,7 @@ $url = $url ?? function(string $path = '/') use ($basePath): string {
     return rtrim($basePath ?? '', '/') . '/' . ltrim($path, '/');
 };
 
-// MAPPING COLORI UNIVERSITÀ (Dinamico)
+// MAPPING COLORI UNIVERSITÀ (In futuro gestito dinamicamente dal DB)
 $uniId = $course['university_id'] ?? 1; // 1 = Insubria
 $uniColors = [
     1 => '#007161', // Insubria (Verde)
@@ -11,21 +11,23 @@ $uniColors = [
     3 => '#b30000', // Bicocca (Rosso)
     4 => '#e88300'  // PoliMi (Arancione)
 ];
-// Fallback al Fucsia Campusly se l'ID non esiste
+// Fallback al Fucsia Campusly se l'ID non è mappato
 $activeUniColor = $uniColors[$uniId] ?? '#E83E8C'; 
 ?>
 
+<!-- Passiamo il path a JavaScript -->
 <script>
     window.APP_BASE_PATH = '<?= htmlspecialchars($basePath ?? '') ?>';
 </script>
 
-<!-- Iniettiamo il colore scelto nel CSS tramite variabili native -->
-<div class="uni-theme" style="--uni-primary: <?= $activeUniColor ?>; --uni-primary-hover: <?= $activeUniColor ?>dd;">
+<!-- WRAPPER TEMA UNIVERSITÀ: Passa il colore dinamicamente al CSS -->
+<div class="uni-theme" style="--uni-primary: <?= $activeUniColor ?>; --uni-primary-hover: <?= $activeUniColor ?>E6;">
     
-    <!-- Toolbar Calendario -->
+    <!-- 1. TOOLBAR CALENDARIO -->
     <div class="toolbar-calendario">
         <div class="container toolbar-inner">
             
+            <!-- Controlli Settimana -->
             <div class="settimana-nav">
                 <button id="btn-prec" class="btn-icon" aria-label="Settimana precedente">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
@@ -36,6 +38,7 @@ $activeUniColor = $uniColors[$uniId] ?? '#E83E8C';
                 </button>
             </div>
 
+            <!-- Azioni -->
             <div class="toolbar-actions">
                 <button id="btn-export" class="btn-icon" title="Esporta Calendario">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -50,27 +53,32 @@ $activeUniColor = $uniColors[$uniId] ?? '#E83E8C';
         </div>
     </div>
 
-    <!-- Contenitore Calendario -->
+    <!-- 2. GRIGLIA CALENDARIO PRINCIPALE -->
     <div class="container calendario-wrapper">
         <div id="calendario-container">
-            <p id="caricamento" class="loading-text">⏳ Caricamento lezioni in corso...</p>
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p id="caricamento">Caricamento lezioni in corso...</p>
+            </div>
         </div>
     </div>
 
-    <!-- Modale Dettagli -->
+    <!-- 3. MODALE DETTAGLI LEZIONE -->
     <div id="modale-dettagli" class="modale-overlay hidden">
         <div class="modale-content highlight-box">
             <button id="chiudi-modale" class="modale-close" aria-label="Chiudi">&times;</button>
-            <div id="modale-body"></div>
+            <div id="modale-body">
+                <!-- Il contenuto viene iniettato da app.js -->
+            </div>
         </div>
     </div>
 
-    <!-- Tasto Flottante (Usa colore università) -->
+    <!-- 4. TASTO FLOTTANTE (FAB) -->
     <button id="btn-add-evento" class="fab-add" aria-label="Aggiungi Evento">
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
     </button>
 
-    <!-- Modale Form Nuovo Evento -->
+    <!-- 5. MODALE NUOVO EVENTO -->
     <div id="modale-form-evento" class="modale-overlay hidden">
         <div class="modale-content highlight-box">
             <button id="chiudi-modale-form" class="modale-close" aria-label="Chiudi">&times;</button>
@@ -100,7 +108,7 @@ $activeUniColor = $uniColors[$uniId] ?? '#E83E8C';
                 
                 <div class="input-group">
                     <label for="form-luogo">Luogo (opzionale)</label>
-                    <input type="text" id="form-luogo" placeholder="Es. Aula Studio...">
+                    <input type="text" id="form-luogo" placeholder="Es. Aula Studio, Casa...">
                 </div>
                 
                 <button type="submit" class="btn btn-uni form-submit">Salva Evento</button>
@@ -109,4 +117,4 @@ $activeUniColor = $uniColors[$uniId] ?? '#E83E8C';
     </div>
 </div>
 
-<script src="<?= htmlspecialchars($url('/assets/js/app.js')) ?>?v=13"></script>
+<script src="<?= htmlspecialchars($url('/assets/js/app.js')) ?>?v=15"></script>

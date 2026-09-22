@@ -1,14 +1,15 @@
 /* =========================================
-   TOOLBAR CALENDARIO
+   1. TOOLBAR CALENDARIO (Sticky Bar)
    ========================================= */
 .toolbar-calendario {
-    background: var(--surface);
+    background-color: var(--header-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-color);
     padding: 12px 0;
     position: sticky;
-    top: 76px; /* Offset esatto per agganciarsi sotto all'header di 76px */
+    top: 76px; /* Altezza esatta dell'header di Campusly */
     z-index: 99;
-    box-shadow: 0 4px 12px -4px rgba(0,0,0,0.05);
 }
 
 .toolbar-inner {
@@ -24,12 +25,12 @@
 }
 
 .settimana-nav h2 {
-    font-size: 1rem;
-    font-weight: 600;
-    min-width: 160px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    min-width: 180px;
     text-align: center;
-    margin: 0;
     color: var(--text-primary);
+    margin: 0;
 }
 
 .toolbar-actions {
@@ -38,87 +39,102 @@
     align-items: center;
 }
 
-/* =========================================
-   CONTENITORE CALENDARIO E AZIONI
-   ========================================= */
-.calendario-wrapper {
-    padding-top: 24px;
-    padding-bottom: 80px;
-}
-
-.loading-text {
-    text-align: center;
-    padding: 2rem;
-    color: var(--text-secondary);
-}
-
-.hidden {
-    display: none !important;
-}
-
-/* =========================================
-   OVERRIDE TEMA UNIVERSITÀ (Colori Dinamici)
-   ========================================= */
-/* Usa la variabile iniettata via style nel div wrapper */
-.uni-theme .btn-uni {
-    background-color: var(--uni-primary);
-    color: #ffffff;
-    border: none;
-}
-
-.uni-theme .btn-uni:hover {
-    background-color: var(--uni-primary-hover);
-}
-
-/* Tasto Flottante per Aggiungere Eventi */
-.fab-add {
-    background-color: var(--uni-primary);
-    color: #ffffff;
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    border: none;
-    cursor: pointer;
-    z-index: 1000;
-    transition: transform 0.2s, background-color 0.2s;
-}
-
-.fab-add:hover {
-    transform: scale(1.05);
-    background-color: var(--uni-primary-hover);
-}
-
-/* =========================================
-   PULSANTI ICONA (Toolbar)
-   ========================================= */
+/* Pulsanti Icona (Freccette, Export, Tema) */
 .btn-icon {
-    background: transparent;
+    background: var(--surface);
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 8px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--transition-speed);
 }
 
 .btn-icon:hover {
-    background: var(--surface);
-    color: var(--primary-color);
-    border-color: var(--primary-color);
+    color: var(--uni-primary, var(--primary-color));
+    border-color: var(--uni-primary, var(--primary-color));
+    box-shadow: var(--shadow-soft);
 }
 
 /* =========================================
-   MODALI E FORM
+   2. TEMA DINAMICO UNIVERSITÀ
+   ========================================= */
+/* Usa la variabile passata dal PHP, se non c'è usa il fucsia base */
+.uni-theme .btn-uni {
+    background-color: var(--uni-primary, var(--primary-color));
+    color: #ffffff;
+    border: none;
+}
+
+.uni-theme .btn-uni:hover {
+    background-color: var(--uni-primary-hover, var(--primary-hover));
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+/* =========================================
+   3. CONTENITORE PRINCIPALE & CARICAMENTO
+   ========================================= */
+.calendario-wrapper {
+    padding-top: 24px;
+    padding-bottom: 120px; /* Spazio in basso per non coprire eventi con il FAB */
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 0;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--uni-primary, var(--primary-color));
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+.hidden { display: none !important; }
+
+/* =========================================
+   4. TASTO FLOTTANTE (FAB)
+   ========================================= */
+.fab-add {
+    background-color: var(--uni-primary, var(--primary-color));
+    color: #ffffff;
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    border: none;
+    cursor: pointer;
+    z-index: 1000;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s;
+}
+
+.fab-add:hover {
+    transform: scale(1.08);
+    background-color: var(--uni-primary-hover, var(--primary-hover));
+}
+
+/* =========================================
+   5. MODALI (Overlay e Contenuto)
    ========================================= */
 .modale-overlay {
     position: fixed;
@@ -126,8 +142,9 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
+    background: rgba(23, 21, 37, 0.6); /* Sfondo Navy semi-trasparente */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -137,40 +154,56 @@
 .modale-content {
     position: relative;
     width: 90%;
-    max-width: 450px;
+    max-width: 480px;
     max-height: 90vh;
     overflow-y: auto;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .modale-close {
     position: absolute;
     top: 16px;
     right: 16px;
-    background: transparent;
+    background: var(--bg-main);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     border: none;
-    font-size: 24px;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
     color: var(--text-secondary);
-    transition: color 0.2s;
+    transition: all 0.2s;
 }
 
 .modale-close:hover {
+    background: var(--border-color);
     color: var(--text-primary);
 }
 
+/* Form interno ai modali */
 .form-title {
     margin-top: 0;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 800;
 }
 
 .input-group {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .form-row {
     display: flex;
-    gap: 12px;
+    gap: 16px;
 }
 
 .form-row .input-group {
@@ -179,5 +212,29 @@
 
 .form-submit {
     width: 100%;
-    margin-top: 8px;
+    margin-top: 12px;
+    padding: 16px;
+}
+
+/* =========================================
+   6. RESPONSIVE MOBILE
+   ========================================= */
+@media (max-width: 768px) {
+    .toolbar-inner {
+        flex-direction: column;
+        gap: 12px;
+    }
+    .settimana-nav h2 {
+        min-width: auto;
+        font-size: 1rem;
+    }
+    .fab-add {
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+    }
+    .toolbar-calendario {
+        padding: 16px 20px;
+    }
 }
