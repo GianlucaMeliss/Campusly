@@ -45,7 +45,8 @@ $router->get('/dashboard', function () use ($requireAuth): void {
 
     \App\Core\View::render('pages/calendar', [
         'pageTitle' => 'Il Mio Calendario',
-        'pageCss' => 'calendar'
+        'pageCss' => 'calendar',
+        'course' => $config
     ]);
 });
 

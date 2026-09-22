@@ -238,3 +238,116 @@
         padding: 16px 20px;
     }
 }
+
+/* =========================================
+   7. GRIGLIA CALENDARIO E LEZIONI
+   (Ripristino degli stili generati da app.js)
+   ========================================= */
+
+/* Il contenitore principale generato dal JS */
+.calendario-grid {
+    display: grid;
+    grid-template-columns: 60px repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+    align-items: start;
+}
+
+/* Disposizione su mobile (lista verticale invece di griglia) */
+@media (max-width: 768px) {
+    .calendario-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+
+/* Le colonne dei giorni */
+.colonna-giorno {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    min-height: 200px;
+}
+
+/* Intestazione del giorno (es. "Lunedì 14") */
+.giorno-header {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    text-align: center;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--bg-main);
+}
+
+/* Singolo Evento / Lezione generato dal JS */
+.evento {
+    background-color: var(--uni-primary, var(--primary-color));
+    color: #ffffff;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-left: 4px solid rgba(255, 255, 255, 0.3);
+}
+
+.evento:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+
+/* Stili specifici per i testi dentro l'evento */
+.evento-titolo {
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: block;
+    line-height: 1.2;
+}
+
+.evento-orario {
+    font-weight: 600;
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.evento-luogo {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+/* Eventi Passati (leggermente sbiaditi) */
+.evento.passato {
+    opacity: 0.6;
+    background-color: var(--text-secondary) !important;
+}
+
+/* Eventi Personali (Stile diverso per distinguerli) */
+.evento.personale {
+    background: var(--gradient-brand) !important;
+    border-left: 4px solid var(--brand-fuchsia);
+}
+
+/* Badge interno al modale dettagli */
+.modale-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: white;
+}
+.badge-now { background-color: #ef4444; animation: pulse 2s infinite; }
+.badge-future { background-color: var(--uni-primary, var(--primary-color)); }
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
