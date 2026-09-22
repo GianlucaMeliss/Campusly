@@ -121,4 +121,4 @@ $activeUniColor = $uniColors[$uniId] ?? '#E83E8C';
     </div>
 </div>
 
-<script src="<?= htmlspecialchars($url('/assets/js/app.js')) ?>?v=15"></script>
+<script src="<?= $url('/assets/js/app.js') ?>"></script>

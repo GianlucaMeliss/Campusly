@@ -1,14 +1,14 @@
 <?php
 // Gestione percorsi sicura per l'ambiente di produzione
-$basePath = defined('BASE_PATH') ? BASE_PATH : '';
+$basePath = defined('BASE_PATH') ? BASE_PATH : '/Campusly';
 
-// Helper di produzione: aggancia /public/ e aggiunge il versioning automatico basato sul file
-$assetUrl = function (string $path) use ($basePath): string {
+// Helper di produzione: usa il nome $url per compatibilità con tutte le tue viste
+$url = function (string $path) use ($basePath): string {
     $relativePath = '/public/' . ltrim($path, '/');
     $fullUrl = rtrim($basePath, '/') . $relativePath;
     
-    // Cache busting intelligente: usa la data di modifica del file
-    $physicalPath = BASEPATH . $relativePath;
+    // Cache busting automatico basato sull'ultima modifica del file
+    $physicalPath = defined('BASEPATH') ? BASEPATH . $relativePath : $_SERVER['DOCUMENT_ROOT'] . $fullUrl;
     $version = file_exists($physicalPath) ? filemtime($physicalPath) : '1.0';
     
     return htmlspecialchars($fullUrl . '?v=' . $version);
@@ -26,20 +26,20 @@ $activePage = $pageCss ?? 'home';
     
     <meta name="theme-color" content="#F8F7FA">
     
-    <link rel="icon" href="<?= $assetUrl('/assets/img/icon-192.png') ?>">
-    <link rel="apple-touch-icon" href="<?= $assetUrl('/assets/img/icon-192.png') ?>">
+    <link rel="icon" href="<?= $url('/assets/img/icon-192.png') ?>">
+    <link rel="apple-touch-icon" href="<?= $url('/assets/img/icon-192.png') ?>">
     
     <!-- CSS Generali e Specifici con cache-busting automatico -->
-    <link rel="stylesheet" href="<?= $assetUrl('/assets/css/style.css') ?>">
+    <link rel="stylesheet" href="<?= $url('/assets/css/style.css') ?>">
     <?php if (!empty($pageCss)): ?>
-        <link rel="stylesheet" href="<?= $assetUrl('/assets/css/' . $pageCss . '.css') ?>">
+        <link rel="stylesheet" href="<?= $url('/assets/css/' . $pageCss . '.css') ?>">
     <?php endif; ?>
 </head>
 <body>
     <header class="site-header">
         <div class="container site-header__inner">
             <a href="<?= htmlspecialchars($basePath . '/') ?>" class="site-brand">
-                <img src="<?= $assetUrl('/assets/img/icon-192.png') ?>" alt="Campusly Logo" width="36" height="36" style="border-radius: 8px;">
+                <img src="<?= $url('/assets/img/icon-192.png') ?>" alt="Campusly Logo" width="36" height="36" style="border-radius: 8px;">
                 <span>Campusly</span>
             </a>
 
