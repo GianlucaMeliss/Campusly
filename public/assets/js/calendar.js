@@ -262,7 +262,7 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
 
         if (tuttiTerminati || weekendSenzaEventi) {
             haFattoAutoAvanzamento = true; 
-            setTimeout(() => cambiaSettimana(7), 50); 
+            setTimeout(() => window.cambiaSettimana(7), 50);
             return; 
         }
     }
@@ -631,15 +631,22 @@ window.eliminaEventoPersonale = async function(id) {
 };
 
 // ==========================================
+// FUNZIONI DI NAVIGAZIONE (Globali)
+// ==========================================
+function cambiaSettimana(giorni) {
+    dataRiferimento.setDate(dataRiferimento.getDate() + giorni);
+    caricaSettimana(dataRiferimento);
+}
+
+// Essendo globale ora può essere chiamata dall'HTML o da altre funzioni
+window.cambiaSettimana = cambiaSettimana;
+
+// ==========================================
 // INIZIALIZZAZIONE EVENT LISTENERS
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     
-    function cambiaSettimana(giorni) {
-        dataRiferimento.setDate(dataRiferimento.getDate() + giorni);
-        caricaSettimana(dataRiferimento);
-    }
-
+    // Tasti Navigazione Settimana
     const btnPrec = document.getElementById('btn-prec');
     const btnSucc = document.getElementById('btn-succ');
     const btnExport = document.getElementById('btn-export');
