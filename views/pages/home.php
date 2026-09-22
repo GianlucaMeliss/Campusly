@@ -1,7 +1,6 @@
-<?php
-$url = $url ?? function(string $path = '/') use ($basePath): string {
-    return rtrim($basePath ?? '', '/') . '/' . ltrim($path, '/');
-};
+<<?php
+// Usiamo la costante di sistema per percorsi sicuri
+$basePath = defined('BASE_PATH') ? BASE_PATH : '/Campusly';
 $isLoggedIn = isset($_SESSION['user_id']);
 ?>
 
@@ -20,10 +19,12 @@ $isLoggedIn = isset($_SESSION['user_id']);
                 
                 <div class="hero-cta">
                     <?php if ($isLoggedIn): ?>
-                        <a href="<?= htmlspecialchars($url('/dashboard')) ?>" class="btn btn-primary">Apri il tuo Calendario</a>
+                        <!-- Rotta Dashboard -->
+                        <a href="<?= htmlspecialchars($basePath . '/dashboard') ?>" class="btn btn-primary">Apri il tuo Calendario</a>
                     <?php else: ?>
-                        <a href="<?= htmlspecialchars($url('/register')) ?>" class="btn btn-primary">Inizia gratis</a>
-                        <a href="<?= htmlspecialchars($url('/login')) ?>" class="btn btn-secondary">Accedi</a>
+                        <!-- Rotte Auth -->
+                        <a href="<?= htmlspecialchars($basePath . '/register') ?>" class="btn btn-primary">Inizia gratis</a>
+                        <a href="<?= htmlspecialchars($basePath . '/login') ?>" class="btn btn-secondary">Accedi</a>
                     <?php endif; ?>
                 </div>
             </div>
