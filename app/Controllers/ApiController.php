@@ -324,6 +324,23 @@ class ApiController
         exit;
     }
 
+    public function getCourseCurriculums(string $courseId): void
+    {
+        header("Content-Type: application/json; charset=UTF-8");
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Non autenticato']);
+            exit;
+        }
+
+        $db = \App\Core\Database::getInstance();
+        $stmt = $db->prepare("SELECT id, campus_location, year FROM course_curriculums WHERE course_id = :cid ORDER BY year ASC");
+        $stmt->execute(['cid' => (int)$courseId]);
+        
+        echo json_encode($stmt->fetchAll());
+        exit;
+    }
+
     public function deletePersonalEvent(string $eventId): void
     {
         if (!isset($_SESSION['user_id'])) {

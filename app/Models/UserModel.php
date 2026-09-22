@@ -63,7 +63,7 @@ class UserModel extends Model
     // In app/Models/UserModel.php
     public function saveAcademicProfile(int $userId, int $universityId, string $courseName, string $sede, int $anno, string $apiConfig): void
     {
-        // 1. Cerca se il corso base esiste già (es. "Informatica" all'Insubria)
+        // 1. Cerca il corso principale
         $stmt = $this->db->prepare("SELECT id FROM courses WHERE name = :name AND university_id = :uni_id");
         $stmt->execute(['name' => $courseName, 'uni_id' => $universityId]);
         $course = $stmt->fetch();
@@ -71,36 +71,44 @@ class UserModel extends Model
         if ($course) {
             $courseId = (int)$course['id'];
         } else {
-            // Se non esiste, creiamo il corso base
             $stmtIns = $this->db->prepare("INSERT INTO courses (university_id, name) VALUES (:uni_id, :name)");
             $stmtIns->execute(['uni_id' => $universityId, 'name' => $courseName]);
             $courseId = (int)$this->db->lastInsertId();
         }
 
-        // 2. Crea il curriculum specifico (Anno + Sede + Codici API)
-        $stmtCurr = $this->db->prepare("
-            INSERT INTO course_curriculums (course_id, campus_location, year, api_config) 
-            VALUES (:course_id, :campus, :year, :api_config)
-        ");
-        $stmtCurr->execute([
-            'course_id' => $courseId,
-            'campus' => $sede,
-            'year' => $anno,
-            'api_config' => $apiConfig
-        ]);
-        $curriculumId = (int)$this->db->lastInsertId();
+        // 2. Cerca se esiste già la combinazione specifica Anno + Sede nel DB
+        $stmtCurr = $this->db->prepare("SELECT id FROM course_curriculums WHERE course_id = :cid AND campus_location = :sede AND year = :anno LIMIT 1");
+        $stmtCurr->execute(['cid' => $courseId, 'sede' => $sede, 'anno' => $anno]);
+        $curriculum = $stmtCurr->fetch();
 
-        // 3. Collega l'utente al corso e al suo curriculum specifico
-        $stmtLink = $this->db->prepare("
-            INSERT INTO user_academic_profiles (user_id, course_id, curriculum_id, enrollment_year) 
-            VALUES (:user_id, :course_id, :curr_id, :year)
-        ");
-        $stmtLink->execute([
-            'user_id' => $userId,
-            'course_id' => $courseId,
-            'curr_id' => $curriculumId,
-            'year' => date('Y')
-        ]);
+        if ($curriculum) {
+            $curriculumId = (int)$curriculum['id'];
+            // Se siamo nello step manuale per smanettoni, sovrascriviamo l'api_config "AUTO" con i dati reali
+            if ($apiConfig !== '{"linkCalendarioId":"AUTO","clienteId":"AUTO"}') {
+                $upd = $this->db->prepare("UPDATE course_curriculums SET api_config = :conf WHERE id = :id");
+                $upd->execute(['conf' => $apiConfig, 'id' => $curriculumId]);
+            }
+        } else {
+            // Se non esiste, lo inseriamo
+            $stmtInsC = $this->db->prepare("INSERT INTO course_curriculums (course_id, campus_location, year, api_config) VALUES (:cid, :sede, :anno, :conf)");
+            $stmtInsC->execute(['cid' => $courseId, 'sede' => $sede, 'anno' => $anno, 'conf' => $apiConfig]);
+            $curriculumId = (int)$this->db->lastInsertId();
+        }
+
+        // 3. IL FIX FINALE: Collega l'utente al nuovo curriculum
+        $stmtCheck = $this->db->prepare("SELECT id FROM user_academic_profiles WHERE user_id = :uid");
+        $stmtCheck->execute(['uid' => $userId]);
+        $profile = $stmtCheck->fetch();
+
+        if ($profile) {
+            // Aggiorna il profilo esistente con il nuovo id
+            $updProf = $this->db->prepare("UPDATE user_academic_profiles SET course_id = :cid, curriculum_id = :currid WHERE id = :pid");
+            $updProf->execute(['cid' => $courseId, 'currid' => $curriculumId, 'pid' => $profile['id']]);
+        } else {
+            // Se l'utente non aveva alcun profilo, crealo
+            $insProf = $this->db->prepare("INSERT INTO user_academic_profiles (user_id, course_id, curriculum_id, enrollment_year) VALUES (:uid, :cid, :currid, :year)");
+            $insProf->execute(['uid' => $userId, 'cid' => $courseId, 'currid' => $curriculumId, 'year' => date('Y')]);
+        }
     }
 
     public function getUserCourseConfig(int $userId): ?array
