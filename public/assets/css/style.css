@@ -445,3 +445,33 @@ body.dark-mode .alert-success { color: #34d399; }
 
 .btn-restore:hover { background: #059669; }
 .btn-restore:active { transform: scale(0.95); }
+
+/* In public/assets/css/style.css - Sezione Mobile Globale */
+@media (max-width: 768px) {
+    /* 1. Riduciamo i padding laterali globali del container */
+    .container {
+        padding: 0 12px; /* Era 24px, dimezzato per dare respiro al calendario */
+    }
+
+    /* 2. Snelliamo l'Header (Navbar) */
+    .site-header {
+        height: 60px; /* Era 76px, recuperiamo 16px verticali */
+    }
+
+    .site-brand img {
+        width: 28px; /* Era 36px */
+        height: 28px;
+    }
+
+    .site-brand span {
+        font-size: 1.2rem; /* Era 1.4rem, testo più compatto */
+    }
+
+    .site-nav {
+        gap: 12px; /* Ridotto il gap tra i link */
+    }
+
+    .site-nav a {
+        font-size: 0.85rem; /* Era 0.95rem */
+    }
+}

@@ -6,10 +6,15 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-color);
-    padding: 12px 0;
     position: sticky;
-    top: 76px; /* Altezza esatta dell'header di Campusly */
+    top: 76px; 
+    padding: 8px 0; 
     z-index: 99;
+}
+@media (max-width: 768px) {
+    .toolbar-calendario {
+        top: 60px; /* Sincronizzato con il nuovo header compatto */
+    }
 }
 
 .toolbar-inner {
@@ -25,9 +30,9 @@
 }
 
 .settimana-nav h2 {
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     font-weight: 700;
-    min-width: 180px;
+    min-width: 140px;
     text-align: center;
     color: var(--text-primary);
     margin: 0;
@@ -126,7 +131,7 @@ body.dark-mode .highlight-box {
 }
 
 .angolo-vuoto, .orari-colonna { 
-    width: 55px !important; min-width: 55px !important; 
+    width: 45px !important; min-width: 45px !important; 
 }
 
 .header-colonna {
@@ -146,8 +151,8 @@ body.dark-mode .highlight-box {
 }
 
 .orario-label {
-    position: absolute; width: 100%; text-align: right; padding-right: 8px !important; 
-    font-size: 12px; color: var(--text-muted); font-weight: 600;
+    position: absolute; width: 100%; text-align: right; padding-right: 6px !important; 
+    font-size: 11px; color: var(--text-muted); font-weight: 600;
     transform: translateY(-50%); box-sizing: border-box;
 }
 
@@ -319,4 +324,82 @@ body.dark-mode .lezione-card {
 @media (max-width: 768px) {
     .fab-add { width: 56px; height: 56px; bottom: 24px; right: 24px; }
     .form-orari-row { flex-direction: column; align-items: stretch; gap: 12px; }
+}
+
+/* --- MOBILE SPECIFICO PER IL CALENDARIO --- */
+@media (max-width: 768px) {
+    /* Compatta la toolbar superiore */
+    .toolbar-inner { 
+        flex-direction: row; /* Manteniamo tutto su una riga se possibile! */
+        justify-content: space-between;
+        gap: 8px; 
+    }
+    
+    .settimana-nav {
+        gap: 8px; /* Tasti ravvicinati */
+    }
+
+    .btn-icon {
+        padding: 6px; /* Tasti quadrati più piccoli */
+    }
+
+    /* Il box in evidenza diventa quasi edge-to-edge */
+    .highlight-box { 
+        padding: 12px; /* Ridotto drasticamente da 24px/16px */
+        margin-bottom: 12px; 
+        border-radius: var(--radius-md); /* Meno arrotondato sui bordi stretti */
+    }
+    
+    .hl-titolo { 
+        font-size: 1.1rem; /* Ridotto per evitare di occupare 3 righe */
+        margin: 0 0 10px 0;
+    }
+    
+    .hl-dettagli { 
+        grid-template-columns: 1fr; /* Torna su una colonna ma... */
+        gap: 6px; /* ...molto più compatta */
+    } 
+
+    .hl-riga {
+        font-size: 12px; /* Testo dei dettagli più piccolo (aule, prof) */
+    }
+    
+    /* GRIGLIA CALENDARIO EDGE-TO-EDGE */
+    .calendario-main-container {
+        /* Guadagniamo spazio laterale: la colonna orari è strettissima (40px) */
+        grid-template-columns: 40px repeat(var(--num-giorni, 5), minmax(220px, 1fr)); 
+        gap: 8px 4px; /* Riduciamo i gap tra i giorni */
+    }
+    
+    .angolo-vuoto, .orari-colonna { 
+        width: 40px !important; /* Super compatto */
+        min-width: 40px !important; 
+    }
+
+    .header-colonna, .giorno-colonna { 
+        scroll-margin-left: 40px; 
+    } 
+
+    /* CARD DELLE LEZIONI */
+    .lezione-card { 
+        padding: 4px; /* Padding minimo interno */
+        border-left-width: 3px; 
+    } 
+
+    .lezione-titolo {
+        font-size: 11px; /* Testo microscopico ma leggibile per evitare troncamenti */
+        -webkit-line-clamp: 3; /* Permettiamo 3 righe visto che il font è più piccolo */
+    }
+
+    .lezione-orario, .lezione-dettaglio {
+        font-size: 9px;
+    }
+    
+    /* MODALE E TASTO AGGIUNGI (dal tuo vecchio CSS) */
+    .fab-add { 
+        width: 50px; 
+        height: 50px; 
+        bottom: 16px; 
+        right: 16px; 
+    }
 }
