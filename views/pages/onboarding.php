@@ -87,11 +87,6 @@
                     <div style="text-align: center; margin-top: 25px;">
                     <button type="button" class="btn btn-ghost" style="font-size: 0.85rem;" onclick="apriRichiesta('curriculum')">Manca la tua sede o il tuo anno? Segnalacelo</button>
                 </div>
-
-                <div class="wizard-nav">
-                    <button type="button" class="btn btn-ghost" onclick="vaiAStep(2)">Indietro</button>
-                    <button type="submit" class="btn btn-primary" id="btn-submit" disabled>Conferma e Vai</button>
-                </div>
                 
                 </form>
             </div>

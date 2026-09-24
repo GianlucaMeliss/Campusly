@@ -141,3 +141,52 @@
     border: none;
 }
 .btn-ghost:hover { color: var(--text-primary); }
+
+/* =========================================
+   MODALE RICHIESTA (E TASTO X)
+   ========================================= */
+.modale-overlay {
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6); 
+    backdrop-filter: blur(4px);
+    z-index: 1000; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+}
+
+.modale-content {
+    position: relative; 
+    width: 90%; 
+    max-width: 500px;
+    margin: auto;
+}
+
+/* Stile per la "X" di chiusura */
+.modale-close {
+    position: absolute; 
+    top: 16px; 
+    right: 16px;
+    background: var(--bg-main); 
+    width: 32px; 
+    height: 32px; 
+    border-radius: 50%;
+    border: none; 
+    font-size: 20px; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    cursor: pointer; 
+    color: var(--text-secondary); 
+    transition: all 0.2s;
+    z-index: 10;
+}
+
+.modale-close:hover { 
+    background: var(--border-color); 
+    color: var(--text-primary); 
+}
