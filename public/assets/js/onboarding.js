@@ -51,8 +51,9 @@ async function selezionaCorso(courseId, nomeCorso) {
     document.getElementById('subtitle-course-name').textContent = nomeCorso;
     document.getElementById('input-course-name').value = nomeCorso;
     
-    // Reset campi e UI
-    wizardData.sede = null; wizardData.anno = null;
+    // Reset di tutti i campi
+    wizardData.sede = null; 
+    wizardData.anno = null;
     wizardData.loadedCurriculums = [];
     document.getElementById('input-sede').value = '';
     document.getElementById('input-anno').value = '';
@@ -68,17 +69,14 @@ async function selezionaCorso(courseId, nomeCorso) {
 
     try {
         const response = await fetch(`${apiBasePath}/api/corsi/${courseId}/curriculums`);
-        
-        // 1. Invece di fare subito .json(), leggiamo il testo grezzo per intercettare errori PHP
-        const rawText = await response.text(); 
+        const text = await response.text();
         
         let curriculums;
         try {
-            curriculums = JSON.parse(rawText);
-        } catch (jsonError) {
-            console.error("❌ IL SERVER NON HA RESTITUITO UN JSON VALIDO. Risposta ricevuta:");
-            console.error(rawText);
-            throw new Error("Risposta API non valida");
+            curriculums = JSON.parse(text);
+        } catch (e) {
+            console.error("Risposta non JSON dal server:", text);
+            throw new Error("Dati non validi");
         }
 
         wizardData.loadedCurriculums = curriculums;
@@ -87,14 +85,33 @@ async function selezionaCorso(courseId, nomeCorso) {
             const sedi = [...new Set(curriculums.map(c => c.campus_location).filter(Boolean))];
 
             if (sedi.length === 1) {
-                // Auto-seleziona l'unica sede (ritardato di 50ms per assicurare il render DOM)
-                setTimeout(() => {
-                    selezionaToggle(null, 'sede', sedi[0], true);
-                }, 50);
+                // CASO 1: C'è una sola sede. La stampiamo e prepariamo subito gli anni.
+                const sedeScelta = sedi[0];
+                wizardData.sede = sedeScelta;
+                document.getElementById('input-sede').value = sedeScelta;
+                containerSede.innerHTML = `<div class="toggle-btn selected" style="cursor:default; pointer-events:none;">${sedeScelta} (Unica)</div>`;
+                
+                // Filtriamo gli anni per questa unica sede
+                const curriculumsSede = curriculums.filter(c => c.campus_location === sedeScelta);
+                const anniSede = [...new Set(curriculumsSede.map(c => c.year).filter(Boolean))].sort();
+
+                if (anniSede.length === 1) {
+                    // C'è pure un solo anno! (Caso perfetto, sblocca il bottone submit)
+                    wizardData.anno = anniSede[0];
+                    document.getElementById('input-anno').value = anniSede[0];
+                    containerAnno.innerHTML = `<div class="toggle-btn selected" style="cursor:default; pointer-events:none;">${anniSede[0]}° Anno (Unico)</div>`;
+                    document.getElementById('btn-submit').removeAttribute('disabled');
+                } else if (anniSede.length > 1) {
+                    // Ci sono più anni per l'unica sede, falli scegliere
+                    containerAnno.innerHTML = anniSede.map(a => `<div class="toggle-btn" onclick="selezionaToggle(this, 'anno', '${a}')">${a}° Anno</div>`).join('');
+                }
             } else {
+                // CASO 2: Ci sono più sedi. L'utente deve cliccarne una per sbloccare gli anni.
                 containerSede.innerHTML = sedi.map(s => `<div class="toggle-btn" onclick="selezionaToggle(this, 'sede', '${s}')">${s}</div>`).join('');
+                containerAnno.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem;">Seleziona prima una sede</p>';
             }
         } else {
+            // CASO 3: Fallback. Il corso esiste ma non ha configurazioni nel DB.
             wizardData.sede = 'Principale'; wizardData.anno = 1;
             document.getElementById('input-sede').value = 'Principale';
             document.getElementById('input-anno').value = 1;
@@ -104,13 +121,13 @@ async function selezionaCorso(courseId, nomeCorso) {
         }
 
     } catch (e) {
-        console.error("❌ ERRORE JS CATTURATO:", e);
-        containerSede.innerHTML = '<p style="color:#ef4444;">Errore di caricamento. Apri la console (F12).</p>';
+        console.error("Errore JS:", e);
+        containerSede.innerHTML = '<p style="color:#ef4444;">Errore di caricamento</p>';
         containerAnno.innerHTML = '';
     }
 }
 
-function selezionaToggle(element, type, value, isAuto = false) {
+function selezionaToggle(element, type, value) {
     if (element) {
         const siblings = element.parentElement.querySelectorAll('.toggle-btn');
         siblings.forEach(el => el.classList.remove('selected'));
@@ -120,40 +137,29 @@ function selezionaToggle(element, type, value, isAuto = false) {
     wizardData[type] = value;
     document.getElementById('input-' + type).value = value;
 
-    // Se l'utente ha appena scelto una SEDE, calcoliamo dinamicamente gli ANNI disponibili per quella sede
+    // Se stiamo selezionando una sede, calcoliamo dinamicamente gli anni
     if (type === 'sede') {
-        // Resettiamo l'anno precedente
         wizardData.anno = null;
         document.getElementById('input-anno').value = '';
         document.getElementById('btn-submit').disabled = true;
 
         const containerAnno = document.getElementById('anno-toggles');
-        
-        // Filtriamo i curriculums salvati tenendo solo quelli della sede scelta
         const curriculumsSede = wizardData.loadedCurriculums.filter(c => c.campus_location === value);
         const anniSede = [...new Set(curriculumsSede.map(c => c.year).filter(Boolean))].sort();
 
-        // Renderizziamo il blocco Sede (se forzato dall'isAuto)
-        if (isAuto) {
-            const containerSede = document.getElementById('sede-toggles');
-            containerSede.innerHTML = `<div class="toggle-btn selected" style="cursor:default; pointer-events:none;">${value} (Unica)</div>`;
-        }
-
-        // Renderizziamo dinamicamente gli anni
         if (anniSede.length === 1) {
-            // Se c'è un solo anno per questa sede, selezionalo in automatico
             wizardData.anno = anniSede[0];
             document.getElementById('input-anno').value = anniSede[0];
             containerAnno.innerHTML = `<div class="toggle-btn selected" style="cursor:default; pointer-events:none;">${anniSede[0]}° Anno (Unico)</div>`;
+            document.getElementById('btn-submit').removeAttribute('disabled');
         } else if (anniSede.length > 1) {
-            // Se ci sono più anni, mostrali
             containerAnno.innerHTML = anniSede.map(a => `<div class="toggle-btn" onclick="selezionaToggle(this, 'anno', '${a}')">${a}° Anno</div>`).join('');
         } else {
-            containerAnno.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem;">Nessun anno specificato</p>';
+            containerAnno.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem;">Nessun anno trovato</p>';
         }
     }
 
-    // Abilita il submit solo se abbiamo sia sede che anno validi
+    // Se abbiamo sia la sede che l'anno, abilitiamo il form
     if (wizardData.sede && wizardData.anno) {
         document.getElementById('btn-submit').removeAttribute('disabled');
     }
