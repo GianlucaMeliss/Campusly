@@ -88,3 +88,73 @@ if ('serviceWorker' in navigator) {
             .catch(error => console.error('Errore SW:', error));
     });
 }
+
+// ==========================================
+// 4. INSTALLAZIONE PWA (Pop-up post-login)
+// ==========================================
+let deferredPrompt;
+const pwaModal = document.getElementById('pwa-install-modal');
+const pwaInstallBtn = document.getElementById('pwa-install-btn');
+const pwaCloseBtn = document.getElementById('pwa-close-btn');
+const pwaIosInstructions = document.getElementById('pwa-ios-instructions');
+
+// Verifica se è già installata o se l'utente ha già ignorato il banner
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+const pwaDismissed = localStorage.getItem('pwa_prompt_dismissed');
+
+if (!isStandalone && !pwaDismissed) {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    if (isIOS) {
+        // Su iOS mostriamo il modale con le istruzioni dopo 2 secondi (se il modale esiste nella pagina corrente)
+        if (pwaModal) {
+            setTimeout(() => {
+                pwaInstallBtn.style.display = 'none';
+                pwaIosInstructions.style.display = 'block';
+                pwaModal.style.display = 'flex';
+            }, 2000);
+        }
+    } else {
+        // Su Android/Desktop intercettiamo la richiesta di sistema
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); // Blocca la mini-barra automatica di Chrome
+            deferredPrompt = e; // Salva l'evento per attivarlo al click
+            
+            if (pwaModal) {
+                setTimeout(() => {
+                    pwaModal.style.display = 'flex';
+                }, 2000); // Ritardo di 2 secondi per non aggredire l'utente appena apre la pagina
+            }
+        });
+    }
+}
+
+// Azione al click sul pulsante "Installa" (solo Android/Desktop)
+if (pwaInstallBtn) {
+    pwaInstallBtn.addEventListener('click', async () => {
+        pwaModal.style.display = 'none';
+        if (deferredPrompt) {
+            deferredPrompt.prompt(); // Mostra il prompt nativo del sistema operativo
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                console.log('App installata!');
+            }
+            deferredPrompt = null;
+        }
+    });
+}
+
+// Chiusura del modale (salva nel LocalStorage per non riproporlo)
+const dismissPwaModal = () => {
+    if (pwaModal) {
+        pwaModal.style.display = 'none';
+        localStorage.setItem('pwa_prompt_dismissed', 'true');
+    }
+};
+
+if (pwaCloseBtn) pwaCloseBtn.addEventListener('click', dismissPwaModal);
+if (pwaModal) {
+    pwaModal.addEventListener('click', (e) => {
+        if (e.target === pwaModal) dismissPwaModal();
+    });
+}

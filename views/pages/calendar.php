@@ -119,6 +119,23 @@ $activeUniColor = $uniColors[$uniId] ?? '#E83E8C';
             </form>
         </div>
     </div>
+    <!-- MODALE INSTALLAZIONE PWA -->
+    <div id="pwa-install-modal" class="modale-overlay hidden" style="display: none; z-index: 3000;">
+        <div class="modale-content highlight-box" style="text-align: center; padding: 30px;">
+            <button class="modale-close" id="pwa-close-btn">&times;</button>
+            <div style="font-size: 48px; margin-bottom: 16px;">📱</div>
+            <h2 class="section-title">Installa Campusly</h2>
+            <p class="section-subtitle" style="margin-bottom: 24px;">Aggiungi l'app alla schermata Home per un accesso immediato e per poter consultare l'orario anche offline.</p>
+            
+            <!-- Pulsante per Android/Desktop -->
+            <button id="pwa-install-btn" class="btn btn-primary btn-full-width" style="margin-bottom: 12px;">Installa App</button>
+            
+            <!-- Istruzioni per iOS (Nascoste di default) -->
+            <div id="pwa-ios-instructions" style="display: none; background: var(--bg-main); padding: 16px; border-radius: var(--radius-md); text-align: left; font-size: 0.9rem; color: var(--text-primary);">
+                <p style="margin: 0;"><strong>Su iPhone o iPad:</strong><br><br>1. Tocca l'icona Condividi <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin: 0 4px;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> nella barra di navigazione di Safari.<br>2. Scorri in basso e seleziona <strong>"Aggiungi alla schermata Home"</strong>.</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Script base (Dark mode, Modali, PWA) -->

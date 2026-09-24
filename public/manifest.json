@@ -2,7 +2,7 @@
   "name": "Campusly",
   "short_name": "Campusly",
   "description": "Il tuo calendario universitario",
-  "start_url": "/",
+  "start_url": "/Campusly",
   "display": "standalone",
   "background_color": "#F8F7FA",
   "theme_color": "#E83E8C",
