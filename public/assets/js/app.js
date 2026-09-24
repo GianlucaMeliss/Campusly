@@ -89,6 +89,9 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// ==========================================
+// 4. INSTALLAZIONE PWA (Pop-up post-login)
+// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     let deferredPrompt;
     const pwaModal = document.getElementById('pwa-install-modal');
@@ -96,31 +99,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const pwaCloseBtn = document.getElementById('pwa-close-btn');
     const pwaIosInstructions = document.getElementById('pwa-ios-instructions');
 
-    // Verifica se è già installata o se ignorata
+    // Verifica se è già installata o ignorata
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     const pwaDismissed = localStorage.getItem('pwa_prompt_dismissed');
 
-    if (!isStandalone && !pwaDismissed) {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (!isStandalone && !pwaDismissed && pwaModal) {
+        
+        const userAgent = navigator.userAgent;
+        const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+        // Rileva Safari su Mac (esclude Chrome/Edge che contengono "Safari" nell'UA ma anche "Chrome")
+        const isMacSafari = /^((?!chrome|android).)*safari/i.test(userAgent) && /Mac/.test(userAgent);
 
-        if (isIOS) {
-            if (pwaModal) {
-                setTimeout(() => {
-                    pwaInstallBtn.style.display = 'none';
-                    pwaIosInstructions.style.display = 'block';
-                    pwaModal.style.display = 'flex';
-                }, 2000);
-            }
+        if (isIOS || isMacSafari) {
+            // Apple Ecosystem: Mostra le istruzioni manuali dopo 2 secondi
+            setTimeout(() => {
+                pwaInstallBtn.style.display = 'none';
+                pwaIosInstructions.style.display = 'block';
+                
+                // Personalizza il testo se è su Mac
+                if (isMacSafari && !isIOS) {
+                    pwaIosInstructions.innerHTML = `<p style="margin: 0;"><strong>Su Mac (Safari):</strong><br><br>Clicca sull'icona <strong>Condividi</strong> in alto a destra e seleziona <strong>"Aggiungi al Dock"</strong>, oppure vai nel menu in alto <strong>File > Aggiungi al Dock</strong>.</p>`;
+                }
+                
+                pwaModal.style.display = 'flex';
+            }, 2000);
+            
         } else {
+            // Android, Chrome OS, Edge, Chrome Desktop: aspetta l'evento di sistema
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault(); 
                 deferredPrompt = e; 
                 
-                if (pwaModal) {
-                    setTimeout(() => {
-                        pwaModal.style.display = 'flex';
-                    }, 2000); 
-                }
+                setTimeout(() => {
+                    pwaModal.style.display = 'flex';
+                }, 2000); 
             });
         }
     }
