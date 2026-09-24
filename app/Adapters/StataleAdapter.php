@@ -7,7 +7,6 @@ use Exception;
 
 class StataleAdapter implements UniversityAdapterInterface
 {
-    // L'endpoint standard di EasyStaff per recuperare gli eventi della griglia
     private const API_URL = 'https://orari.unimi.it/PortaleStudenti/grid_call.php';
 
     public function getSchedule(string $startDate, string $endDate, array $courseConfig): array
@@ -20,11 +19,9 @@ class StataleAdapter implements UniversityAdapterInterface
             throw new Exception("Configurazione corso Statale mancante.");
         }
 
-        // Converte la data ISO in formato testuale per EasyStaff (es. 24-09-2026)
         $dataInizioTs = strtotime($startDate);
         $dataEasyStaff = date('d-m-Y', $dataInizioTs);
 
-        // Parametri richiesti dal server EasyStaff
         $queryData = http_build_query([
             'view' => 'easycourse',
             'form-type' => 'corso',
@@ -47,9 +44,9 @@ class StataleAdapter implements UniversityAdapterInterface
             'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
         ]);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -65,52 +62,68 @@ class StataleAdapter implements UniversityAdapterInterface
 
         $data = json_decode($response, true);
         
-        // EasyStaff restituisce solitamente un array 'celle'
         $eventiOriginali = $data['celle'] ?? [];
         $eventiNormalizzati = [];
 
         foreach ($eventiOriginali as $evento) {
-            // Forziamo i trattini al posto delle slash per far capire a PHP che è formato Europeo (Gg-Mm-Aaaa)
+            // 1. GESTIONE DATE (Senza la \Z finale per evitare fusi orari sballati)
             $dataPulita = str_replace('/', '-', $evento['data']);
-            
             $startStr = $dataPulita . ' ' . $evento['ora_inizio'];
             $endStr = $dataPulita . ' ' . $evento['ora_fine'];
             
             $isoStart = date('Y-m-d\TH:i:s.000', strtotime($startStr));
             $isoEnd = date('Y-m-d\TH:i:s.000', strtotime($endStr));
 
-            // Formattazione Aule
-            $risorse = [];
-            if (!empty($evento['aule'])) {
-                foreach ($evento['aule'] as $aula) {
-                    $risorse[] = [
-                        'aula' => [
-                            'descrizione' => $aula['des_indirizzo'] ?? $aula['descrizione'] ?? 'Aula ignota'
-                        ],
-                        'docente' => [
-                            'cognome' => $evento['docente'] ?? ''
-                        ]
-                    ];
-                }
-            } else {
-                $risorse[] = [
-                    'aula' => ['descrizione' => 'Aula non assegnata'],
-                    'docente' => ['cognome' => $evento['docente'] ?? '']
-                ];
+            // 2. GESTIONE AULE ED EDIFICI (Regex per separare "Aula 6 [Conservatorio]")
+            $rawAula = $evento['aula'] ?? 'Aula non assegnata';
+            $descrizioneAula = $rawAula;
+            $edificioAula = '';
+
+            // Cerca uno schema: "Qualsiasi testo [Testo tra parentesi]"
+            if (preg_match('/^(.*?)\[(.*?)\]$/', trim($rawAula), $matches)) {
+                $descrizioneAula = trim($matches[1]); // Es: "Aula 6"
+                $edificioAula = trim($matches[2]);    // Es: "Conservatorio (Edificio 4)"
             }
 
+            // 3. STATO DELLA LEZIONE
+            $stato = (isset($evento['Annullato']) && $evento['Annullato'] === "1") ? 'A' : 'C';
+
+            // 4. MAPPA EVENTO PER IL CALENDARIO FRONTEND
             $eventiNormalizzati[] = [
                 'idPersonale' => null,
                 'nome' => $evento['nome_insegnamento'] ?? 'Lezione',
                 'dataInizio' => $isoStart,
                 'dataFine' => $isoEnd,
-                'stato' => isset($evento['annullato']) && $evento['annullato'] ? 'A' : 'C',
-                'risorse' => $risorse,
+                'stato' => $stato,
+                // Passiamo il tipo (Es. "Lezione", "Esercitazione") che il JS inserirà nel badge rosso/rosa
+                'tipoAbbreviazione' => $evento['tipo'] ?? 'Lezione',
+                
+                // Sfruttiamo il campo "dettagliDidattici" per mostrare il curriculum sotto l'orario
+                'dettagliDidattici' => [
+                    [
+                        'partizione' => [
+                            'descrizione' => $evento['percorso_didattico'] ?? ''
+                        ]
+                    ]
+                ],
+
+                // Array risorse compatibile con il parser Insubria
+                'risorse' => [
+                    [
+                        'aula' => [
+                            'descrizione' => $descrizioneAula,
+                            'edificio' => [
+                                'descrizione' => $edificioAula
+                            ]
+                        ],
+                        'docente' => [
+                            'cognome' => $evento['docente'] ?? 'Non assegnato'
+                        ]
+                    ]
+                ],
                 'isPersonale' => false
             ];
         }
-
-        return $eventiNormalizzati;
 
         return $eventiNormalizzati;
     }
