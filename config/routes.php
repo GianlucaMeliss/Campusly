@@ -61,6 +61,7 @@ $router->post('/onboarding', function () use ($requireAuth): void {
 // Nuova rotta API per recuperare i corsi di una specifica università
 $router->get('/api/universita/{id}/corsi', function (string $id): void { (new ApiController())->getCoursesByUniversity($id); });
 $router->get('/api/corsi/{id}/curriculums', function (string $id): void { (new ApiController())->getCourseCurriculums($id); });
+$router->post('/profilo/rimuovi-corso', function () use ($requireAuth): void { $requireAuth(); (new ProfileController())->removeCourse(); });
 
 // Pagine Profilo
 $router->get('/profilo', function () use ($requireAuth): void {

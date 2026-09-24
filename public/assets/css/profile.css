@@ -1,0 +1,14 @@
+.active-course-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-bottom: 12px;
+}
+.course-info h3 { margin: 0 0 4px 0; font-size: 1.1rem; color: var(--primary-color); }
+.course-info p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+.btn-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 8px 12px; border-radius: var(--radius-md); border: none; font-weight: bold; cursor: pointer; }
+.btn-danger:hover { background: #ef4444; color: white; }

@@ -33,7 +33,33 @@ class UserModel extends Model
         return (int)$this->db->lastInsertId();
     }
 
-    // Gestione del "Remember Me"
+    public function getUserCourses(int $userId): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT 
+                uap.id AS profile_id,
+                cc.api_config AS external_course_id, 
+                cc.campus_location,
+                cc.year,
+                c.name AS course_name,
+                u.name AS uni_name,
+                u.adapter_class 
+            FROM user_academic_profiles uap
+            JOIN course_curriculums cc ON uap.curriculum_id = cc.id
+            JOIN courses c ON uap.course_id = c.id
+            JOIN universities u ON c.university_id = u.id
+            WHERE uap.user_id = :user_id
+        ");
+        $stmt->execute(['user_id' => $userId]);
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function removeUserCourse(int $userId, int $profileId): void
+    {
+        $stmt = $this->db->prepare("DELETE FROM user_academic_profiles WHERE id = :id AND user_id = :uid");
+        $stmt->execute(['id' => $profileId, 'uid' => $userId]);
+    }
+    
     public function storeRememberToken(int $userId, string $tokenHash, string $expiresAt): void
     {
         $stmt = $this->db->prepare("
@@ -95,11 +121,15 @@ class UserModel extends Model
             $curriculumId = (int)$this->db->lastInsertId();
         }
 
-        // 3. IL FIX FINALE: Collega l'utente al nuovo curriculum
-        $stmtCheck = $this->db->prepare("SELECT id FROM user_academic_profiles WHERE user_id = :uid");
-        $stmtCheck->execute(['uid' => $userId]);
-        $profile = $stmtCheck->fetch();
-
+        // 3. IL FIX FINALE: Collega l'utente al nuovo curriculum senza sovrascrivere gli altri
+        $stmtCheck = $this->db->prepare("SELECT id FROM user_academic_profiles WHERE user_id = :uid AND curriculum_id = :currid");
+        $stmtCheck->execute(['uid' => $userId, 'currid' => $curriculumId]);
+        
+        // Se non è già iscritto esattamente a questa combo, lo inseriamo
+        if (!$stmtCheck->fetch()) {
+            $insProf = $this->db->prepare("INSERT INTO user_academic_profiles (user_id, course_id, curriculum_id, enrollment_year) VALUES (:uid, :cid, :currid, :year)");
+            $insProf->execute(['uid' => $userId, 'cid' => $courseId, 'currid' => $curriculumId, 'year' => date('Y')]);
+        }
         if ($profile) {
             // Aggiorna il profilo esistente con il nuovo id
             $updProf = $this->db->prepare("UPDATE user_academic_profiles SET course_id = :cid, curriculum_id = :currid WHERE id = :pid");

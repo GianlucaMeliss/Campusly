@@ -22,23 +22,28 @@ class ProfileController
     {
         $userId = (int)$_SESSION['user_id'];
         
-        $courseConfig = $this->userModel->getUserCourseConfig($userId);
-        $extConfig = $courseConfig ? json_decode($courseConfig['external_course_id'], true) : [];
+        $courses = $this->userModel->getUserCourses($userId);
         $hiddenCourses = $this->hiddenCourseModel->getHiddenCourses($userId);
 
-        View::render('pages/profile', [
+        \App\Core\View::render('pages/profile', [
             'pageTitle' => 'Il Mio Profilo - Campusly',
             'activeMenu' => 'profile',
-            'user' => [
-                'name' => $_SESSION['user_name'],
-            ],
-            'course' => [
-                'name' => $courseConfig['name'] ?? '',
-                'linkId' => $extConfig['linkCalendarioId'] ?? '',
-                'clienteId' => $extConfig['clienteId'] ?? ''
-            ],
+            'user' => ['name' => $_SESSION['user_name']],
+            'courses' => $courses,
             'hiddenCourses' => $hiddenCourses
         ]);
+    }
+
+    public function removeCourse(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profile_id'])) {
+            $userId = (int)$_SESSION['user_id'];
+            $profileId = (int)$_POST['profile_id'];
+            $this->userModel->removeUserCourse($userId, $profileId);
+            
+            header('Location: ' . BASE_PATH . '/profilo?status=removed');
+            exit;
+        }
     }
 
     public function updateCourse(): void

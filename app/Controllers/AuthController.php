@@ -129,19 +129,19 @@ class AuthController
 
     public function showOnboarding(): void
     {
-        // Controllo esistenza configurazione
-        $config = (new \App\Models\UserModel())->getUserCourseConfig((int)$_SESSION['user_id']);
-        if ($config) {
-            header('Location: ' . BASE_PATH . '/dashboard');
-            exit;
+        // Se NON c'è il parametro ?add=1, controlliamo se ha già dei corsi per mandarlo alla dashboard
+        if (!isset($_GET['add'])) {
+            $courses = (new \App\Models\UserModel())->getUserCourses((int)$_SESSION['user_id']);
+            if (!empty($courses)) {
+                header('Location: ' . BASE_PATH . '/dashboard');
+                exit;
+            }
         }
 
-        // Estraiamo dinamicamente le università dal database
         $db = \App\Core\Database::getInstance();
         $stmt = $db->query("SELECT id, name, logo_path FROM universities WHERE is_active = 1 ORDER BY name ASC");
         $universities = $stmt->fetchAll();
 
-        // Passiamo le università alla View
         \App\Core\View::render('pages/onboarding', [
             'pageTitle' => 'Configurazione - Campusly',
             'pageCss' => 'onboarding',

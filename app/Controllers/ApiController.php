@@ -176,43 +176,24 @@ class ApiController
         $dataInizio = $_GET['inizio'] ?? date('Y-m-d\T00:00:00.000\Z');
         $dataFine = $_GET['fine'] ?? date('Y-m-d\T23:59:59.000\Z', strtotime('+7 days'));
 
-        // 2. Lettura Dinamica dal Database
         $userModel = new \App\Models\UserModel();
-        $courseData = $userModel->getUserCourseConfig($userId);
+        $userCourses = $userModel->getUserCourses($userId);
 
-        if (!$courseData) {
+        if (empty($userCourses)) {
             http_response_code(400);
-            echo json_encode(['error' => 'Profilo accademico non configurato']);
+            echo json_encode(['error' => 'Nessun corso configurato']);
             exit;
         }
 
-        // Il JSON che abbiamo salvato durante l'onboarding (contiene linkCalendarioId e clienteId)
-        $extConfig = json_decode($courseData['external_course_id'], true);
+        $tuttiGliEventi = [];
         
-        // Assegniamo i valori dinamici
-        $courseConfig = [
-            'linkCalendarioId' => $extConfig['linkCalendarioId'] ?? '',
-            'clienteId' => $extConfig['clienteId'] ?? '',
-        ];
-        
-        // 3. Adapter Dinamico (Estraiamo il nome della classe dal DB, es: \App\Adapters\CinecaAdapter)
-        $adapterClass = $courseData['adapter_class'];
-
-        if (!class_exists($adapterClass)) {
-            http_response_code(500);
-            echo json_encode(['error' => "Adapter non trovato: $adapterClass"]);
-            exit;
-        }
-
-        // 4. Logica di Micro-Cache (5 minuti) - Usiamo i codici univoci nel nome del file!
+        // Generiamo una chiave di cache che tenga conto di TUTTI i corsi dell'utente
+        $hashCorsi = md5(serialize(array_column($userCourses, 'external_course_id')));
         $dataPulita = substr(preg_replace('/[^0-9]/', '', $dataInizio), 0, 8);
-        $cacheDir = BASEPATH . '/data/cache';
-        if (!is_dir($cacheDir)) {
-            mkdir($cacheDir, 0755, true);
-        }
         
-        $hashCorso = md5($courseData['external_course_id']);
-        $cacheFile = $cacheDir . '/settimana_' . $dataPulita . '_' . $hashCorso . '.json';
+        $cacheDir = BASE_PATH . '/data/cache';
+        if (!is_dir($cacheDir)) mkdir($cacheDir, 0755, true);
+        $cacheFile = $cacheDir . '/settimana_' . $dataPulita . '_' . $hashCorsi . '.json';
         
         if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
             header("X-Cache-Status: HIT-MICROCACHE");
@@ -223,16 +204,20 @@ class ApiController
         header("X-Cache-Status: MISS-FETCHING-API");
 
         try {
-            // 5. Eseguiamo la fetch all'università giusta
-            /** @var \App\Adapters\UniversityAdapterInterface $adapter */
-            $adapter = new $adapterClass();
-            $eventi = $adapter->getSchedule($dataInizio, $dataFine, $courseConfig);
+            foreach ($userCourses as $courseData) {
+                $extConfig = json_decode($courseData['external_course_id'], true);
+                if (isset($extConfig['linkCalendarioId']) && $extConfig['linkCalendarioId'] === 'AUTO') continue; // Salta i non ancora mappati
 
-            $jsonResponse = json_encode($eventi);
-            
-            // Salviamo la cache per i futuri studenti dello stesso corso
+                $adapterClass = $courseData['adapter_class'];
+                if (class_exists($adapterClass)) {
+                    $adapter = new $adapterClass();
+                    $eventiCorso = $adapter->getSchedule($dataInizio, $dataFine, $extConfig);
+                    $tuttiGliEventi = array_merge($tuttiGliEventi, $eventiCorso);
+                }
+            }
+
+            $jsonResponse = json_encode($tuttiGliEventi);
             file_put_contents($cacheFile, $jsonResponse);
-            
             echo $jsonResponse;
 
         } catch (\Exception $e) {
