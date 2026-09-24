@@ -64,14 +64,16 @@ $activePage = $activeMenu ?? ($pageCss ?? 'home');
                 <?php if ($isLoggedIn): ?>
                     <a href="<?= $route('/dashboard') ?>" class="<?= $activePage === 'calendar' ? 'active-link' : '' ?>">Calendario</a>
                     <a href="<?= $route('/profilo') ?>" class="<?= $activePage === 'profile' ? 'active-link' : '' ?>">Profilo</a>
-                    <a href="<?= $route('/logout') ?>">Esci</a>
+                    <!-- Tasto esci colorato per distinguerlo visivamente -->
+                    <a href="<?= $route('/logout') ?>" style="color: #ef4444 !important; font-weight: 600;">Esci</a>
                 <?php else: ?>
-                    <!-- Pulsante Accedi bianco con bordi leggeri -->
-                    <a href="<?= $route('/login') ?>" class="btn btn-sm" style="background-color: var(--surface); color: var(--text-primary); border: 1px solid var(--border-color); box-shadow: var(--shadow-soft);">Accedi</a>
-                    <!-- Pulsante Inizia Ora in evidenza -->
+                    <!-- Testo "Accedi" pulito e ad alto contrasto -->
+                    <a href="<?= $route('/login') ?>" style="color: var(--text-primary) !important; font-weight: 700; font-size: 1rem;">Accedi</a>
+                    <!-- Bottone "Inizia ora" primario -->
                     <a href="<?= $route('/register') ?>" class="btn btn-primary btn-sm">Inizia ora</a>
                 <?php endif; ?>
             </nav>
+            
         </div>
     </header>
     <main>

@@ -17,12 +17,10 @@ $isLoggedIn = isset($_SESSION['user_id']);
                 
                 <div class="hero-cta">
                     <?php if ($isLoggedIn): ?>
-                        <!-- Aggiornato con $route() -->
-                        <a href="<?= htmlspecialchars($route('/dashboard')) ?>" class="btn btn-primary">Apri il tuo Calendario</a>
+                        <a href="<?= $route('/dashboard') ?>" class="btn btn-primary">Apri il tuo Calendario</a>
                     <?php else: ?>
-                        <!-- Aggiornato con $route() -->
-                        <a href="<?= htmlspecialchars($route('/register')) ?>" class="btn btn-primary">Inizia gratis</a>
-                        <a href="<?= htmlspecialchars($route('/login')) ?>" class="btn btn-secondary">Accedi</a>
+                        <a href="<?= $route('/register') ?>" class="btn btn-primary">Inizia gratis</a>
+                        <a href="<?= $route('/login') ?>" class="btn" style="background-color: var(--text-primary); color: var(--bg-main);">Accedi</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -58,7 +56,6 @@ $isLoggedIn = isset($_SESSION['user_id']);
     </section>
 
     <!-- Sezione Features (Sotto la Hero) -->
-    <!-- Sezione Features (Layout Bento Box) -->
     <section class="features-section">
         <div class="container">
             <div class="section-header" style="text-align: center; margin-bottom: 60px;">
