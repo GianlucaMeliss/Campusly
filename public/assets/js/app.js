@@ -107,18 +107,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const ua = navigator.userAgent;
         
-        // 1. Rileva iOS: copre iPhone, vecchi iPad e i nuovi iPadOS (che si fingono Mac ma hanno il touch)
+        // 1. Rileva iOS (iPhone, vecchi iPad e nuovi iPadOS "camuffati" da Mac ma col touch)
         let isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-        if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) {
+        if (ua.includes('Mac') && navigator.maxTouchPoints > 1) {
             isIOS = true;
         }
 
-        // 2. Rileva un VERO Mac (escludendo gli iPad rilevati sopra)
-        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0 && !isIOS;
-        const isMacSafari = isMac && /^((?!chrome|android).)*safari/i.test(ua);
+        // 2. Rileva un VERO Mac (Desktop/Laptop, escludendo l'iPad rilevato sopra)
+        const isMac = (ua.includes('Macintosh') || ua.includes('Mac OS X')) && !isIOS;
+        const isMacSafari = isMac && ua.includes('Safari') && !ua.includes('Chrome') && !ua.includes('Chromium');
         
         // 3. Rileva Android
-        const isAndroid = /Android/i.test(ua);
+        const isAndroid = ua.includes('Android');
 
         // Funzione per mostrare il modale con ritardo
         const showModal = () => {
