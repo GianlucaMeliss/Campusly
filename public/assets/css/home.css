@@ -259,48 +259,91 @@
 }
 
 /* =========================================
-   ADATTAMENTO MOBILE
+   ADATTAMENTO MOBILE (Effetto Widget iOS)
    ========================================= */
 @media (max-width: 992px) {
     .bento-grid {
-        /* Su tablet/mobile tutto collassa in una colonna singola */
-        grid-template-columns: 1fr;
+        /* Passiamo a una griglia a 2 colonne anziché 1 singola colonna noiosa */
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
     }
 
+    .bento-card {
+        padding: 24px; /* Riduciamo i padding spropositati per il mobile */
+    }
+
+    /* La card principale prende tutta la riga (2 colonne) */
     .bento-large {
-        grid-column: span 1;
-        grid-row: span 1;
+        grid-column: span 2;
+        grid-row: auto;
         flex-direction: column;
         align-items: flex-start;
     }
 
     .bento-large .bento-content {
         padding-right: 0;
-        margin-bottom: 30px;
+        margin-bottom: 24px;
     }
 
+    /* La card CTA finale prende tutta la riga (2 colonne) */
     .bento-wide {
-        grid-column: span 1;
+        grid-column: span 2;
     }
 
     .wide-flex {
         flex-direction: column;
         align-items: flex-start;
-        gap: 24px;
+        gap: 20px;
     }
     
     .bento-visual {
         width: 100%;
         box-sizing: border-box;
+        padding: 16px;
     }
 }
 
-/* Responsive */
+/* Smartphone stretti (iPhone classici) */
+@media (max-width: 600px) {
+    .features-section {
+        padding: 40px 0 80px;
+    }
+
+    .section-header h2 {
+        font-size: 2.2rem !important; /* Ridimensiona il titolo troppo grosso */
+    }
+
+    .bento-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+        margin-bottom: 16px;
+        border-radius: 12px;
+    }
+
+    .bento-card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+    }
+
+    /* Le 2 card affiancate diventano dei Widget: limitiamo le righe di testo per mantenere i quadrati simmetrici */
+    .bento-card:not(.bento-large):not(.bento-wide) p {
+        font-size: 0.85rem;
+        line-height: 1.4;
+        /* Taglia il testo alla terza riga aggiungendo i puntini... */
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
+
+/* Responsive Hero */
 @media (max-width: 900px) {
     .hero-grid {
         grid-template-columns: 1fr;
         text-align: center;
-        gap: 60px;
+        gap: 40px; /* Ridotto per non avere troppi spazi vuoti */
     }
     
     .hero-text {
@@ -312,15 +355,36 @@
     }
 
     .hero-visual {
-        height: 350px;
+        height: 280px; /* Più compatto e proporzionato */
+        position: relative;
+        display: flex;
+        justify-content: center;
     }
     
     .floating-card {
-        width: 90%;
-        max-width: 320px;
+        width: 85%;
+        max-width: 280px;
+        /* Forziamo il centro annullando il left/right del desktop */
+        left: 50% !important;
+        right: auto !important;
     }
     
-    .card-1 { top: 0; right: 5%; }
-    .card-2 { top: 120px; left: 5%; }
-    .card-3 { bottom: 0; right: 10%; }
+    /* Effetto "Wallet": Carte impilate con profondità */
+    .card-1 { 
+        top: 0; 
+        z-index: 3;
+        transform: translateX(-50%);
+    }
+    .card-2 { 
+        top: 55px; 
+        z-index: 2;
+        transform: translateX(-50%) scale(0.95);
+        opacity: 0.95;
+    }
+    .card-3 { 
+        top: 110px; 
+        z-index: 1;
+        transform: translateX(-50%) scale(0.9);
+        opacity: 0.85;
+    }
 }

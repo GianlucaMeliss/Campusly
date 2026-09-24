@@ -1,4 +1,4 @@
-<<?php
+<?php
 $isLoggedIn = isset($_SESSION['user_id']);
 ?>
 
