@@ -116,13 +116,30 @@
                     </div>
                 </form>
             </div>
+            <!-- MODALE RICHIESTA INSERIMENTO -->
+            <div id="modal-richiesta" class="modale-overlay hidden" style="display: none;">
+                <div class="modale-content highlight-box" style="margin: auto;">
+                    <button class="modale-close" onclick="chiudiRichiesta()">&times;</button>
+                    <h2 id="modal-richiesta-titolo" class="section-title">Richiedi Inserimento</h2>
+                    <p class="section-subtitle">Inserisci il nome esatto. Il nostro team mapperà i codici e lo aggiungerà il prima possibile.</p>
+                    
+                    <form id="form-richiesta" class="campusly-form">
+                        <input type="hidden" id="richiesta-tipo" value="">
+                        <div class="form-group">
+                            <label id="modal-richiesta-label">Nome</label>
+                            <input type="text" id="richiesta-nome" required placeholder="Scrivi qui...">
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="btn-richiesta-submit">Invia Richiesta</button>
+                    </form>
+                </div>
+            </div>
+        </section>
 
-        </div>
-    </div>
-</section>
-
-<!-- 1. Passiamo il base path al JS -->
-<script>window.APP_BASE_PATH = '<?= htmlspecialchars($basePath ?? '') ?>';</script>
+<!-- Passiamo le variabili essenziali al JS -->
+<script>
+    window.APP_BASE_PATH = '<?= htmlspecialchars($basePath ?? '') ?>';
+    window.CSRF_TOKEN = '<?= htmlspecialchars($_SESSION['csrf_token']) ?>';
+</script>
 
 <!-- 2. Carichiamo il file JS esterno corretto -->
 <script src="<?= htmlspecialchars($url('/assets/js/onboarding.js')) ?>"></script>

@@ -209,11 +209,64 @@ function selezionaToggle(element, type, value) {
     }
 }
 
-async function apriRichiesta(tipo) {
-    const msg = tipo === 'uni' ? "la tua Università" : "il tuo Corso";
-    const request = prompt(`Come si chiama ${msg}? Lo aggiungeremo il prima possibile!`);
+// --- GESTIONE RICHIESTE (EMAIL + DB) ---
+
+function apriRichiesta(tipo) {
+    const modal = document.getElementById('modal-richiesta');
+    const titolo = document.getElementById('modal-richiesta-titolo');
+    const label = document.getElementById('modal-richiesta-label');
+    const tipoInput = document.getElementById('richiesta-tipo');
     
-    if (request && request.trim() !== '') {
-        alert("Richiesta inviata con successo! Il nostro team la valuterà a breve.");
+    if (tipo === 'uni') {
+        titolo.textContent = "Richiedi Università";
+        label.textContent = "Nome esatto dell'Ateneo";
+    } else {
+        titolo.textContent = "Richiedi Corso";
+        label.textContent = "Nome esatto del Corso di Laurea";
     }
+    
+    tipoInput.value = tipo;
+    document.getElementById('richiesta-nome').value = '';
+    
+    modal.style.display = 'flex';
 }
+
+function chiudiRichiesta() {
+    document.getElementById('modal-richiesta').style.display = 'none';
+}
+
+// Gestione invio form
+document.getElementById('form-richiesta').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const btn = document.getElementById('btn-richiesta-submit');
+    const originalText = btn.textContent;
+    btn.textContent = 'Invio in corso...';
+    btn.disabled = true;
+
+    const payload = {
+        type: document.getElementById('richiesta-tipo').value,
+        name: document.getElementById('richiesta-nome').value,
+        csrf_token: window.CSRF_TOKEN
+    };
+
+    try {
+        const response = await fetch(`${apiBasePath}/api/richiesta-onboarding`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            alert("Richiesta inviata con successo! Ti avviseremo appena sarà disponibile.");
+            chiudiRichiesta();
+        } else {
+            alert("Impossibile inviare la richiesta. Riprova più tardi.");
+        }
+    } catch (err) {
+        alert("Errore di rete. Controlla la connessione.");
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+});

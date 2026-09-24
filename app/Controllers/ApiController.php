@@ -380,4 +380,67 @@ class ApiController
         }
         exit;
     }
+
+    public function submitOnboardingRequest(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
+        
+        header("Content-Type: application/json; charset=UTF-8");
+        
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Non autenticato']);
+            exit;
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        // Verifica CSRF (Sicurezza)
+        if (!isset($data['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $data['csrf_token'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Token CSRF non valido']);
+            exit;
+        }
+
+        $type = $data['type'] ?? '';
+        $name = trim(htmlspecialchars($data['name'] ?? ''));
+        
+        if (empty($name)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Nome mancante']);
+            exit;
+        }
+
+        $userId = (int)$_SESSION['user_id'];
+        $reqType = ($type === 'uni') ? 'new_university' : 'new_course';
+        
+        // 1. Salvataggio nel Database
+        $db = \App\Core\Database::getInstance();
+        $stmt = $db->prepare("INSERT INTO onboarding_requests (user_id, request_type, request_data) VALUES (:uid, :type, :data)");
+        $stmt->execute([
+            'uid' => $userId,
+            'type' => $reqType,
+            'data' => $name
+        ]);
+        
+        // 2. Invio Email all'Amministratore
+        $appConfig = require BASEPATH . '/config/app.php';
+        $to = $appConfig['mail']['contact_email'] ?? 'admin@localhost';
+        
+        $tipoTesto = ($type === 'uni') ? 'Università' : 'Corso';
+        $subject = "🔔 Campusly - Richiesta nuovo inserimento: $tipoTesto";
+        
+        $message = "Ciao!\nUno studente (ID Utente: $userId) non ha trovato il suo percorso in fase di onboarding e ha richiesto un inserimento.\n\n";
+        $message .= "Tipo Richiesta: $tipoTesto\n";
+        $message .= "Nome Fornito: $name\n\n";
+        $message .= "Puoi aggiungere i dati dal tuo database aziendale.\n";
+        
+        $domain = $_SERVER['HTTP_HOST'] ?? 'campusly.it';
+        $headers = "From: noreply@$domain\r\nReply-To: noreply@$domain\r\nContent-Type: text/plain; charset=UTF-8\r\n";
+        
+        mail($to, $subject, $message, $headers);
+        
+        echo json_encode(['status' => 'success']);
+        exit;
+    }
 }

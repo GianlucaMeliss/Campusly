@@ -22,6 +22,7 @@ $router->get('/api/eventi-personali/delete/{id}', function (string $id): void { 
 $router->get('/api/corsi-nascosti', function (): void { (new ApiController())->getHiddenCourses(); });
 $router->post('/api/corsi-nascosti/toggle', function (): void { (new ApiController())->toggleHiddenCourse(); });
 $router->get('/api/calendario', function (): void { (new ApiController())->getCalendarEvents(); });
+$router->post('/api/richiesta-onboarding', function () { (new \App\Controllers\ApiController())->submitOnboardingRequest(); });
 
 // Middleware/Controllo di Sicurezza (Funzione helper)
 $requireAuth = function() {
@@ -104,8 +105,3 @@ $router->get('/servizi', function (): void {
 $router->get('/servizi/{slug}', function (string $slug): void {
     (new PageController())->showItem($slug);
 });
-
-// Esempio di rotta dinamica per gestire futuri elementi (es. servizi, portfolio)
-// $router->get('/item/{slug}', function (string $slug): void {
-//     (new PageController())->showItem($slug);
-// });
