@@ -28,6 +28,7 @@ class ProfileController
         \App\Core\View::render('pages/profile', [
             'pageTitle' => 'Il Mio Profilo - Campusly',
             'activeMenu' => 'profile',
+            'pageCss' => 'profile',
             'user' => ['name' => $_SESSION['user_name']],
             'courses' => $courses,
             'hiddenCourses' => $hiddenCourses

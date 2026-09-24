@@ -86,7 +86,6 @@ class UserModel extends Model
         return $user ?: null;
     }
 
-    // In app/Models/UserModel.php
     public function saveAcademicProfile(int $userId, int $universityId, string $courseName, string $sede, int $anno, string $apiConfig): void
     {
         // 1. Cerca il corso principale
@@ -109,33 +108,22 @@ class UserModel extends Model
 
         if ($curriculum) {
             $curriculumId = (int)$curriculum['id'];
-            // Se siamo nello step manuale per smanettoni, sovrascriviamo l'api_config "AUTO" con i dati reali
+            // Aggiorna API config se non è quello automatico
             if ($apiConfig !== '{"linkCalendarioId":"AUTO","clienteId":"AUTO"}') {
                 $upd = $this->db->prepare("UPDATE course_curriculums SET api_config = :conf WHERE id = :id");
                 $upd->execute(['conf' => $apiConfig, 'id' => $curriculumId]);
             }
         } else {
-            // Se non esiste, lo inseriamo
             $stmtInsC = $this->db->prepare("INSERT INTO course_curriculums (course_id, campus_location, year, api_config) VALUES (:cid, :sede, :anno, :conf)");
             $stmtInsC->execute(['cid' => $courseId, 'sede' => $sede, 'anno' => $anno, 'conf' => $apiConfig]);
             $curriculumId = (int)$this->db->lastInsertId();
         }
 
-        // 3. IL FIX FINALE: Collega l'utente al nuovo curriculum senza sovrascrivere gli altri
+        // 3. IL FIX FINALE: Inserisce il collegamento utente-curriculum solo se non esiste già
         $stmtCheck = $this->db->prepare("SELECT id FROM user_academic_profiles WHERE user_id = :uid AND curriculum_id = :currid");
         $stmtCheck->execute(['uid' => $userId, 'currid' => $curriculumId]);
         
-        // Se non è già iscritto esattamente a questa combo, lo inseriamo
         if (!$stmtCheck->fetch()) {
-            $insProf = $this->db->prepare("INSERT INTO user_academic_profiles (user_id, course_id, curriculum_id, enrollment_year) VALUES (:uid, :cid, :currid, :year)");
-            $insProf->execute(['uid' => $userId, 'cid' => $courseId, 'currid' => $curriculumId, 'year' => date('Y')]);
-        }
-        if ($profile) {
-            // Aggiorna il profilo esistente con il nuovo id
-            $updProf = $this->db->prepare("UPDATE user_academic_profiles SET course_id = :cid, curriculum_id = :currid WHERE id = :pid");
-            $updProf->execute(['cid' => $courseId, 'currid' => $curriculumId, 'pid' => $profile['id']]);
-        } else {
-            // Se l'utente non aveva alcun profilo, crealo
             $insProf = $this->db->prepare("INSERT INTO user_academic_profiles (user_id, course_id, curriculum_id, enrollment_year) VALUES (:uid, :cid, :currid, :year)");
             $insProf->execute(['uid' => $userId, 'cid' => $courseId, 'currid' => $curriculumId, 'year' => date('Y')]);
         }

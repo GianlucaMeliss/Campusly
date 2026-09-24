@@ -1,3 +1,33 @@
+/* =========================================
+   PAGINA PROFILO (Multi-corso)
+   ========================================= */
+.profile-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.section-title {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.section-subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.empty-state {
+    color: var(--text-secondary);
+    font-style: italic;
+    margin: 0;
+}
+
+/* --- Card Corsi Attivi --- */
 .active-course-card {
     display: flex;
     justify-content: space-between;
@@ -7,8 +37,121 @@
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     margin-bottom: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
-.course-info h3 { margin: 0 0 4px 0; font-size: 1.1rem; color: var(--primary-color); }
-.course-info p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
-.btn-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 8px 12px; border-radius: var(--radius-md); border: none; font-weight: bold; cursor: pointer; }
-.btn-danger:hover { background: #ef4444; color: white; }
+
+.active-course-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
+}
+
+.course-info h3 {
+    margin: 0 0 6px 0;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.course-info p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.btn-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    border: none;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, transform 0.1s;
+}
+
+.btn-danger:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-danger:active {
+    transform: scale(0.95);
+}
+
+.btn-full-width {
+    width: 100%;
+    display: block;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+/* --- Lista Corsi Nascosti --- */
+.hidden-courses-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hidden-course-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-main);
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.hidden-course-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
+}
+
+.course-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.btn-restore {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: bold;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.btn-restore:hover {
+    background: #059669;
+}
+
+.btn-restore:active {
+    transform: scale(0.95);
+}
+
+/* --- Allerte --- */
+.alert {
+    padding: 16px;
+    border-radius: var(--radius-md);
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 24px;
+}
+
+.alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+body.dark-mode .alert-success {
+    color: #34d399;
+}
