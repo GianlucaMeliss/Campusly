@@ -68,22 +68,33 @@ async function selezionaCorso(courseId, nomeCorso) {
 
     try {
         const response = await fetch(`${apiBasePath}/api/corsi/${courseId}/curriculums`);
-        const curriculums = await response.json();
-        wizardData.loadedCurriculums = curriculums; // Salviamo i dati per poterli filtrare dopo
+        
+        // 1. Invece di fare subito .json(), leggiamo il testo grezzo per intercettare errori PHP
+        const rawText = await response.text(); 
+        
+        let curriculums;
+        try {
+            curriculums = JSON.parse(rawText);
+        } catch (jsonError) {
+            console.error("❌ IL SERVER NON HA RESTITUITO UN JSON VALIDO. Risposta ricevuta:");
+            console.error(rawText);
+            throw new Error("Risposta API non valida");
+        }
+
+        wizardData.loadedCurriculums = curriculums;
 
         if (curriculums.length > 0) {
-            // Estrapoliamo SOLO le sedi per ora
             const sedi = [...new Set(curriculums.map(c => c.campus_location).filter(Boolean))];
 
             if (sedi.length === 1) {
-                // Se c'è una sola sede, la selezioniamo e carichiamo subito gli anni disponibili per lei
-                selezionaToggle(null, 'sede', sedi[0], true);
+                // Auto-seleziona l'unica sede (ritardato di 50ms per assicurare il render DOM)
+                setTimeout(() => {
+                    selezionaToggle(null, 'sede', sedi[0], true);
+                }, 50);
             } else {
-                // Se ci sono più sedi, le mostriamo e aspettiamo il clic
                 containerSede.innerHTML = sedi.map(s => `<div class="toggle-btn" onclick="selezionaToggle(this, 'sede', '${s}')">${s}</div>`).join('');
             }
         } else {
-            // Caso di fallback: il corso è nel DB ma non ha nessun curriculum
             wizardData.sede = 'Principale'; wizardData.anno = 1;
             document.getElementById('input-sede').value = 'Principale';
             document.getElementById('input-anno').value = 1;
@@ -91,8 +102,10 @@ async function selezionaCorso(courseId, nomeCorso) {
             containerAnno.innerHTML = `<div class="toggle-btn selected" style="pointer-events:none;">1° Anno</div>`;
             document.getElementById('btn-submit').removeAttribute('disabled');
         }
+
     } catch (e) {
-        containerSede.innerHTML = '<p style="color:#ef4444;">Errore di caricamento</p>';
+        console.error("❌ ERRORE JS CATTURATO:", e);
+        containerSede.innerHTML = '<p style="color:#ef4444;">Errore di caricamento. Apri la console (F12).</p>';
         containerAnno.innerHTML = '';
     }
 }
