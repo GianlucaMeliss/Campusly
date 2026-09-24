@@ -338,12 +338,19 @@
     }
 }
 
-/* Responsive Hero */
+/* =========================================
+   RESPONSIVE HERO E SPAZIATURE MOBILE
+   ========================================= */
 @media (max-width: 900px) {
+    /* 1. Riduciamo l'enorme spazio vuoto sotto l'header */
+    .hero-section {
+        padding-top: 20px !important; 
+    }
+    
     .hero-grid {
         grid-template-columns: 1fr;
         text-align: center;
-        gap: 40px;
+        gap: 30px; /* Ridotto per avvicinare i contenuti */
     }
     
     .hero-text {
@@ -354,38 +361,29 @@
         justify-content: center;
     }
 
+    /* 2. Le 3 card: addio impilamento, benvenuta colonna leggibile */
     .hero-visual {
-        height: 300px; 
-        position: relative;
+        height: auto; /* Altezza dinamica, niente più tagli */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px; /* Lo spazietto perfetto per leggerle tutte */
+        padding-bottom: 10px;
     }
     
     .floating-card {
-        /* Il trucco magico per centrare elementi assoluti senza usare transform */
-        left: 0 !important;
-        right: 0 !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+        position: relative !important; /* Le sleghiamo dal posizionamento forzato */
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        margin: 0 !important;
+        width: 90% !important;
+        max-width: 320px;
+        opacity: 1 !important; /* Nessuna sbiaditura */
     }
     
-    /* Effetto "Wallet": Carte impilate e centrate alla perfezione */
-    .card-1 { 
-        top: 0; 
-        z-index: 3;
-        width: 85%;
-        max-width: 280px;
-    }
-    .card-2 { 
-        top: 55px; 
-        z-index: 2;
-        width: 78%; /* Più stretta per dare profondità */
-        max-width: 260px;
-        opacity: 0.95;
-    }
-    .card-3 { 
-        top: 110px; 
-        z-index: 1;
-        width: 71%; /* Ancora più stretta */
-        max-width: 240px;
-        opacity: 0.85;
+    /* 3. Avviciniamo la sezione sotto (i Bento Box) */
+    .features-section {
+        padding-top: 30px !important; /* Tagliamo il margine verso il basso */
     }
 }
