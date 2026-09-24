@@ -76,8 +76,8 @@ class StataleAdapter implements UniversityAdapterInterface
             $startStr = $dataPulita . ' ' . $evento['ora_inizio'];
             $endStr = $dataPulita . ' ' . $evento['ora_fine'];
             
-            $isoStart = date('Y-m-d\TH:i:s.000\Z', strtotime($startStr));
-            $isoEnd = date('Y-m-d\TH:i:s.000\Z', strtotime($endStr));
+            $isoStart = date('Y-m-d\TH:i:s.000', strtotime($startStr));
+            $isoEnd = date('Y-m-d\TH:i:s.000', strtotime($endStr));
 
             // Formattazione Aule
             $risorse = [];
