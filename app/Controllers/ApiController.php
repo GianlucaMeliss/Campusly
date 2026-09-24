@@ -395,7 +395,7 @@ class ApiController
 
         $data = json_decode(file_get_contents('php://input'), true);
         
-        // Verifica CSRF (Sicurezza)
+        // Verifica CSRF
         if (!isset($data['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $data['csrf_token'])) {
             http_response_code(403);
             echo json_encode(['error' => 'Token CSRF non valido']);
@@ -404,6 +404,7 @@ class ApiController
 
         $type = $data['type'] ?? '';
         $name = trim(htmlspecialchars($data['name'] ?? ''));
+        $courseExtra = trim(htmlspecialchars($data['course_extra'] ?? '')); // Campo aggiuntivo
         
         if (empty($name)) {
             http_response_code(400);
@@ -414,26 +415,46 @@ class ApiController
         $userId = (int)$_SESSION['user_id'];
         $reqType = ($type === 'uni') ? 'new_university' : 'new_course';
         
-        // 1. Salvataggio nel Database
         $db = \App\Core\Database::getInstance();
+
+        // 1. Recupero email utente per la notifica
+        $stmtUser = $db->prepare("SELECT email FROM users WHERE id = :uid");
+        $stmtUser->execute(['uid' => $userId]);
+        $user = $stmtUser->fetch();
+        $userEmail = $user ? $user['email'] : 'Email sconosciuta';
+
+        // Format per il DB
+        $requestDataToSave = $name;
+        if ($type === 'uni' && !empty($courseExtra)) {
+            $requestDataToSave .= " (Corso richiesto: " . $courseExtra . ")";
+        }
+        
+        // 2. Salvataggio nel Database
         $stmt = $db->prepare("INSERT INTO onboarding_requests (user_id, request_type, request_data) VALUES (:uid, :type, :data)");
         $stmt->execute([
             'uid' => $userId,
             'type' => $reqType,
-            'data' => $name
+            'data' => $requestDataToSave
         ]);
         
-        // 2. Invio Email all'Amministratore
+        // 3. Invio Email all'Amministratore
         $appConfig = require BASEPATH . '/config/app.php';
         $to = $appConfig['mail']['contact_email'] ?? 'admin@localhost';
         
         $tipoTesto = ($type === 'uni') ? 'Università' : 'Corso';
         $subject = "🔔 Campusly - Richiesta nuovo inserimento: $tipoTesto";
         
-        $message = "Ciao!\nUno studente (ID Utente: $userId) non ha trovato il suo percorso in fase di onboarding e ha richiesto un inserimento.\n\n";
+        $message = "Ciao!\nUno studente ha richiesto un nuovo inserimento durante l'onboarding.\n\n";
+        $message .= "Richiedente: $userEmail\n";
         $message .= "Tipo Richiesta: $tipoTesto\n";
-        $message .= "Nome Fornito: $name\n\n";
-        $message .= "Puoi aggiungere i dati dal tuo database aziendale.\n";
+        $message .= "Nome " . ($type === 'uni' ? 'Ateneo' : 'Corso') . ": $name\n";
+        
+        // Aggiungiamo il corso se la richiesta parte dall'università
+        if ($type === 'uni' && !empty($courseExtra)) {
+            $message .= "Corso di Laurea associato: $courseExtra\n";
+        }
+        
+        $message .= "\nPuoi aggiungere i dati dal tuo database aziendale.\n";
         
         $domain = $_SERVER['HTTP_HOST'] ?? 'campusly.it';
         $headers = "From: noreply@$domain\r\nReply-To: noreply@$domain\r\nContent-Type: text/plain; charset=UTF-8\r\n";

@@ -211,18 +211,27 @@ function selezionaToggle(element, type, value) {
 
 // --- GESTIONE RICHIESTE (EMAIL + DB) ---
 
+// --- GESTIONE RICHIESTE (EMAIL + DB) ---
+
 function apriRichiesta(tipo) {
     const modal = document.getElementById('modal-richiesta');
     const titolo = document.getElementById('modal-richiesta-titolo');
     const label = document.getElementById('modal-richiesta-label');
     const tipoInput = document.getElementById('richiesta-tipo');
     
+    const gruppoCorsoExtra = document.getElementById('gruppo-corso-extra');
+    const inputCorsoExtra = document.getElementById('richiesta-corso-extra');
+    
     if (tipo === 'uni') {
         titolo.textContent = "Richiedi Università";
         label.textContent = "Nome esatto dell'Ateneo";
+        gruppoCorsoExtra.style.display = 'flex'; // Mostra il campo del corso aggiuntivo
+        inputCorsoExtra.value = '';
     } else {
         titolo.textContent = "Richiedi Corso";
         label.textContent = "Nome esatto del Corso di Laurea";
+        gruppoCorsoExtra.style.display = 'none'; // Nascondilo se sta già richiedendo solo il corso
+        inputCorsoExtra.value = '';
     }
     
     tipoInput.value = tipo;
@@ -235,7 +244,6 @@ function chiudiRichiesta() {
     document.getElementById('modal-richiesta').style.display = 'none';
 }
 
-// Gestione invio form
 document.getElementById('form-richiesta').addEventListener('submit', async function(e) {
     e.preventDefault();
     
@@ -247,6 +255,7 @@ document.getElementById('form-richiesta').addEventListener('submit', async funct
     const payload = {
         type: document.getElementById('richiesta-tipo').value,
         name: document.getElementById('richiesta-nome').value,
+        course_extra: document.getElementById('richiesta-corso-extra').value, // Invio del nuovo campo extra
         csrf_token: window.CSRF_TOKEN
     };
 
