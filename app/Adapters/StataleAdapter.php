@@ -47,6 +47,8 @@ class StataleAdapter implements UniversityAdapterInterface
             'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
         ]);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
         $response = curl_exec($ch);
