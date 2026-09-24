@@ -100,17 +100,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const pwaDesc = document.getElementById('pwa-desc');
     const pwaIcon = document.getElementById('pwa-icon');
 
-    // Verifica se è già installata o se l'utente l'ha chiusa in precedenza
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     const pwaDismissed = localStorage.getItem('pwa_prompt_dismissed');
 
     if (!isStandalone && !pwaDismissed && pwaModal) {
         
         const ua = navigator.userAgent;
-        const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-        const isMac = /Mac OS X/.test(ua);
+        
+        // 1. Rileva iOS: copre iPhone, vecchi iPad e i nuovi iPadOS (che si fingono Mac ma hanno il touch)
+        let isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+        if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) {
+            isIOS = true;
+        }
+
+        // 2. Rileva un VERO Mac (escludendo gli iPad rilevati sopra)
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0 && !isIOS;
         const isMacSafari = isMac && /^((?!chrome|android).)*safari/i.test(ua);
-        const isAndroid = /Android/.test(ua);
+        
+        // 3. Rileva Android
+        const isAndroid = /Android/i.test(ua);
 
         // Funzione per mostrare il modale con ritardo
         const showModal = () => {
