@@ -66,7 +66,9 @@ $activePage = $activeMenu ?? ($pageCss ?? 'home');
                     <a href="<?= $route('/profilo') ?>" class="<?= $activePage === 'profile' ? 'active-link' : '' ?>">Profilo</a>
                     <a href="<?= $route('/logout') ?>">Esci</a>
                 <?php else: ?>
-                    <a href="<?= $route('/login') ?>">Accedi</a>
+                    <!-- Pulsante Accedi bianco con bordi leggeri -->
+                    <a href="<?= $route('/login') ?>" class="btn btn-sm" style="background-color: var(--surface); color: var(--text-primary); border: 1px solid var(--border-color); box-shadow: var(--shadow-soft);">Accedi</a>
+                    <!-- Pulsante Inizia Ora in evidenza -->
                     <a href="<?= $route('/register') ?>" class="btn btn-primary btn-sm">Inizia ora</a>
                 <?php endif; ?>
             </nav>
