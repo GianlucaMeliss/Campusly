@@ -119,7 +119,9 @@ $activeUniColor = $uniColors[$uniId] ?? '#E83E8C';
             </form>
         </div>
     </div>
-    <!-- MODALE INSTALLAZIONE PWA -->
+    
+</div>
+<!-- MODALE INSTALLAZIONE PWA -->
     <div id="pwa-install-modal" class="modale-overlay hidden" style="display: none; z-index: 3000;">
         <div class="modale-content highlight-box" style="text-align: center; padding: 30px;">
             <button class="modale-close" id="pwa-close-btn">&times;</button>
@@ -136,7 +138,6 @@ $activeUniColor = $uniColors[$uniId] ?? '#E83E8C';
             </div>
         </div>
     </div>
-</div>
 
 <!-- Script base (Dark mode, Modali, PWA) -->
 <script src="<?= $url('/assets/js/app.js') ?>"></script>
