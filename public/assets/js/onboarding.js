@@ -197,20 +197,6 @@ function filtraCorsi() {
         btn.remove();
     }
 }
-
-function selezionaToggle(element, type, value) {
-    const siblings = element.parentElement.querySelectorAll('.toggle-btn');
-    siblings.forEach(el => el.classList.remove('selected'));
-    
-    element.classList.add('selected');
-    wizardData[type] = value;
-    document.getElementById('input-' + type).value = value;
-
-    if (wizardData.sede && wizardData.anno) {
-        document.getElementById('btn-submit').removeAttribute('disabled');
-    }
-}
-
 // --- GESTIONE RICHIESTE (EMAIL + DB) ---
 
 // --- GESTIONE RICHIESTE (EMAIL + DB) ---
