@@ -343,7 +343,7 @@
     .hero-grid {
         grid-template-columns: 1fr;
         text-align: center;
-        gap: 40px; /* Ridotto per non avere troppi spazi vuoti */
+        gap: 40px;
     }
     
     .hero-text {
@@ -355,36 +355,37 @@
     }
 
     .hero-visual {
-        height: 280px; /* Più compatto e proporzionato */
+        height: 300px; 
         position: relative;
-        display: flex;
-        justify-content: center;
     }
     
     .floating-card {
-        width: 85%;
-        max-width: 280px;
-        /* Forziamo il centro annullando il left/right del desktop */
-        left: 50% !important;
-        right: auto !important;
+        /* Il trucco magico per centrare elementi assoluti senza usare transform */
+        left: 0 !important;
+        right: 0 !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
     }
     
-    /* Effetto "Wallet": Carte impilate con profondità */
+    /* Effetto "Wallet": Carte impilate e centrate alla perfezione */
     .card-1 { 
         top: 0; 
         z-index: 3;
-        transform: translateX(-50%);
+        width: 85%;
+        max-width: 280px;
     }
     .card-2 { 
         top: 55px; 
         z-index: 2;
-        transform: translateX(-50%) scale(0.95);
+        width: 78%; /* Più stretta per dare profondità */
+        max-width: 260px;
         opacity: 0.95;
     }
     .card-3 { 
         top: 110px; 
         z-index: 1;
-        transform: translateX(-50%) scale(0.9);
+        width: 71%; /* Ancora più stretta */
+        max-width: 240px;
         opacity: 0.85;
     }
 }
