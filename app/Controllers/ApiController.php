@@ -404,57 +404,67 @@ class ApiController
 
         $type = $data['type'] ?? '';
         $name = trim(htmlspecialchars($data['name'] ?? ''));
-        $courseExtra = trim(htmlspecialchars($data['course_extra'] ?? '')); // Campo aggiuntivo
+        $courseExtra = trim(htmlspecialchars($data['course_extra'] ?? '')); 
+        $contextUni = trim(htmlspecialchars($data['context_uni'] ?? '')); 
+        $contextCourse = trim(htmlspecialchars($data['context_course'] ?? ''));
         
         if (empty($name)) {
             http_response_code(400);
-            echo json_encode(['error' => 'Nome mancante']);
+            echo json_encode(['error' => 'Dato principale mancante']);
             exit;
         }
 
         $userId = (int)$_SESSION['user_id'];
-        $reqType = ($type === 'uni') ? 'new_university' : 'new_course';
         
-        $db = \App\Core\Database::getInstance();
+        // Formattazione dati in base al tipo di richiesta
+        $requestDataToSave = $name;
+        $tipoTesto = '';
+        $reqType = 'new_course'; // Default DB enum
 
-        // 1. Recupero email utente per la notifica
+        if ($type === 'uni') {
+            $reqType = 'new_university';
+            $tipoTesto = 'Università';
+            if (!empty($courseExtra)) $requestDataToSave .= " (Corso richiesto: $courseExtra)";
+        } elseif ($type === 'course') {
+            $tipoTesto = 'Corso (per Università esistente)';
+            $requestDataToSave = "Corso richiesto: $name | Università: $contextUni";
+        } elseif ($type === 'curriculum') {
+            $tipoTesto = 'Curriculum (Sede/Anno mancante)';
+            $requestDataToSave = "Dettagli mancanti: $name | Corso: $contextCourse | Università: $contextUni";
+        }
+
+        $db = \App\Core\Database::getInstance();
         $stmtUser = $db->prepare("SELECT email FROM users WHERE id = :uid");
         $stmtUser->execute(['uid' => $userId]);
         $user = $stmtUser->fetch();
         $userEmail = $user ? $user['email'] : 'Email sconosciuta';
-
-        // Format per il DB
-        $requestDataToSave = $name;
-        if ($type === 'uni' && !empty($courseExtra)) {
-            $requestDataToSave .= " (Corso richiesto: " . $courseExtra . ")";
-        }
         
-        // 2. Salvataggio nel Database
+        // Salvataggio nel Database
         $stmt = $db->prepare("INSERT INTO onboarding_requests (user_id, request_type, request_data) VALUES (:uid, :type, :data)");
-        $stmt->execute([
-            'uid' => $userId,
-            'type' => $reqType,
-            'data' => $requestDataToSave
-        ]);
+        $stmt->execute(['uid' => $userId, 'type' => $reqType, 'data' => $requestDataToSave]);
         
-        // 3. Invio Email all'Amministratore
+        // Costruzione Email
         $appConfig = require BASEPATH . '/config/app.php';
         $to = $appConfig['mail']['contact_email'] ?? 'admin@localhost';
+        $subject = "🔔 Campusly - Segnalazione Onboarding: $tipoTesto";
         
-        $tipoTesto = ($type === 'uni') ? 'Università' : 'Corso';
-        $subject = "🔔 Campusly - Richiesta nuovo inserimento: $tipoTesto";
-        
-        $message = "Ciao!\nUno studente ha richiesto un nuovo inserimento durante l'onboarding.\n\n";
+        $message = "Ciao!\nUno studente ha effettuato una segnalazione durante la configurazione.\n\n";
         $message .= "Richiedente: $userEmail\n";
-        $message .= "Tipo Richiesta: $tipoTesto\n";
-        $message .= "Nome " . ($type === 'uni' ? 'Ateneo' : 'Corso') . ": $name\n";
+        $message .= "Tipo Segnalazione: $tipoTesto\n\n";
         
-        // Aggiungiamo il corso se la richiesta parte dall'università
-        if ($type === 'uni' && !empty($courseExtra)) {
-            $message .= "Corso di Laurea associato: $courseExtra\n";
+        if ($type === 'uni') {
+            $message .= "Ateneo richiesto: $name\n";
+            if (!empty($courseExtra)) $message .= "Corso associato: $courseExtra\n";
+        } elseif ($type === 'course') {
+            $message .= "Università selezionata: $contextUni\n";
+            $message .= "Corso mancante segnalato: $name\n";
+        } elseif ($type === 'curriculum') {
+            $message .= "Università: $contextUni\n";
+            $message .= "Corso selezionato: $contextCourse\n";
+            $message .= "Dettagli mancanti segnalati dall'utente: $name\n";
         }
         
-        $message .= "\nPuoi aggiungere i dati dal tuo database aziendale.\n";
+        $message .= "\nPuoi verificare la richiesta nel database.\n";
         
         $domain = $_SERVER['HTTP_HOST'] ?? 'campusly.it';
         $headers = "From: noreply@$domain\r\nReply-To: noreply@$domain\r\nContent-Type: text/plain; charset=UTF-8\r\n";

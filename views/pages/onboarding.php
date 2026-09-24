@@ -47,7 +47,7 @@
 
                 <div class="wizard-nav">
                     <button class="btn btn-ghost" onclick="vaiAStep(1)">Indietro</button>
-                    <button class="btn btn-ghost" style="color: var(--primary-color);" onclick="vaiAStep(4)">Inserimento Manuale Avanzato</button>
+                    <button class="btn btn-ghost" style="color: var(--primary-color);" onclick="apriRichiesta('course')">Non trovi il corso? Richiedilo</button>
                 </div>
             </div>
 
@@ -83,37 +83,16 @@
                         <button type="button" class="btn btn-ghost" onclick="vaiAStep(2)">Indietro</button>
                         <button type="submit" class="btn btn-primary" id="btn-submit" disabled>Conferma e Vai</button>
                     </div>
-                </form>
-            </div>
 
-            <!-- STEP 4: INSERIMENTO MANUALE (Per i corsi non mappati / Smanettoni) -->
-            <div id="step-4" class="wizard-step">
-                <h1 class="page-title">Inserimento Manuale</h1>
-                <p class="page-subtitle">Incolla i codici identificativi del portale Cineca.</p>
+                    <div style="text-align: center; margin-top: 25px;">
+                    <button type="button" class="btn btn-ghost" style="font-size: 0.85rem;" onclick="apriRichiesta('curriculum')">Manca la tua sede o il tuo anno? Segnalacelo</button>
+                </div>
+
+                <div class="wizard-nav">
+                    <button type="button" class="btn btn-ghost" onclick="vaiAStep(2)">Indietro</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit" disabled>Conferma e Vai</button>
+                </div>
                 
-                <form action="<?= htmlspecialchars($route('/onboarding')) ?>" method="POST" class="campusly-form">
-                    <input type="hidden" name="university_id" value="1">
-                    
-                    <div class="form-group">
-                        <label>Nome del tuo Corso (es. Informatica 1° Anno)</label>
-                        <input type="text" name="course_name" required placeholder="Es. Informatica">
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Link Calendario ID</label>
-                            <input type="text" name="link_calendario_id" required placeholder="es. 6a69b9...">
-                        </div>
-                        <div class="form-group">
-                            <label>Cliente ID</label>
-                            <input type="text" name="cliente_id" required placeholder="es. 59f051...">
-                        </div>
-                    </div>
-
-                    <div class="wizard-nav">
-                        <button type="button" class="btn btn-ghost" onclick="vaiAStep(2)">Indietro</button>
-                        <button type="submit" class="btn btn-primary">Salva Codici</button>
-                    </div>
                 </form>
             </div>
 

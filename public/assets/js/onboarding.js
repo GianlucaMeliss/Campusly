@@ -1,6 +1,7 @@
 // Stato dell'onboarding
 let wizardData = {
     uniId: null,
+    uniName: null, 
     courseName: null,
     sede: null,
     anno: null,
@@ -17,6 +18,7 @@ function vaiAStep(stepNum) {
 
 async function selezionaUni(id, nome) {
     wizardData.uniId = id;
+    wizardData.uniName = nome;
     document.getElementById('subtitle-uni-name').textContent = nome;
     document.getElementById('input-uni-id').value = id;
     
@@ -217,25 +219,31 @@ function apriRichiesta(tipo) {
     const modal = document.getElementById('modal-richiesta');
     const titolo = document.getElementById('modal-richiesta-titolo');
     const label = document.getElementById('modal-richiesta-label');
+    const inputNome = document.getElementById('richiesta-nome');
     const tipoInput = document.getElementById('richiesta-tipo');
-    
     const gruppoCorsoExtra = document.getElementById('gruppo-corso-extra');
-    const inputCorsoExtra = document.getElementById('richiesta-corso-extra');
+    
+    tipoInput.value = tipo;
+    inputNome.value = '';
+    document.getElementById('richiesta-corso-extra').value = '';
     
     if (tipo === 'uni') {
         titolo.textContent = "Richiedi Università";
         label.textContent = "Nome esatto dell'Ateneo";
-        gruppoCorsoExtra.style.display = 'flex'; // Mostra il campo del corso aggiuntivo
-        inputCorsoExtra.value = '';
-    } else {
+        inputNome.placeholder = "Es. Politecnico di Milano";
+        gruppoCorsoExtra.style.display = 'flex';
+    } else if (tipo === 'course') {
         titolo.textContent = "Richiedi Corso";
-        label.textContent = "Nome esatto del Corso di Laurea";
-        gruppoCorsoExtra.style.display = 'none'; // Nascondilo se sta già richiedendo solo il corso
-        inputCorsoExtra.value = '';
+        // Mostriamo il contesto all'utente
+        label.innerHTML = `Nome del Corso per <strong>${wizardData.uniName}</strong>`;
+        inputNome.placeholder = "Es. Ingegneria Informatica";
+        gruppoCorsoExtra.style.display = 'none';
+    } else if (tipo === 'curriculum') {
+        titolo.textContent = "Segnala Dati Mancanti";
+        label.innerHTML = `Cosa manca per <strong>${wizardData.courseName}</strong>?`;
+        inputNome.placeholder = "Es. Manca la sede di Como, oppure manca il 2° Anno";
+        gruppoCorsoExtra.style.display = 'none';
     }
-    
-    tipoInput.value = tipo;
-    document.getElementById('richiesta-nome').value = '';
     
     modal.style.display = 'flex';
 }
@@ -252,10 +260,13 @@ document.getElementById('form-richiesta').addEventListener('submit', async funct
     btn.textContent = 'Invio in corso...';
     btn.disabled = true;
 
+    // Aggiungiamo i dati di contesto al payload
     const payload = {
         type: document.getElementById('richiesta-tipo').value,
         name: document.getElementById('richiesta-nome').value,
-        course_extra: document.getElementById('richiesta-corso-extra').value, // Invio del nuovo campo extra
+        course_extra: document.getElementById('richiesta-corso-extra').value,
+        context_uni: wizardData.uniName || '',
+        context_course: wizardData.courseName || '',
         csrf_token: window.CSRF_TOKEN
     };
 
