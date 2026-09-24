@@ -70,13 +70,14 @@ class StataleAdapter implements UniversityAdapterInterface
         $eventiNormalizzati = [];
 
         foreach ($eventiOriginali as $evento) {
-            // Uniamo data e ora (es. "24-09-2026" + "08:30") e convertiamo in ISO
-            $startStr = $evento['data'] . ' ' . $evento['ora_inizio'];
-            $endStr = $evento['data'] . ' ' . $evento['ora_fine'];
+            // Forziamo i trattini al posto delle slash per far capire a PHP che è formato Europeo (Gg-Mm-Aaaa)
+            $dataPulita = str_replace('/', '-', $evento['data']);
             
-            // FormatDateTime converte "d-m-Y H:i" in "Y-m-d\TH:i:s.000\Z" per JS
-            $isoStart = date('Y-m-d\TH:i:s.000\Z', strtotime(str_replace('-', '/', $startStr)));
-            $isoEnd = date('Y-m-d\TH:i:s.000\Z', strtotime(str_replace('-', '/', $endStr)));
+            $startStr = $dataPulita . ' ' . $evento['ora_inizio'];
+            $endStr = $dataPulita . ' ' . $evento['ora_fine'];
+            
+            $isoStart = date('Y-m-d\TH:i:s.000\Z', strtotime($startStr));
+            $isoEnd = date('Y-m-d\TH:i:s.000\Z', strtotime($endStr));
 
             // Formattazione Aule
             $risorse = [];
@@ -108,6 +109,8 @@ class StataleAdapter implements UniversityAdapterInterface
                 'isPersonale' => false
             ];
         }
+
+        return $eventiNormalizzati;
 
         return $eventiNormalizzati;
     }
