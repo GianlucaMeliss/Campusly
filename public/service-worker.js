@@ -40,38 +40,46 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-    // 1. GESTIONE DATI DINAMICI (Lezioni del calendario sulle nuove API)
-    // Cambiamo 'proxy.php' con '/api/calendario'
-    if (event.request.url.includes('/api/calendario')) {
+    const url = new URL(event.request.url);
+
+    // 1. GESTIONE DATI DINAMICI (API Calendario) -> Network First con Cache Fallback
+    if (url.pathname.includes('/api/calendario')) {
         event.respondWith(
             fetch(event.request)
                 .then(response => {
                     if (response.status === 200) {
                         const clonedResponse = response.clone();
-                        caches.open(DATA_CACHE_NAME).then(cache => {
-                            cache.put(event.request, clonedResponse);
-                        });
+                        caches.open(DATA_CACHE_NAME).then(cache => cache.put(event.request, clonedResponse));
                     }
                     return response;
                 })
-                .catch(async (err) => {
+                .catch(async () => {
                     const cachedResponse = await caches.match(event.request);
-                    if (cachedResponse) {
-                        return cachedResponse; 
-                    }
-                    return new Response(JSON.stringify([]), {
+                    return cachedResponse || new Response(JSON.stringify([]), {
                         status: 503,
                         headers: new Headers({ 'Content-Type': 'application/json' })
                     });
                 })
         );
+        return; // Interrompe qui
     } 
-    // 2. GESTIONE ASSETS STATICI
-    else {
+
+    // 2. NAVIGAZIONE PAGINE HTML (PHP) -> Network First
+    // Evita di pescare vecchie pagine in cache rompendo i token CSRF o le sessioni
+    if (event.request.mode === 'navigate') {
         event.respondWith(
-            caches.match(event.request).then(response => {
-                return response || fetch(event.request);
+            fetch(event.request).catch(() => {
+                // Se sei offline, prova a mostrare la dashboard cachata se esiste
+                return caches.match(event.request);
             })
         );
+        return;
     }
+
+    // 3. ASSETS STATICI (CSS, JS, Img) -> Cache First
+    event.respondWith(
+        caches.match(event.request).then(response => {
+            return response || fetch(event.request);
+        })
+    );
 });

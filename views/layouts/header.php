@@ -37,6 +37,10 @@ $activePage = $activeMenu ?? ($pageCss ?? 'home');
     <title><?= htmlspecialchars($pageTitle ?? 'Campusly') ?></title>
     
     <meta name="theme-color" content="#F8F7FA">
+    <link rel="manifest" href="<?= $url('/manifest.json') ?>">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Campusly">
     
     <!-- USA IL RESOURCE HELPER ($url) PER IMMAGINI E CSS -->
     <link rel="icon" href="<?= $url('/assets/img/icon-192.png') ?>">
