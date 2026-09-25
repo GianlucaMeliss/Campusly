@@ -519,12 +519,13 @@ class ApiController
             return ['status' => 'error', 'message' => 'Codice invito non valido'];
         }
 
+        // Usiamo due parametri distinti (:privacy1 e :privacy2) per evitare il crash PDO
         $stmtIns = $this->db->prepare("
-            INSERT IGNORE INTO group_members (group_id, user_id, privacy_level) 
+            INSERT INTO group_members (group_id, user_id, privacy_level) 
             VALUES (:group_id, :user_id, :privacy1)
             ON DUPLICATE KEY UPDATE privacy_level = :privacy2
         ");
-
+        
         $stmtIns->execute([
             'group_id' => $group['id'],
             'user_id' => $userId,
