@@ -50,6 +50,20 @@
                 </ul>
             <?php endif; ?>
         </div>
+
+        <!-- 3. PREFERENZE -->
+        <div class="highlight-box">
+            <h2 class="section-title">Preferenze App</h2>
+            <p class="section-subtitle">Scegli il tema dell'interfaccia. La scelta verrà sincronizzata automaticamente su tutti i tuoi dispositivi.</p>
+            
+            <div class="form-group" style="max-width: 300px;">
+                <label for="theme-select">Tema visivo</label>
+                <select id="theme-select" onchange="window.cambiaTemaCloud(this.value)">
+                    <option value="light" <?= ($_SESSION['theme'] ?? 'light') === 'light' ? 'selected' : '' ?>>☀️ Modalità Chiara</option>
+                    <option value="dark" <?= ($_SESSION['theme'] ?? '') === 'dark' ? 'selected' : '' ?>>🌙 Modalità Scura</option>
+                </select>
+            </div>
+        </div>
     </div>
 </section>
 
