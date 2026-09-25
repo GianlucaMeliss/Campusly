@@ -509,36 +509,30 @@ class ApiController
         exit;
     }
 
-    public function joinGroup(): void
+    public function joinGroup(int $userId, string $inviteCode, string $privacyLevel = 'logistical'): array
     {
-        header("Content-Type: application/json; charset=UTF-8");
-        if (!isset($_SESSION['user_id'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Non autenticato']);
-            exit;
+        $stmt = $this->db->prepare("SELECT id FROM study_groups WHERE invite_code = :code");
+        $stmt->execute(['code' => $inviteCode]);
+        $group = $stmt->fetch();
+
+        if (!$group) {
+            return ['status' => 'error', 'message' => 'Codice invito non valido'];
         }
 
-        $data = json_decode(file_get_contents('php://input'), true);
-        
-        if (!isset($data['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $data['csrf_token'])) {
-            http_response_code(403);
-            echo json_encode(['error' => 'Token CSRF non valido']);
-            exit;
-        }
+        $stmtIns = $this->db->prepare("
+            INSERT IGNORE INTO group_members (group_id, user_id, privacy_level) 
+            VALUES (:group_id, :user_id, :privacy1)
+            ON DUPLICATE KEY UPDATE privacy_level = :privacy2
+        ");
 
-        $code = trim(htmlspecialchars($data['invite_code'] ?? ''));
-        $privacy = $data['privacy_level'] ?? 'logistical';
-        
-        if (empty($code)) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Codice mancante']);
-            exit;
-        }
+        $stmtIns->execute([
+            'group_id' => $group['id'],
+            'user_id' => $userId,
+            'privacy1' => $privacyLevel,
+            'privacy2' => $privacyLevel
+        ]);
 
-        $model = new \App\Models\GroupModel();
-        $result = $model->joinGroup((int)$_SESSION['user_id'], $code, $privacy);
-        echo json_encode($result);
-        exit;
+        return ['status' => 'success', 'group_id' => $group['id']];
     }
 
     public function getGroupCalendar(string $groupId): void
@@ -650,10 +644,6 @@ class ApiController
         exit;
     }
 
-    /**
-     * Helper per recuperare la cache di un utente specifico internamente (senza passare per l'HTTP).
-     * Simula il comportamento di getCalendarEvents ma lo restituisce come array.
-     */
     private function getInternalUserEventsCached(int $userId, array $userCourses, string $dataInizio, string $dataFine): array
     {
         if (empty($userCourses)) return [];
