@@ -5,7 +5,6 @@ const PATH_PREFIX = '/Campusly/';
 
 const ASSETS_TO_CACHE = [
     PATH_PREFIX,
-    PATH_PREFIX + 
     PATH_PREFIX + '/assets/css/calendar.css',
     PATH_PREFIX + '/assets/css/style.css',
     PATH_PREFIX + '/assets/js/app.js',
