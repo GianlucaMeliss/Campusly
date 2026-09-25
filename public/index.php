@@ -40,6 +40,21 @@ spl_autoload_register(function (string $class): void {
 
 \App\Core\ErrorHandler::register();
 
+// Ripristino automatico della sessione tramite "Remember Me"
+if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_me'])) {
+    $tokenHash = hash('sha256', $_COOKIE['remember_me']);
+    $userModel = new \App\Models\UserModel();
+    $user = $userModel->findUserByToken($tokenHash);
+
+    if ($user) {
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_name'] = $user['first_name'];
+    } else {
+        // Se il token è scaduto o non valido, rimuoviamo il cookie orfano
+        setcookie('remember_me', '', time() - 3600, '/');
+    }
+}
+
 $router = new \App\Core\Router();
 
 require BASEPATH . '/config/routes.php';
