@@ -110,73 +110,74 @@ async function caricaSettimana(dataRif) {
     domenica.setDate(lunedi.getDate() + 6);
     domenica.setHours(23, 59, 59, 999);
 
+    // 1. Creiamo una chiave univoca in memoria per questa esatta settimana e gruppo
+    const strLunedi = lunedi.toISOString().split('T')[0];
+    const cacheKey = `campusly_week_${strLunedi}_g${window.ACTIVE_GROUP_ID || 'me'}`;
+
     if (labelSettimana) {
         labelSettimana.textContent = `${lunedi.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })} - ${domenica.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}`;
     }
 
-    // 1. Imposta lo stato su "Sincronizzazione in corso"
     if (syncStatus) {
         syncStatus.innerHTML = svgSync;
-        syncStatus.title = "Aggiornamento dati in corso...";
+        syncStatus.title = "Aggiornamento in corso...";
     }
 
-    mostraSkeleton();
-    caricaDatiUtente();
+    // Carica preferenze in modo sincrono
+    caricaDatiUtente(); 
 
+    // 2. Lettura ISTANTANEA dal LocalStorage (Bypassa il Service Worker)
+    let datiCacheText = localStorage.getItem(cacheKey);
+
+    if (datiCacheText) {
+        // Se abbiamo i dati, niente skeleton: stampiamo subito il calendario
+        const eventiGrezzi = JSON.parse(datiCacheText);
+        renderizzaCalendario(eventiGrezzi, lunedi, true);
+    } else {
+        // Mostriamo lo skeleton SOLO se non abbiamo mai aperto questa settimana
+        mostraSkeleton();
+    }
+
+    // 3. Chiamata di Rete in background (Revalidate)
     let endpoint = window.ACTIVE_GROUP_ID 
         ? `/api/calendario/gruppo/${window.ACTIVE_GROUP_ID}` 
         : `/api/calendario`;
     const urlProxy = `${API_BASE_PATH}${endpoint}?inizio=${encodeURIComponent(lunedi.toISOString())}&fine=${encodeURIComponent(domenica.toISOString())}`;
     
-    let datiCacheText = null;
-
-    // 2. Lettura immediata dalla Cache (Stale)
-    try {
-        if ('caches' in window) {
-            const cacheResponse = await caches.match(urlProxy);
-            if (cacheResponse) {
-                datiCacheText = await cacheResponse.text();
-                const eventiGrezzi = JSON.parse(datiCacheText);
-                renderizzaCalendario(eventiGrezzi, lunedi, true);
-            }
-        }
-    } catch (e) {
-        console.warn("Nessuna cache trovata:", e);
-    }
-
-    // 3. Chiamata in background (Revalidate)
     try {
         const response = await fetch(urlProxy);
         if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
         
         const datiReteText = await response.text();
 
+        // 4. Se i dati dal server sono cambiati, aggiorniamo UI e Memoria
         if (datiReteText !== datiCacheText) {
             const lunediCheck = ottieniLunedi(dataRiferimento);
             lunediCheck.setHours(0, 0, 0, 0);
             if (lunedi.getTime() !== lunediCheck.getTime()) return; 
             
+            // Salviamo il nuovo JSON in memoria locale
+            localStorage.setItem(cacheKey, datiReteText);
+            
             const eventiGrezzi = JSON.parse(datiReteText);
-            renderizzaCalendario(eventiGrezzi, lunedi, datiCacheText === null); 
+            // Rifacciamo il render visivo (invisibile all'utente se i blocchi sono gli stessi)
+            renderizzaCalendario(eventiGrezzi, lunedi, !datiCacheText); 
         }
 
-        // Rete OK: Mostra la spunta verde
         if (syncStatus) {
             syncStatus.innerHTML = svgSuccess;
             syncStatus.title = "Calendario aggiornato";
-            setTimeout(() => { if (syncStatus.innerHTML === svgSuccess) syncStatus.innerHTML = ''; }, 3000); // Scompare dopo 3 sec
+            setTimeout(() => { if (syncStatus.innerHTML === svgSuccess) syncStatus.innerHTML = ''; }, 3000);
         }
 
     } catch (error) {
-        // Nessuna rete: Mostra l'icona cloud sbarrata
         if (syncStatus) {
             syncStatus.innerHTML = svgOffline;
-            syncStatus.title = "Modalità Offline (Nessuna connessione)";
+            syncStatus.title = "Modalità Offline";
         }
-        
         if (!datiCacheText) {
             const container = document.getElementById('calendario-container');
-            if (container) container.innerHTML = `<div class="errore" style="color:red; padding:20px; text-align:center;">⚠️ Nessuna connessione internet e nessun dato in memoria.</div>`;
+            if (container) container.innerHTML = `<div class="errore" style="color:red; padding:20px; text-align:center;">⚠️ Nessuna connessione e nessun dato in memoria.</div>`;
         }
     }
 }
