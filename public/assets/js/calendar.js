@@ -60,15 +60,10 @@ function ottieniLunedi(d) {
     return new Date(data.setDate(diff));
 }
 
-function isAulaVarese(aula) {
-    if (!aula) return false;
-    const nomeAula = (aula.descrizione || "").toLowerCase();
-    const edificio = (aula.edificio && aula.edificio.descrizione) ? aula.edificio.descrizione.toLowerCase() : "";
-    const paroleComo = ['como', 'valleggio', 'sant\'abbondio', 'castelnuovo', 'cavaliere', 'va1', 'va2', 'va3', 'va4', 'va5', 'va6', 'va7', 'va8'];
-    for (let parola of paroleComo) {
-        if (nomeAula.includes(parola) || edificio.includes(parola)) return false;
-    }
-    return true; 
+function isAulaValida(aula) {
+    // Per l'MVP multi-ateneo accettiamo tutte le aule valide restituite dall'API.
+    // In futuro aggiungeremo un filtro basato sulla campus_location dell'utente.
+    return aula && aula.descrizione ? true : false; 
 }
 
 // ==========================================
@@ -376,7 +371,7 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
             let aule = [];
             if (evento.risorse) {
                 evento.risorse.forEach(r => { 
-                    if (r.aula && isAulaVarese(r.aula)) {
+                    if (r.aula && isAulaValida(r.aula)) {
                         aule.push(r.aula.descrizione);
                     } 
                 });
@@ -427,7 +422,7 @@ function aggiornaBoxEvidenza() {
     let aule = [];
     if (evento.risorse) {
         evento.risorse.forEach(r => { 
-            if (r.aula && isAulaVarese(r.aula)) aule.push(r.aula.descrizione);
+            if (r.aula && isAulaValida(r.aula)) aule.push(r.aula.descrizione);
         });
     }
     const auleTesto = aule.length > 0 ? aule.join(', ') : (evento.luogo || "Da definire");
@@ -517,7 +512,7 @@ function esportaSettimanaICS() {
         let infoAule = [];
         if (evento.risorse) {
             evento.risorse.forEach(r => {
-                if (r.aula && isAulaVarese(r.aula)) {
+                if (r.aula && isAulaValida(r.aula)) {
                     const edificio = (r.aula.edificio && r.aula.edificio.descrizione) ? ` (${r.aula.edificio.descrizione})` : "";
                     infoAule.push(r.aula.descrizione + edificio);
                 }
@@ -548,6 +543,7 @@ function esportaSettimanaICS() {
 // MODALI E AZIONI CLOUD
 // ==========================================
 window.apriModaleDettagli = function(evento) {
+
     const modale = document.getElementById('modale-dettagli');
     const modaleBody = document.getElementById('modale-body');
     if(!modale || !modaleBody) return;
@@ -565,7 +561,7 @@ window.apriModaleDettagli = function(evento) {
     
     if (evento.risorse) {
         evento.risorse.forEach(r => {
-            if (r.aula && isAulaVarese(r.aula)) {
+            if (r.aula && isAulaValida(r.aula)) {
                 const nomeAula = r.aula.descrizione || "Aula non specificata";
                 const edificio = (r.aula.edificio && r.aula.edificio.descrizione) ? r.aula.edificio.descrizione : "Padiglione non specificato";
                 const capienza = r.aula.capienza ? `Capienza: ${r.aula.capienza} posti` : "Capienza ignota";

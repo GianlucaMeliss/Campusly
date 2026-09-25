@@ -28,154 +28,86 @@
             line-height: 1.5;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
+        .header { text-align: center; margin-bottom: 40px; }
         .header h1 {
-            font-size: 2.5rem;
-            margin: 0;
+            font-size: 2.5rem; margin: 0;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
         .box { 
-            background: var(--surface); 
-            padding: 30px; 
-            border-radius: var(--radius); 
-            box-shadow: var(--shadow); 
-            margin-bottom: 30px; 
-            border: 1px solid var(--border); 
+            background: var(--surface); padding: 30px; border-radius: var(--radius); 
+            box-shadow: var(--shadow); margin-bottom: 30px; border: 1px solid var(--border); 
         }
 
-        .box-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--border);
-        }
+        .box-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+        .box-header h2 { color: var(--text-main); margin: 0; font-size: 1.25rem; }
 
-        .box-header h2 { 
-            color: var(--text-main); 
-            margin: 0; 
-            font-size: 1.25rem;
-        }
-
-        label { 
-            display: block; 
-            font-weight: 600; 
-            margin-bottom: 6px; 
-            font-size: 0.85rem; 
-            color: var(--text-muted); 
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
+        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
         input[type="text"], input[type="number"], select { 
-            width: 100%; 
-            padding: 12px 16px; 
-            border: 2px solid var(--border); 
-            border-radius: 8px; 
-            box-sizing: border-box; 
-            font-size: 0.95rem;
-            transition: all 0.2s;
-            background: var(--bg-main);
-            color: var(--text-main);
-            font-weight: 500;
+            width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: 8px; box-sizing: border-box; 
+            font-size: 0.95rem; transition: all 0.2s; background: var(--bg-main); color: var(--text-main); font-weight: 500;
         }
+        input:focus, select:focus { border-color: var(--primary); outline: none; background: var(--surface); box-shadow: 0 0 0 4px rgba(232, 62, 140, 0.1); }
 
-        input:focus, select:focus {
-            border-color: var(--primary);
-            outline: none;
-            background: var(--surface);
-            box-shadow: 0 0 0 4px rgba(232, 62, 140, 0.1);
-        }
-
-        .row { 
-            display: flex; 
-            gap: 15px; 
-            margin-bottom: 15px; 
-            align-items: flex-end; 
-            padding-bottom: 20px; 
-            border-bottom: 1px dashed var(--border); 
-        }
+        .row { display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-start; flex-wrap: wrap; }
         .row > div { flex: 1; }
-        .row:last-child { border-bottom: none; padding-bottom: 0; }
 
-        button { 
-            background: var(--primary); 
-            color: white; 
-            border: none; 
-            padding: 14px 24px; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            font-weight: 700; 
-            font-size: 1rem;
-            transition: transform 0.1s, box-shadow 0.2s; 
-            box-shadow: 0 4px 12px rgba(232, 62, 140, 0.3);
-        }
-        button:hover { 
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(232, 62, 140, 0.4);
-        }
+        button { background: var(--primary); color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1rem; transition: transform 0.1s, box-shadow 0.2s; box-shadow: 0 4px 12px rgba(232, 62, 140, 0.3); }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(232, 62, 140, 0.4); }
         button:active { transform: translateY(0); }
-
-        button.add-btn { background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); margin-bottom: 20px;}
+        button.add-btn { background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); margin-bottom: 20px; width: 100%; }
         button.add-btn:hover { background: #059669; box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4); }
-        
-        .remove-btn { 
-            background: #fee2e2; 
-            color: #ef4444; 
-            padding: 12px; 
-            width: 45px; 
-            text-align: center; 
-            box-shadow: none;
-        }
-        .remove-btn:hover { background: #fca5a5; color: white; box-shadow: none; }
 
-        textarea { 
-            width: 100%; 
-            height: 250px; 
-            padding: 16px; 
-            font-family: 'JetBrains Mono', 'Courier New', Courier, monospace; 
-            border: none; 
-            border-radius: 8px; 
-            box-sizing: border-box; 
-            resize: vertical; 
-            background: #171525; 
-            color: #34d399; 
-            font-size: 0.95rem;
-            line-height: 1.5;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
-        }
+        textarea { width: 100%; height: 250px; padding: 16px; font-family: 'JetBrains Mono', monospace; border: none; border-radius: 8px; box-sizing: border-box; resize: vertical; background: #171525; color: #34d399; font-size: 0.95rem; line-height: 1.5; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
 
-        /* Modalità Principali */
         #mode_uni, #mode_course { display: none; animation: fadeIn 0.3s ease; }
         body.show-uni #mode_uni { display: block; }
         body.show-course #mode_course { display: block; }
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Template API Dinamici */
-        .tpl-cineca, .tpl-easystaff, .tpl-custom { display: none; gap: 10px; }
-        #mode_course.show-tpl-cineca .tpl-cineca { display: flex; flex: 2; }
-        #mode_course.show-tpl-easystaff .tpl-easystaff { display: flex; flex: 2.5; }
-        #mode_course.show-tpl-custom .tpl-custom { display: block; flex: 2; }
+        .api-selector-box { background: rgba(124, 77, 255, 0.05); border: 1px solid rgba(124, 77, 255, 0.2); padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; display: flex; align-items: center; gap: 15px; }
 
-        .api-selector-box {
-            background: rgba(124, 77, 255, 0.05);
-            border: 1px solid rgba(124, 77, 255, 0.2);
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
+        /* NUOVA STRUTTURA DELLE VARIANTI */
+        .variant-card {
+            background: #ffffff;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 24px;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
         }
+
+        .remove-btn { 
+            position: absolute; top: 15px; right: 15px; background: #fee2e2; color: #ef4444; 
+            padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; box-shadow: none; 
+        }
+        .remove-btn:hover { background: #ef4444; color: white; transform: none; box-shadow: none;}
+
+        .magic-link-box { 
+            width: 100%; display: flex; gap: 15px; align-items: center; 
+            background: #f0fdf4; padding: 16px; border-radius: 8px; border: 1px dashed #86efac; 
+            margin-bottom: 24px; box-sizing: border-box;
+        }
+        .magic-link-box input { background: #ffffff; border-color: #bbf7d0; font-size: 1rem; }
+        .magic-link-box input:focus { border-color: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1); }
+
+        .divider {
+            text-align: center; margin: 24px 0; position: relative;
+        }
+        .divider span {
+            background: #fff; padding: 0 15px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; position: relative; z-index: 1;
+        }
+        .divider::before {
+            content: ""; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: var(--border); z-index: 0;
+        }
+
+        /* Gestione Visibilità Campi Dinamici */
+        .tpl-cineca, .tpl-easystaff, .tpl-custom { display: none; gap: 15px; width: 100%; margin-top: 15px; }
+        #mode_course.show-tpl-cineca .tpl-cineca { display: flex; }
+        #mode_course.show-tpl-easystaff .tpl-easystaff { display: flex; }
+        #mode_course.show-tpl-custom .tpl-custom { display: flex; }
     </style>
 </head>
 <body class="show-uni">
@@ -215,7 +147,7 @@
                 <input type="text" id="u_domain" placeholder="Es. polimi.it">
             </div>
         </div>
-        <div class="row" style="border: none;">
+        <div class="row" style="margin-bottom: 0;">
             <div>
                 <label>Classe Adapter (Traduttore PHP)</label>
                 <input type="text" id="u_adapter" placeholder="Es. App\Adapters\PoliMiAdapter">
@@ -225,7 +157,7 @@
                 <input type="text" id="u_logo" placeholder="Es. /assets/img/logo-polimi.png">
             </div>
         </div>
-        <div style="text-align: right; margin-top: 20px;">
+        <div style="text-align: right; margin-top: 30px;">
             <button type="button" onclick="generaSQLUni()">Genera SQL Università</button>
         </div>
     </div>
@@ -237,7 +169,7 @@
                 <span style="font-size: 1.5rem;">📚</span>
                 <h2>Anagrafica Generale del Corso</h2>
             </div>
-            <div class="row" style="border: none;">
+            <div class="row" style="margin-bottom: 0;">
                 <div style="flex: 0.5;">
                     <label>ID Uni</label>
                     <input type="number" id="c_uni_id" placeholder="Es. 1">
@@ -260,8 +192,8 @@
             </div>
             
             <div class="api-selector-box">
-                <label style="margin: 0; color: var(--secondary);">Formato API Esterna:</label>
-                <select id="api_template" onchange="cambiaTemplateAPI()" style="max-width: 300px; padding: 8px; font-weight: bold; border-color: var(--secondary);">
+                <label style="margin: 0; color: var(--secondary);">Formato API Esterna per tutte le varianti:</label>
+                <select id="api_template" onchange="cambiaTemplateAPI()" style="max-width: 350px; padding: 8px; font-weight: bold; border-color: var(--secondary);">
                     <option value="cineca">Cineca UP (Es. Insubria)</option>
                     <option value="easystaff">EasyStaff (Es. Statale)</option>
                     <option value="custom">JSON Personalizzato</option>
@@ -269,57 +201,73 @@
             </div>
 
             <div id="curriculums-container">
-                <!-- Riga Base -->
-                <div class="row curr-row">
-                    <div>
-                        <label>Sede</label>
-                        <input type="text" class="v_sede" placeholder="Es. Varese" required>
-                    </div>
-                    <div style="flex: 0.5;">
-                        <label>Anno</label>
-                        <input type="number" class="v_anno" placeholder="1" required>
+                <!-- SCHEDA VARIANTE BASE -->
+                <div class="variant-card curr-row">
+                    
+                    <!-- RIGA 1: LINK MAGICO -->
+                    <div class="magic-link-box">
+                        <span style="font-size: 1.5rem;">✨</span>
+                        <div style="flex: 1;">
+                            <label style="color: #166534; font-size: 0.8rem;">Autocompilazione da Link (Consigliato)</label>
+                            <input type="text" class="m_link" placeholder="Incolla l'URL della pagina orari qui per compilare tutto in automatico..." oninput="estraiDaLink(this)">
+                        </div>
                     </div>
 
-                    <!-- CAMPI CINECA -->
+                    <div class="divider"><span>Oppure controlla/compila manualmente</span></div>
+
+                    <!-- RIGA 2: CAMPI MANUALI BASE -->
+                    <div class="row" style="margin-bottom: 0;">
+                        <div style="flex: 2;">
+                            <label>Sede (Città o Edificio)</label>
+                            <input type="text" class="v_sede" placeholder="Es. Varese" required>
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Anno di Corso</label>
+                            <input type="number" class="v_anno" placeholder="Es. 1" required>
+                        </div>
+                    </div>
+
+                    <!-- RIGA 3A: CAMPI CINECA -->
                     <div class="tpl-cineca">
-                        <div style="flex:1;">
+                        <div style="flex:1.5;">
                             <label>linkCalendarioId</label>
                             <input type="text" class="c_link" placeholder="Es. 5E75A...">
                         </div>
                         <div style="flex:1;">
                             <label>clienteId</label>
-                            <!-- PRECOMPILATO CON IL VALORE DI DEFAULT -->
                             <input type="text" class="c_cliente" value="59f05192a635f443422fe8fd">
                         </div>
                     </div>
 
-                    <!-- CAMPI EASYSTAFF -->
+                    <!-- RIGA 3B: CAMPI EASYSTAFF -->
                     <div class="tpl-easystaff">
                         <div style="flex:1;">
-                            <label>Cod. Corso (corso)</label>
+                            <label>Cod. Corso (Param: corso)</label>
                             <input type="text" class="e_corso" placeholder="Es. BAE">
                         </div>
-                        <div style="flex:1;">
-                            <label>Curriculum (anno2)</label>
+                        <div style="flex:1.5;">
+                            <label>Curriculum (Param: anno2)</label>
                             <input type="text" class="e_curr" placeholder="Es. BAE-0|2">
                         </div>
-                        <div style="flex: 0.5;">
-                            <label>A.A.</label>
+                        <div style="flex: 0.8;">
+                            <label>Anno Accademico</label>
                             <input type="text" class="e_aa" value="2026">
                         </div>
                     </div>
 
-                    <!-- CAMPI CUSTOM -->
+                    <!-- RIGA 3C: CAMPI CUSTOM -->
                     <div class="tpl-custom">
-                        <label>API Config (JSON RAW)</label>
-                        <input type="text" class="v_json" placeholder='Es. {"chiave": "valore"}'>
+                        <div style="flex: 1;">
+                            <label>API Config (JSON RAW)</label>
+                            <input type="text" class="v_json" placeholder='Es. {"chiave": "valore"}'>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                <button type="button" class="add-btn" onclick="aggiungiRigaVariante()">+ Aggiungi Variante</button>
-                <button type="button" onclick="generaSQLCorso()">Genera SQL Corso</button>
+            <button type="button" class="add-btn" onclick="aggiungiRigaVariante()">+ Aggiungi un'altra Variante</button>
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" onclick="generaSQLCorso()" style="padding: 16px 32px; font-size: 1.1rem;">Genera SQL Corso</button>
             </div>
         </div>
     </div>
@@ -330,24 +278,70 @@
             <span style="font-size: 1.5rem;">💾</span>
             <h2>Output SQL Pronto</h2>
         </div>
-        <textarea id="sql_output" readonly placeholder="Il codice SQL generato apparirà qui, pronto da copiare..."></textarea>
+        <textarea id="sql_output" readonly placeholder="Il codice SQL generato apparirà qui, pronto da copiare in phpMyAdmin..."></textarea>
     </div>
 
 <script>
-    // Gestione Switch Modalità Principale
     function cambiaModalita() {
-        const mode = document.getElementById('mode_selector').value;
-        document.body.className = 'show-' + mode;
+        document.body.className = 'show-' + document.getElementById('mode_selector').value;
         document.getElementById('sql_output').value = '';
     }
 
-    // Gestione Switch Template API
     function cambiaTemplateAPI() {
-        const tpl = document.getElementById('api_template').value;
-        document.getElementById('mode_course').className = 'show-tpl-' + tpl;
+        document.getElementById('mode_course').className = 'show-tpl-' + document.getElementById('api_template').value;
     }
 
-    // Aggiungi righe dinamiche
+    // MAGIA: Estrazione Automatica dai Link
+    function estraiDaLink(inputElem) {
+        const urlStr = inputElem.value.trim();
+        if(!urlStr) return;
+
+        const row = inputElem.closest('.curr-row');
+        const apiSelector = document.getElementById('api_template');
+
+        try {
+            // EasyStaff (Statale)
+            if (urlStr.includes('easycourse') || urlStr.includes('unimi.it')) {
+                const url = new URL(urlStr);
+                const params = new URLSearchParams(url.search);
+                
+                if(params.has('corso')) row.querySelector('.e_corso').value = params.get('corso');
+                if(params.has('anno2[]')) row.querySelector('.e_curr').value = params.get('anno2[]');
+                if(params.has('anno')) row.querySelector('.e_aa').value = params.get('anno');
+                
+                if(apiSelector.value !== 'easystaff') {
+                    apiSelector.value = 'easystaff';
+                    cambiaTemplateAPI();
+                }
+                animazioneSuccesso(inputElem);
+            } 
+            // Cineca (Insubria)
+            else if (urlStr.includes('linkCalendarioId=') || urlStr.includes('cineca.it')) {
+                const match = urlStr.match(/linkCalendarioId=([a-zA-Z0-9]+)/);
+                if (match && match[1]) {
+                    row.querySelector('.c_link').value = match[1];
+                }
+                if(apiSelector.value !== 'cineca') {
+                    apiSelector.value = 'cineca';
+                    cambiaTemplateAPI();
+                }
+                animazioneSuccesso(inputElem);
+            }
+        } catch (e) {
+            console.log("URL non riconosciuto", e);
+        }
+    }
+
+    function animazioneSuccesso(el) {
+        const bgOriginale = el.style.backgroundColor;
+        el.style.backgroundColor = '#dcfce7'; 
+        el.style.borderColor = '#22c55e';
+        setTimeout(() => {
+            el.style.backgroundColor = bgOriginale;
+            el.style.borderColor = '#bbf7d0';
+        }, 800);
+    }
+
     function aggiungiRigaVariante() {
         const container = document.getElementById('curriculums-container');
         const primaRiga = container.querySelector('.curr-row');
@@ -355,66 +349,52 @@
         
         // Pulisci i campi
         nuovaRiga.querySelector('.v_anno').value = '';
+        nuovaRiga.querySelector('.m_link').value = '';
         nuovaRiga.querySelector('.c_link').value = '';
-        
-        // Mantiene il valore precompilato fisso per Cineca
         nuovaRiga.querySelector('.c_cliente').value = '59f05192a635f443422fe8fd';
-        
         nuovaRiga.querySelector('.e_corso').value = '';
         nuovaRiga.querySelector('.e_curr').value = '';
         nuovaRiga.querySelector('.v_json').value = '';
         
-        // Bottone rimuovi stile premium
+        // Aggiungi bottone rimuovi alla scheda
         if (!nuovaRiga.querySelector('.remove-btn')) {
-            const btnDiv = document.createElement('div');
-            btnDiv.style.flex = "0 0 auto";
-            btnDiv.innerHTML = `<button type="button" class="remove-btn" title="Rimuovi" onclick="this.parentElement.parentElement.remove()">✕</button>`;
-            nuovaRiga.appendChild(btnDiv);
+            const btn = document.createElement('button');
+            btn.className = 'remove-btn';
+            btn.innerHTML = 'Elimina';
+            btn.type = 'button';
+            btn.onclick = function() { this.closest('.variant-card').remove(); };
+            nuovaRiga.appendChild(btn);
         }
         container.appendChild(nuovaRiga);
     }
 
-    // Generatore SQL Università
     function generaSQLUni() {
         const name = document.getElementById('u_name').value.replace(/'/g, "''");
         const domain = document.getElementById('u_domain').value.replace(/'/g, "''");
         const adapter = document.getElementById('u_adapter').value.replace(/'/g, "''").replace(/\\/g, "\\\\");
         const logo = document.getElementById('u_logo').value.replace(/'/g, "''");
 
-        if (!name || !adapter) {
-            alert('Attenzione: Nome e Adapter sono obbligatori!');
-            return;
-        }
+        if (!name || !adapter) return alert('Attenzione: Nome e Adapter sono obbligatori!');
 
-        const sql = `INSERT INTO universities (name, domain, adapter_class, is_active, logo_path) \nVALUES ('${name}', ${domain ? "'"+domain+"'" : "NULL"}, '${adapter}', 1, ${logo ? "'"+logo+"'" : "NULL"});`;
-        document.getElementById('sql_output').value = sql;
+        document.getElementById('sql_output').value = `INSERT INTO universities (name, domain, adapter_class, is_active, logo_path) \nVALUES ('${name}', ${domain ? "'"+domain+"'" : "NULL"}, '${adapter}', 1, ${logo ? "'"+logo+"'" : "NULL"});`;
     }
 
-    // Generatore SQL Corsi e Curriculum
     function generaSQLCorso() {
         const uniId = document.getElementById('c_uni_id').value;
         const name = document.getElementById('c_name').value.replace(/'/g, "''");
         const dep = document.getElementById('c_dep').value.replace(/'/g, "''");
         const tpl = document.getElementById('api_template').value;
         
-        if (!uniId || !name) {
-            alert('Attenzione: ID Università e Nome Corso sono obbligatori!');
-            return;
-        }
+        if (!uniId || !name) return alert('Attenzione: ID Università e Nome Corso sono obbligatori!');
 
-        let sql = `-- Creazione Anagrafica Corso\n`;
-        sql += `INSERT INTO courses (university_id, name, department) \nVALUES (${uniId}, '${name}', ${dep ? "'"+dep+"'" : "NULL"});\n`;
-        sql += `SET @course_id = LAST_INSERT_ID();\n\n`;
-        
-        const righe = document.querySelectorAll('.curr-row');
+        let sql = `-- Creazione Anagrafica Corso\nINSERT INTO courses (university_id, name, department) \nVALUES (${uniId}, '${name}', ${dep ? "'"+dep+"'" : "NULL"});\nSET @course_id = LAST_INSERT_ID();\n\n`;
         let values = [];
         
-        righe.forEach(r => {
+        document.querySelectorAll('.curr-row').forEach(r => {
             const sede = r.querySelector('.v_sede').value.replace(/'/g, "''");
             const anno = r.querySelector('.v_anno').value;
             let jsonString = '';
 
-            // Formattazione JSON Automatica in base al template scelto
             if (tpl === 'cineca') {
                 const link = r.querySelector('.c_link').value.replace(/'/g, "''");
                 const cliente = r.querySelector('.c_cliente').value.replace(/'/g, "''");
@@ -430,18 +410,14 @@
                 jsonString = r.querySelector('.v_json').value.replace(/'/g, "''");
             }
 
-            if (sede && anno && jsonString) {
-                values.push(`(@course_id, '${sede}', ${anno}, '${jsonString}')`);
-            }
+            if (sede && anno && jsonString) values.push(`(@course_id, '${sede}', ${anno}, '${jsonString}')`);
         });
         
         if (values.length > 0) {
-            sql += `-- Inserimento Varianti (Sede / Anno)\n`;
-            sql += `INSERT INTO course_curriculums (course_id, campus_location, year, api_config) VALUES \n`;
-            sql += values.join(',\n') + ';\n';
+            sql += `-- Inserimento Varianti (Sede / Anno)\nINSERT INTO course_curriculums (course_id, campus_location, year, api_config) VALUES \n` + values.join(',\n') + ';\n';
             document.getElementById('sql_output').value = sql;
         } else {
-            document.getElementById('sql_output').value = sql + "-- ATTENZIONE: Nessuna variante generata. Assicurati di aver compilato tutti i campi richiesti.";
+            document.getElementById('sql_output').value = sql + "-- ATTENZIONE: Nessuna variante generata. Assicurati di aver compilato Sede, Anno e i dati dell'API.";
         }
     }
 </script>

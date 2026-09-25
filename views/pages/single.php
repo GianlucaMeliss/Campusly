@@ -19,9 +19,8 @@
         </div>
         
         <div style="margin-top: 4rem; text-align: center;">
-            <button onclick="openContactModal()" class="btn btn-primary">
-                Richiedi informazioni
-            </button>
+            <a href="mailto:<?= htmlspecialchars($app['mail']['contact_email'] ?? 'info@campusly.it') ?>" class="btn btn-primary">
+                <i data-lucide="mail"></i> Contattaci per maggiori informazioni
         </div>
     </div>
 </section>

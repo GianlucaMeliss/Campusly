@@ -52,7 +52,7 @@ class ProfileController
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
         
         $userId = (int)$_SESSION['user_id'];
-        $uniId = 1; // Manteniamo Insubria fisso per ora
+        $uniId = (int)($_POST['university_id'] ?? 1);
         $courseName = trim($_POST['course_name']);
         
         $configJson = json_encode([

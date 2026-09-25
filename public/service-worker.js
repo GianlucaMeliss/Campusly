@@ -1,17 +1,19 @@
 // Cambia questa riga:
 const CACHE_NAME = 'campusly-app-v8'; 
 const DATA_CACHE_NAME = 'campusly-data-v8';
+const PATH_PREFIX = '/Campusly/';
 
 const ASSETS_TO_CACHE = [
-    '/', // La rotta principale del router
-    '/assets/css/calendar.css',
-    '/assets/css/style.css', // Il CSS base del boilerplate
-    '/assets/js/app.js',
-    '/manifest.json',
-    '/img/logo-light.png',
-    '/img/logo-dark.png',
-    '/img/icon-192.png',
-    '/img/icon-512.png'
+    PATH_PREFIX,
+    PATH_PREFIX + 
+    PATH_PREFIX + '/assets/css/calendar.css',
+    PATH_PREFIX + '/assets/css/style.css',
+    PATH_PREFIX + '/assets/js/app.js',
+    PATH_PREFIX + '/manifest.json',
+    PATH_PREFIX + '/img/logo-light.png',
+    PATH_PREFIX + '/img/logo-dark.png',
+    PATH_PREFIX + '/img/icon-192.png',
+    PATH_PREFIX + '/img/icon-512.png'
 ];
 
 self.addEventListener('install', event => {
