@@ -432,3 +432,33 @@ body.dark-mode .lezione-card {
 @keyframes spinSync {
     100% { transform: rotate(360deg); }
 }
+
+/* =========================================
+   GHOST CARDS (Calendario Condiviso)
+   ========================================= */
+.lezione-card.ghost-card {
+    background-color: transparent !important;
+    border: 2px dashed var(--border-color);
+    border-left-width: 2px !important; /* Rimuove la barra spessa laterale */
+    opacity: 0.85;
+    box-shadow: none !important;
+    z-index: 5 !important; /* Stanno sempre "sotto" ai tuoi impegni */
+}
+
+/* Amico occupato genericamente o in altra sede */
+.lezione-card.ghost-card.other-location {
+    border-color: var(--text-muted);
+    color: var(--text-muted);
+}
+
+/* Amico che condivide i dettagli (es. stessa università) */
+.lezione-card.ghost-card.same-location {
+    border-color: var(--primary-color);
+    color: var(--text-primary);
+    background-color: rgba(232, 62, 140, 0.03) !important; /* Leggerissimo sfondo fucsia */
+}
+
+.ghost-card .lezione-titolo {
+    font-size: 0.75rem; /* Testo più piccolo per distinguerlo dai tuoi */
+    font-weight: 600;
+}

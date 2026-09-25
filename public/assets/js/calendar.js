@@ -406,30 +406,8 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
             card.style.zIndex = evento.zIndex;
             card.style.cursor = 'pointer'; 
 
-            if (window.ACTIVE_GROUP_ID && evento.is_me === false) {
-                // Stile "Blocco Fantasma" per gli amici
-                card.style.backgroundColor = 'transparent';
-                card.style.border = '2px dashed var(--text-secondary)';
-                card.style.opacity = '0.7';
-                card.style.color = 'var(--text-secondary)';
-                // Se c'è scritto "Occupato", la facciamo grigia, altrimenti usiamo il colore base
-                if (evento.nome && evento.nome.includes("Occupato")) {
-                    card.style.borderColor = 'var(--text-muted)';
-                } else {
-                    card.style.borderColor = 'var(--primary-color)';
-                }
-            } else {
-                // Stile normale per te (colore materia o evento personale)
-                const hueMateria = getColoreHue(evento.nome || "");
-                card.style.setProperty('--card-hue', hueMateria);
-                if (evento.isPersonale) {
-                    card.style.backgroundColor = 'var(--brand-fuchsia)';
-                    card.style.color = '#fff';
-                }
-            }
-            
             card.addEventListener('click', () => window.apriModaleDettagli(evento));
-            
+
             let titolo = formattaTitolo(evento.nome);
             const partizione = estraiPartizione(evento);
             if (partizione && partizione.descrizione) {
@@ -449,20 +427,41 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
             }
             const auleTesto = aule.length > 0 ? aule.join(', ') : "?";
 
-            const hueMateria = getColoreHue(evento.nome || "");
-            card.style.setProperty('--card-hue', hueMateria);
+            // --- LOGICA STILI: E' MIO O DI UN AMICO? ---
+            const isGhost = window.ACTIVE_GROUP_ID && evento.is_me === false;
 
-            // Stile per Eventi Personali Cloud
-            if(evento.isPersonale) {
-                card.style.backgroundColor = 'var(--brand-fuchsia)';
-                card.style.color = '#fff';
+            if (isGhost) {
+                card.classList.add('ghost-card');
+                
+                // Se il nome contiene "Occupato", applichiamo lo stile grigio neutro
+                if (evento.nome && evento.nome.includes("Occupato")) {
+                    card.classList.add('other-location');
+                } else {
+                    card.classList.add('same-location');
+                }
+                
+                // Card semplificata per l'amico
+                card.innerHTML = `
+                    <div class="lezione-titolo">👤 ${evento.nome}</div>
+                    <div class="lezione-orario">${icnOra} ${orario}</div>
+                    <div class="lezione-dettaglio">${icnAula} ${evento.isPersonale ? (evento.luogo || 'Occupato') : auleTesto}</div>
+                `;
+            } else {
+                // I TUOI IMPEGNI: Colori pieni
+                const hueMateria = getColoreHue(evento.nome || "");
+                card.style.setProperty('--card-hue', hueMateria);
+                if (evento.isPersonale) {
+                    card.style.backgroundColor = 'var(--brand-fuchsia)';
+                    card.style.color = '#fff';
+                }
+
+                card.innerHTML = `
+                    <div class="lezione-titolo">${titolo}</div>
+                    <div class="lezione-orario">${icnOra} ${orario}</div>
+                    <div class="lezione-dettaglio">${icnAula} ${evento.isPersonale ? (evento.luogo || 'Personale') : auleTesto}</div>
+                `;
             }
-
-            card.innerHTML = `
-                <div class="lezione-titolo">${titolo}</div>
-                <div class="lezione-orario">${icnOra} ${orario}</div>
-                <div class="lezione-dettaglio">${icnAula} ${evento.isPersonale ? (evento.luogo || 'Personale') : auleTesto}</div>
-            `;
+            
             colonna.appendChild(card);
         });
         
