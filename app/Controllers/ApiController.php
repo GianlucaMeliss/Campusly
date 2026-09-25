@@ -599,7 +599,17 @@ class ApiController
             }
         }
 
-        echo json_encode($megaEvents);
+        // Raccogliamo i nomi dei membri per il frontend
+        $groupInfo = [];
+        foreach ($members as $m) {
+            $groupInfo[$m['id']] = $m['first_name'];
+        }
+
+        // Restituiamo un oggetto strutturato
+        echo json_encode([
+            'members' => $groupInfo,
+            'events' => $megaEvents
+        ]);
         exit;
     }
 

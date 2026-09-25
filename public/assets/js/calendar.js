@@ -131,8 +131,14 @@ async function caricaSettimana(dataRif) {
 
     if (datiCacheText) {
         // Se abbiamo i dati, niente skeleton: stampiamo subito il calendario
-        const eventiGrezzi = JSON.parse(datiCacheText);
-        renderizzaCalendario(eventiGrezzi, lunedi, true);
+        const payloadGrezzo = JSON.parse(datiReteText);
+            if (window.ACTIVE_GROUP_ID) {
+                // Nuova vista Gruppo
+                renderizzaAgendaGruppo(payloadGrezzo, lunedi);
+            } else {
+                // Vista Personale standard
+                renderizzaCalendario(payloadGrezzo, lunedi, !datiCacheText); 
+            }
     } else {
         // Mostriamo lo skeleton SOLO se non abbiamo mai aperto questa settimana
         mostraSkeleton();
@@ -159,9 +165,14 @@ async function caricaSettimana(dataRif) {
             // Salviamo il nuovo JSON in memoria locale
             localStorage.setItem(cacheKey, datiReteText);
             
-            const eventiGrezzi = JSON.parse(datiReteText);
-            // Rifacciamo il render visivo (invisibile all'utente se i blocchi sono gli stessi)
-            renderizzaCalendario(eventiGrezzi, lunedi, !datiCacheText); 
+            const payloadGrezzo = JSON.parse(datiReteText);
+            if (window.ACTIVE_GROUP_ID) {
+                // Nuova vista Gruppo
+                renderizzaAgendaGruppo(payloadGrezzo, lunedi);
+            } else {
+                // Vista Personale standard
+                renderizzaCalendario(payloadGrezzo, lunedi, !datiCacheText); 
+            }
         }
 
         if (syncStatus) {
@@ -770,3 +781,122 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     caricaSettimana(dataRiferimento);
 });
+
+let giornoSelezionatoGruppo = 1; // 1 = Lunedì, 5 = Venerdì
+
+function renderizzaAgendaGruppo(payload, lunedi) {
+    const container = document.getElementById('calendario-container');
+    if (!container) return;
+
+    const membri = payload.members || {};
+    const eventiTutti = payload.events || [];
+
+    // Nascondiamo il box evidenza classico se c'è
+    const boxEvidenza = document.getElementById('box-evidenza-main');
+    if (boxEvidenza) boxEvidenza.style.display = 'none';
+
+    // 1. Costruzione dei Tabs dei Giorni
+    let htmlTabs = `<div class="group-day-tabs">`;
+    const giorniNomi = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'];
+    
+    for (let i = 0; i < 5; i++) {
+        let d = new Date(lunedi);
+        d.setDate(lunedi.getDate() + i);
+        let isActive = (i + 1) === giornoSelezionatoGruppo ? 'active' : '';
+        htmlTabs += `<div class="group-day-tab ${isActive}" onclick="cambiaGiornoGruppo(${i + 1})">
+            ${giorniNomi[i]} ${d.getDate()}
+        </div>`;
+    }
+    htmlTabs += `</div><div id="agenda-blocks-container"></div>`;
+    
+    container.innerHTML = htmlTabs;
+    const blocksContainer = document.getElementById('agenda-blocks-container');
+
+    // 2. Filtriamo gli eventi per il giorno selezionato
+    const dataRifGiorno = new Date(lunedi);
+    dataRifGiorno.setDate(lunedi.getDate() + (giornoSelezionatoGruppo - 1));
+    const strDataRif = dataRifGiorno.toISOString().split('T')[0];
+
+    const eventiGiorno = eventiTutti.filter(ev => ev.dataInizio.startsWith(strDataRif));
+
+    // 3. Algoritmo di "Affettamento" (Slicing) della linea del tempo
+    let boundaries = new Set(["08:00", "20:00"]); // Orari base
+    
+    eventiGiorno.forEach(ev => {
+        const dStart = new Date(ev.dataInizio);
+        const dEnd = new Date(ev.dataFine);
+        const tStart = dStart.getHours().toString().padStart(2, '0') + ':' + dStart.getMinutes().toString().padStart(2, '0');
+        const tEnd = dEnd.getHours().toString().padStart(2, '0') + ':' + dEnd.getMinutes().toString().padStart(2, '0');
+        
+        if (tStart >= "08:00" && tStart <= "20:00") boundaries.add(tStart);
+        if (tEnd >= "08:00" && tEnd <= "20:00") boundaries.add(tEnd);
+    });
+
+    const sortedBoundaries = Array.from(boundaries).sort();
+    
+    // 4. Costruzione dei blocchi
+    for (let i = 0; i < sortedBoundaries.length - 1; i++) {
+        let start = sortedBoundaries[i];
+        let end = sortedBoundaries[i+1];
+        
+        let liberi = [];
+        let occupati = [];
+
+        Object.keys(membri).forEach(idMem => {
+            const memId = parseInt(idMem);
+            const memNome = membri[idMem];
+            
+            // Cerca se l'utente ha un evento che copre questo slot orario
+            const evOccupante = eventiGiorno.find(ev => {
+                if (ev.member_id !== memId) return false;
+                const eStart = new Date(ev.dataInizio).getHours().toString().padStart(2, '0') + ':' + new Date(ev.dataInizio).getMinutes().toString().padStart(2, '0');
+                const eEnd = new Date(ev.dataFine).getHours().toString().padStart(2, '0') + ':' + new Date(ev.dataFine).getMinutes().toString().padStart(2, '0');
+                // L'evento copre lo slot se inizia prima/uguale allo slot E finisce dopo/uguale alla fine dello slot
+                return (start >= eStart && start < eEnd); 
+            });
+
+            if (evOccupante) occupati.push({ nome: memNome, evento: evOccupante });
+            else liberi.push(memNome);
+        });
+
+        // 5. Render del blocco HTML
+        const isAllFree = occupati.length === 0;
+        let htmlBlock = `<div class="time-slot ${isAllFree ? 'all-free' : ''}">
+            <div class="time-slot-header">
+                <span>🕒 ${start} - ${end}</span>
+                ${isAllFree ? '<span style="color: #10b981; font-size: 0.9rem;">✨ Tutti Liberi</span>' : ''}
+            </div>`;
+
+        if (liberi.length > 0) {
+            htmlBlock += `<div class="slot-section">
+                <div class="slot-section-title">✅ Liberi (${liberi.length})</div>
+                ${liberi.map(n => `<span class="user-chip chip-free">${n}</span>`).join('')}
+            </div>`;
+        }
+
+        if (occupati.length > 0) {
+            htmlBlock += `<div class="slot-section">
+                <div class="slot-section-title">⛔ Occupati (${occupati.length})</div>
+                ${occupati.map(o => {
+                    // Costruiamo il testo aggiuntivo (es. nome materia o sede)
+                    let subText = o.evento.nome;
+                    if (o.evento.risorse && o.evento.risorse.length > 0 && o.evento.risorse[0].aula && o.evento.risorse[0].aula.descrizione) {
+                        subText += ` - ${o.evento.risorse[0].aula.descrizione}`;
+                    }
+                    return `<span class="user-chip chip-busy" title="${subText}">
+                        ${o.nome} <small style="margin-left: 6px; opacity: 0.8; font-weight: 400;">(${subText})</small>
+                    </span>`;
+                }).join('')}
+            </div>`;
+        }
+
+        htmlBlock += `</div>`;
+        blocksContainer.innerHTML += htmlBlock;
+    }
+}
+
+// Funzione globale per cambiare tab
+window.cambiaGiornoGruppo = function(giornoIdx) {
+    giornoSelezionatoGruppo = giornoIdx;
+    caricaSettimana(dataRiferimento); // Ricarica sfruttando la cache veloce
+};
