@@ -475,3 +475,35 @@ body.dark-mode .alert-success { color: #34d399; }
         font-size: 0.85rem; /* Era 0.95rem */
     }
 }
+
+/* =========================================
+   MODALI GLOBALI (Profilo, Calendario, Onboarding)
+   ========================================= */
+.modale-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(23, 21, 37, 0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    display: none; 
+    justify-content: center; align-items: center; z-index: 2000;
+}
+
+.modale-content {
+    position: relative; width: 90%; max-width: 480px; max-height: 90vh;
+    overflow-y: auto; margin: 0; 
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modale-close {
+    position: absolute; top: 16px; right: 16px;
+    background: var(--bg-main); width: 32px; height: 32px; border-radius: 50%;
+    border: none; font-size: 20px; display: flex; justify-content: center; align-items: center;
+    cursor: pointer; color: var(--text-secondary); transition: all 0.2s;
+}
+
+.modale-close:hover { 
+    background: var(--border-color); color: var(--text-primary); 
+}
