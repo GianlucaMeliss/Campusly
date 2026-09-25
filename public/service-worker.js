@@ -1,6 +1,6 @@
 // Cambia questa riga:
-const CACHE_NAME = 'campusly-app-v11'; 
-const DATA_CACHE_NAME = 'campusly-data-v11';
+const CACHE_NAME = 'campusly-app-v12'; 
+const DATA_CACHE_NAME = 'campusly-data-v12';
 const PATH_PREFIX = '/Campusly/';
 
 const ASSETS_TO_CACHE = [
