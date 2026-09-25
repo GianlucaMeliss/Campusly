@@ -11,21 +11,23 @@ let corsiDaNascondere = [];
 let eventiPersonaliCloud = []; 
 let eventiSettimana = [];
 let indiceEvidenza = 0;
+let giornoSelezionatoGruppo = 1; // 1 = Lunedì, 5 = Venerdì
 
 // ==========================================
-// ICONE SVG (Design System)
+// ICONE SVG
 // ==========================================
-const icnOra = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
-const icnAula = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
-const icnProf = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
-const icnData = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
-const icnPartizione = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
+const icnOra = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+const icnAula = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+const icnProf = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+const icnData = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
+const icnPartizione = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
+
 const svgSync = `<svg class="icon-sync spinning" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>`;
 const svgSuccess = `<svg class="icon-success" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
 const svgOffline = `<svg class="icon-offline" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.61 10.61A6 6 0 0 0 4 15.5"></path><path d="M17.39 17.39A6 6 0 0 1 4 15.5"></path><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16 16l-4-4"></path><path d="M12 12l-4 4"></path></svg>`;
 
 // ==========================================
-// HELPER FUNCTIONS (Da vecchio JS)
+// HELPER FUNCTIONS
 // ==========================================
 function estraiPartizione(evento) {
     let part = null;
@@ -64,8 +66,6 @@ function ottieniLunedi(d) {
 }
 
 function isAulaValida(aula) {
-    // Per l'MVP multi-ateneo accettiamo tutte le aule valide restituite dall'API.
-    // In futuro aggiungeremo un filtro basato sulla campus_location dell'utente.
     return aula && aula.descrizione ? true : false; 
 }
 
@@ -73,14 +73,17 @@ function isAulaValida(aula) {
 // CORE DEL CALENDARIO: CARICAMENTO DATI
 // ==========================================
 function caricaDatiUtente() {
-    // 1. Caricamento ISTANTANEO dalla memoria locale (nessun blocco)
-    const cacheCorsi = localStorage.getItem('campusly_corsi_nascosti');
-    const cacheEventi = localStorage.getItem('campusly_eventi_personali');
-    
-    if (cacheCorsi) corsiDaNascondere = JSON.parse(cacheCorsi);
-    if (cacheEventi) eventiPersonaliCloud = JSON.parse(cacheEventi);
+    try {
+        const cacheCorsi = localStorage.getItem('campusly_corsi_nascosti');
+        const cacheEventi = localStorage.getItem('campusly_eventi_personali');
+        if (cacheCorsi) corsiDaNascondere = JSON.parse(cacheCorsi);
+        if (cacheEventi) eventiPersonaliCloud = JSON.parse(cacheEventi);
+    } catch(e) {
+        console.error("Cache preferenze corrotta, pulizia.");
+        localStorage.removeItem('campusly_corsi_nascosti');
+        localStorage.removeItem('campusly_eventi_personali');
+    }
 
-    // 2. Chiamate API in BACKGROUND per aggiornare i dati per il futuro
     fetch(`${API_BASE_PATH}/api/corsi-nascosti`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
@@ -110,7 +113,6 @@ async function caricaSettimana(dataRif) {
     domenica.setDate(lunedi.getDate() + 6);
     domenica.setHours(23, 59, 59, 999);
 
-    // 1. Creiamo una chiave univoca in memoria per questa esatta settimana e gruppo
     const strLunedi = lunedi.toISOString().split('T')[0];
     const cacheKey = `campusly_week_${strLunedi}_g${window.ACTIVE_GROUP_ID || 'me'}`;
 
@@ -123,31 +125,30 @@ async function caricaSettimana(dataRif) {
         syncStatus.title = "Aggiornamento in corso...";
     }
 
-    // Carica preferenze in modo sincrono
     caricaDatiUtente(); 
 
-    // 2. Lettura ISTANTANEA dal LocalStorage (Bypassa il Service Worker)
     let datiCacheText = localStorage.getItem(cacheKey);
+    let cacheValida = false;
 
-    if (datiCacheText) {
-        // Se abbiamo i dati, niente skeleton: stampiamo subito il calendario
-        const payloadGrezzo = JSON.parse(datiReteText);
+    // Lettura sicura dalla memoria locale (Crash proof)
+    try {
+        if (datiCacheText) {
+            const payloadGrezzo = JSON.parse(datiCacheText);
             if (window.ACTIVE_GROUP_ID) {
-                // Nuova vista Gruppo
                 renderizzaAgendaGruppo(payloadGrezzo, lunedi);
             } else {
-                // Vista Personale standard
-                renderizzaCalendario(payloadGrezzo, lunedi, !datiCacheText); 
+                renderizzaCalendario(payloadGrezzo, lunedi, true);
             }
-    } else {
-        // Mostriamo lo skeleton SOLO se non abbiamo mai aperto questa settimana
-        mostraSkeleton();
+            cacheValida = true;
+        }
+    } catch (e) {
+        console.warn("JSON in cache non valido. Pulizia forzata.");
+        localStorage.removeItem(cacheKey);
     }
 
-    // 3. Chiamata di Rete in background (Revalidate)
-    let endpoint = window.ACTIVE_GROUP_ID 
-        ? `/api/calendario/gruppo/${window.ACTIVE_GROUP_ID}` 
-        : `/api/calendario`;
+    if (!cacheValida) mostraSkeleton();
+
+    let endpoint = window.ACTIVE_GROUP_ID ? `/api/calendario/gruppo/${window.ACTIVE_GROUP_ID}` : `/api/calendario`;
     const urlProxy = `${API_BASE_PATH}${endpoint}?inizio=${encodeURIComponent(lunedi.toISOString())}&fine=${encodeURIComponent(domenica.toISOString())}`;
     
     try {
@@ -155,23 +156,19 @@ async function caricaSettimana(dataRif) {
         if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
         
         const datiReteText = await response.text();
+        const payloadGrezzo = JSON.parse(datiReteText); // Se non è JSON, salta nel catch e non salva
 
-        // 4. Se i dati dal server sono cambiati, aggiorniamo UI e Memoria
         if (datiReteText !== datiCacheText) {
             const lunediCheck = ottieniLunedi(dataRiferimento);
             lunediCheck.setHours(0, 0, 0, 0);
             if (lunedi.getTime() !== lunediCheck.getTime()) return; 
             
-            // Salviamo il nuovo JSON in memoria locale
             localStorage.setItem(cacheKey, datiReteText);
             
-            const payloadGrezzo = JSON.parse(datiReteText);
             if (window.ACTIVE_GROUP_ID) {
-                // Nuova vista Gruppo
                 renderizzaAgendaGruppo(payloadGrezzo, lunedi);
             } else {
-                // Vista Personale standard
-                renderizzaCalendario(payloadGrezzo, lunedi, !datiCacheText); 
+                renderizzaCalendario(payloadGrezzo, lunedi, !cacheValida); 
             }
         }
 
@@ -180,13 +177,12 @@ async function caricaSettimana(dataRif) {
             syncStatus.title = "Calendario aggiornato";
             setTimeout(() => { if (syncStatus.innerHTML === svgSuccess) syncStatus.innerHTML = ''; }, 3000);
         }
-
     } catch (error) {
         if (syncStatus) {
             syncStatus.innerHTML = svgOffline;
             syncStatus.title = "Modalità Offline";
         }
-        if (!datiCacheText) {
+        if (!cacheValida) {
             const container = document.getElementById('calendario-container');
             if (container) container.innerHTML = `<div class="errore" style="color:red; padding:20px; text-align:center;">⚠️ Nessuna connessione e nessun dato in memoria.</div>`;
         }
@@ -276,14 +272,12 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
     if (!container) return;
 
     let eventi = [];
-    if (eventiGrezzi && eventiGrezzi.length > 0) {
-        if(Array.isArray(eventiGrezzi)) {
-            eventi = eventiGrezzi.filter(evento => {
-                if (evento.stato === 'A') return false; 
-                const nomeCorso = (evento.nome || "").toUpperCase();
-                return !corsiDaNascondere.some(c => nomeCorso.includes(c.toUpperCase()));
-            });
-        }
+    if (eventiGrezzi && Array.isArray(eventiGrezzi)) {
+        eventi = eventiGrezzi.filter(evento => {
+            if (evento.stato === 'A') return false; 
+            const nomeCorso = (evento.nome || "").toUpperCase();
+            return !corsiDaNascondere.some(c => nomeCorso.includes(c.toUpperCase()));
+        });
     }
 
     const domenica = new Date(lunedi);
@@ -409,16 +403,15 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
 
             const card = document.createElement('div');
             card.className = 'lezione-card';
-
             card.style.top = `${topPx}px`;
             card.style.height = `${altezzaPx}px`;
             card.style.width = evento.widthCSS;
             card.style.left = evento.leftCSS;
             card.style.zIndex = evento.zIndex;
             card.style.cursor = 'pointer'; 
-
+            
             card.addEventListener('click', () => window.apriModaleDettagli(evento));
-
+            
             let titolo = formattaTitolo(evento.nome);
             const partizione = estraiPartizione(evento);
             if (partizione && partizione.descrizione) {
@@ -431,48 +424,24 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
             let aule = [];
             if (evento.risorse) {
                 evento.risorse.forEach(r => { 
-                    if (r.aula && isAulaValida(r.aula)) {
-                        aule.push(r.aula.descrizione);
-                    } 
+                    if (r.aula && isAulaValida(r.aula)) aule.push(r.aula.descrizione);
                 });
             }
             const auleTesto = aule.length > 0 ? aule.join(', ') : "?";
 
-            // --- LOGICA STILI: E' MIO O DI UN AMICO? ---
-            const isGhost = window.ACTIVE_GROUP_ID && evento.is_me === false;
+            const hueMateria = getColoreHue(evento.nome || "");
+            card.style.setProperty('--card-hue', hueMateria);
 
-            if (isGhost) {
-                card.classList.add('ghost-card');
-                
-                // Se il nome contiene "Occupato", applichiamo lo stile grigio neutro
-                if (evento.nome && evento.nome.includes("Occupato")) {
-                    card.classList.add('other-location');
-                } else {
-                    card.classList.add('same-location');
-                }
-                
-                // Card semplificata per l'amico
-                card.innerHTML = `
-                    <div class="lezione-titolo">👤 ${evento.nome}</div>
-                    <div class="lezione-orario">${icnOra} ${orario}</div>
-                    <div class="lezione-dettaglio">${icnAula} ${evento.isPersonale ? (evento.luogo || 'Occupato') : auleTesto}</div>
-                `;
-            } else {
-                // I TUOI IMPEGNI: Colori pieni
-                const hueMateria = getColoreHue(evento.nome || "");
-                card.style.setProperty('--card-hue', hueMateria);
-                if (evento.isPersonale) {
-                    card.style.backgroundColor = 'var(--brand-fuchsia)';
-                    card.style.color = '#fff';
-                }
-
-                card.innerHTML = `
-                    <div class="lezione-titolo">${titolo}</div>
-                    <div class="lezione-orario">${icnOra} ${orario}</div>
-                    <div class="lezione-dettaglio">${icnAula} ${evento.isPersonale ? (evento.luogo || 'Personale') : auleTesto}</div>
-                `;
+            if(evento.isPersonale) {
+                card.style.backgroundColor = 'var(--brand-fuchsia)';
+                card.style.color = '#fff';
             }
-            
+
+            card.innerHTML = `
+                <div class="lezione-titolo">${titolo}</div>
+                <div class="lezione-orario">${icnOra} ${orario}</div>
+                <div class="lezione-dettaglio">${icnAula} ${evento.isPersonale ? (evento.luogo || 'Personale') : auleTesto}</div>
+            `;
             colonna.appendChild(card);
         });
         
@@ -483,6 +452,112 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
 
     if (faiScroll) {
         setTimeout(posizionaSuOggi, 100);
+    }
+}
+
+function renderizzaAgendaGruppo(payload, lunedi) {
+    const container = document.getElementById('calendario-container');
+    if (!container) return;
+
+    const membri = payload.members || {};
+    const eventiTutti = payload.events || [];
+
+    const boxEvidenza = document.getElementById('box-evidenza-main');
+    if (boxEvidenza) boxEvidenza.style.display = 'none';
+
+    let htmlTabs = `<div class="group-day-tabs">`;
+    const giorniNomi = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'];
+    
+    for (let i = 0; i < 5; i++) {
+        let d = new Date(lunedi);
+        d.setDate(lunedi.getDate() + i);
+        let isActive = (i + 1) === giornoSelezionatoGruppo ? 'active' : '';
+        htmlTabs += `<div class="group-day-tab ${isActive}" onclick="cambiaGiornoGruppo(${i + 1})">
+            ${giorniNomi[i]} ${d.getDate()}
+        </div>`;
+    }
+    htmlTabs += `</div><div id="agenda-blocks-container"></div>`;
+    
+    container.innerHTML = htmlTabs;
+    const blocksContainer = document.getElementById('agenda-blocks-container');
+
+    const dataRifGiorno = new Date(lunedi);
+    dataRifGiorno.setDate(lunedi.getDate() + (giornoSelezionatoGruppo - 1));
+    
+    const eventiGiorno = eventiTutti.filter(ev => {
+        if (!ev.dataInizio) return false;
+        const d = new Date(ev.dataInizio);
+        return d.getFullYear() === dataRifGiorno.getFullYear() && 
+               d.getMonth() === dataRifGiorno.getMonth() && 
+               d.getDate() === dataRifGiorno.getDate();
+    });
+
+    let boundaries = new Set(["08:00", "20:00"]); 
+    
+    eventiGiorno.forEach(ev => {
+        const dStart = new Date(ev.dataInizio);
+        const dEnd = new Date(ev.dataFine);
+        const tStart = dStart.getHours().toString().padStart(2, '0') + ':' + dStart.getMinutes().toString().padStart(2, '0');
+        const tEnd = dEnd.getHours().toString().padStart(2, '0') + ':' + dEnd.getMinutes().toString().padStart(2, '0');
+        
+        if (tStart >= "08:00" && tStart <= "20:00") boundaries.add(tStart);
+        if (tEnd >= "08:00" && tEnd <= "20:00") boundaries.add(tEnd);
+    });
+
+    const sortedBoundaries = Array.from(boundaries).sort();
+    
+    for (let i = 0; i < sortedBoundaries.length - 1; i++) {
+        let start = sortedBoundaries[i];
+        let end = sortedBoundaries[i+1];
+        
+        let liberi = [];
+        let occupati = [];
+
+        Object.keys(membri).forEach(idMem => {
+            const memId = parseInt(idMem);
+            const memNome = membri[idMem];
+            
+            const evOccupante = eventiGiorno.find(ev => {
+                if (ev.member_id !== memId) return false;
+                const eStart = new Date(ev.dataInizio).getHours().toString().padStart(2, '0') + ':' + new Date(ev.dataInizio).getMinutes().toString().padStart(2, '0');
+                const eEnd = new Date(ev.dataFine).getHours().toString().padStart(2, '0') + ':' + new Date(ev.dataFine).getMinutes().toString().padStart(2, '0');
+                return (start >= eStart && start < eEnd); 
+            });
+
+            if (evOccupante) occupati.push({ nome: memNome, evento: evOccupante });
+            else liberi.push(memNome);
+        });
+
+        const isAllFree = occupati.length === 0;
+        let htmlBlock = `<div class="time-slot ${isAllFree ? 'all-free' : ''}">
+            <div class="time-slot-header">
+                <span>🕒 ${start} - ${end}</span>
+                ${isAllFree ? '<span style="color: #10b981; font-size: 0.9rem;">✨ Tutti Liberi</span>' : ''}
+            </div>`;
+
+        if (liberi.length > 0) {
+            htmlBlock += `<div class="slot-section">
+                <div class="slot-section-title">✅ Liberi (${liberi.length})</div>
+                ${liberi.map(n => `<span class="user-chip chip-free">${n}</span>`).join('')}
+            </div>`;
+        }
+
+        if (occupati.length > 0) {
+            htmlBlock += `<div class="slot-section">
+                <div class="slot-section-title">⛔ Occupati (${occupati.length})</div>
+                ${occupati.map(o => {
+                    let subText = o.evento.nome;
+                    if (o.evento.risorse && o.evento.risorse.length > 0 && o.evento.risorse[0].aula && o.evento.risorse[0].aula.descrizione) {
+                        subText += ` - ${o.evento.risorse[0].aula.descrizione}`;
+                    }
+                    return `<span class="user-chip chip-busy" title="${subText}">
+                        ${o.nome} <small style="margin-left: 6px; opacity: 0.8; font-weight: 400;">(${subText})</small>
+                    </span>`;
+                }).join('')}
+            </div>`;
+        }
+        htmlBlock += `</div>`;
+        blocksContainer.innerHTML += htmlBlock;
     }
 }
 
@@ -624,7 +699,6 @@ function esportaSettimanaICS() {
 // MODALI E AZIONI CLOUD
 // ==========================================
 window.apriModaleDettagli = function(evento) {
-
     const modale = document.getElementById('modale-dettagli');
     const modaleBody = document.getElementById('modale-body');
     if(!modale || !modaleBody) return;
@@ -713,6 +787,8 @@ window.toggleCorsoNascosto = async function(nomeCorso) {
         });
         if (response.ok) {
             document.getElementById('modale-dettagli').style.display = 'none';
+            // Cancelliamo la cache per forzare un ricaricamento pulito
+            localStorage.removeItem(`campusly_week_${ottieniLunedi(dataRiferimento).toISOString().split('T')[0]}_gme`);
             caricaSettimana(dataRiferimento);
         }
     } catch (error) { alert("Impossibile aggiornare l'impostazione in Cloud."); }
@@ -723,6 +799,7 @@ window.eliminaEventoPersonale = async function(id) {
         try {
             await fetch(`${API_BASE_PATH}/api/eventi-personali/delete/${id}`);
             document.getElementById('modale-dettagli').style.display = 'none';
+            localStorage.removeItem(`campusly_week_${ottieniLunedi(dataRiferimento).toISOString().split('T')[0]}_gme`);
             caricaSettimana(dataRiferimento);
         } catch (error) { alert("Errore durante l'eliminazione dell'evento"); }
     }
@@ -738,6 +815,10 @@ window.cambiaSettimana = function(giorni) {
 window.cambiaEvidenza = function(direzione) {
     indiceEvidenza += direzione;
     aggiornaBoxEvidenza();
+};
+window.cambiaGiornoGruppo = function(giornoIdx) {
+    giornoSelezionatoGruppo = giornoIdx;
+    caricaSettimana(dataRiferimento); 
 };
 
 // ==========================================
@@ -775,128 +856,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 modaleForm.style.display = 'none';
                 form.reset();
+                localStorage.removeItem(`campusly_week_${ottieniLunedi(dataRiferimento).toISOString().split('T')[0]}_gme`);
                 caricaSettimana(dataRiferimento);
             } catch (error) { alert("Errore durante il salvataggio in Cloud dell'evento"); }
         });
     }
     caricaSettimana(dataRiferimento);
 });
-
-let giornoSelezionatoGruppo = 1; // 1 = Lunedì, 5 = Venerdì
-
-function renderizzaAgendaGruppo(payload, lunedi) {
-    const container = document.getElementById('calendario-container');
-    if (!container) return;
-
-    const membri = payload.members || {};
-    const eventiTutti = payload.events || [];
-
-    // Nascondiamo il box evidenza classico se c'è
-    const boxEvidenza = document.getElementById('box-evidenza-main');
-    if (boxEvidenza) boxEvidenza.style.display = 'none';
-
-    // 1. Costruzione dei Tabs dei Giorni
-    let htmlTabs = `<div class="group-day-tabs">`;
-    const giorniNomi = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'];
-    
-    for (let i = 0; i < 5; i++) {
-        let d = new Date(lunedi);
-        d.setDate(lunedi.getDate() + i);
-        let isActive = (i + 1) === giornoSelezionatoGruppo ? 'active' : '';
-        htmlTabs += `<div class="group-day-tab ${isActive}" onclick="cambiaGiornoGruppo(${i + 1})">
-            ${giorniNomi[i]} ${d.getDate()}
-        </div>`;
-    }
-    htmlTabs += `</div><div id="agenda-blocks-container"></div>`;
-    
-    container.innerHTML = htmlTabs;
-    const blocksContainer = document.getElementById('agenda-blocks-container');
-
-    // 2. Filtriamo gli eventi per il giorno selezionato
-    const dataRifGiorno = new Date(lunedi);
-    dataRifGiorno.setDate(lunedi.getDate() + (giornoSelezionatoGruppo - 1));
-    const strDataRif = dataRifGiorno.toISOString().split('T')[0];
-
-    const eventiGiorno = eventiTutti.filter(ev => ev.dataInizio.startsWith(strDataRif));
-
-    // 3. Algoritmo di "Affettamento" (Slicing) della linea del tempo
-    let boundaries = new Set(["08:00", "20:00"]); // Orari base
-    
-    eventiGiorno.forEach(ev => {
-        const dStart = new Date(ev.dataInizio);
-        const dEnd = new Date(ev.dataFine);
-        const tStart = dStart.getHours().toString().padStart(2, '0') + ':' + dStart.getMinutes().toString().padStart(2, '0');
-        const tEnd = dEnd.getHours().toString().padStart(2, '0') + ':' + dEnd.getMinutes().toString().padStart(2, '0');
-        
-        if (tStart >= "08:00" && tStart <= "20:00") boundaries.add(tStart);
-        if (tEnd >= "08:00" && tEnd <= "20:00") boundaries.add(tEnd);
-    });
-
-    const sortedBoundaries = Array.from(boundaries).sort();
-    
-    // 4. Costruzione dei blocchi
-    for (let i = 0; i < sortedBoundaries.length - 1; i++) {
-        let start = sortedBoundaries[i];
-        let end = sortedBoundaries[i+1];
-        
-        let liberi = [];
-        let occupati = [];
-
-        Object.keys(membri).forEach(idMem => {
-            const memId = parseInt(idMem);
-            const memNome = membri[idMem];
-            
-            // Cerca se l'utente ha un evento che copre questo slot orario
-            const evOccupante = eventiGiorno.find(ev => {
-                if (ev.member_id !== memId) return false;
-                const eStart = new Date(ev.dataInizio).getHours().toString().padStart(2, '0') + ':' + new Date(ev.dataInizio).getMinutes().toString().padStart(2, '0');
-                const eEnd = new Date(ev.dataFine).getHours().toString().padStart(2, '0') + ':' + new Date(ev.dataFine).getMinutes().toString().padStart(2, '0');
-                // L'evento copre lo slot se inizia prima/uguale allo slot E finisce dopo/uguale alla fine dello slot
-                return (start >= eStart && start < eEnd); 
-            });
-
-            if (evOccupante) occupati.push({ nome: memNome, evento: evOccupante });
-            else liberi.push(memNome);
-        });
-
-        // 5. Render del blocco HTML
-        const isAllFree = occupati.length === 0;
-        let htmlBlock = `<div class="time-slot ${isAllFree ? 'all-free' : ''}">
-            <div class="time-slot-header">
-                <span>🕒 ${start} - ${end}</span>
-                ${isAllFree ? '<span style="color: #10b981; font-size: 0.9rem;">✨ Tutti Liberi</span>' : ''}
-            </div>`;
-
-        if (liberi.length > 0) {
-            htmlBlock += `<div class="slot-section">
-                <div class="slot-section-title">✅ Liberi (${liberi.length})</div>
-                ${liberi.map(n => `<span class="user-chip chip-free">${n}</span>`).join('')}
-            </div>`;
-        }
-
-        if (occupati.length > 0) {
-            htmlBlock += `<div class="slot-section">
-                <div class="slot-section-title">⛔ Occupati (${occupati.length})</div>
-                ${occupati.map(o => {
-                    // Costruiamo il testo aggiuntivo (es. nome materia o sede)
-                    let subText = o.evento.nome;
-                    if (o.evento.risorse && o.evento.risorse.length > 0 && o.evento.risorse[0].aula && o.evento.risorse[0].aula.descrizione) {
-                        subText += ` - ${o.evento.risorse[0].aula.descrizione}`;
-                    }
-                    return `<span class="user-chip chip-busy" title="${subText}">
-                        ${o.nome} <small style="margin-left: 6px; opacity: 0.8; font-weight: 400;">(${subText})</small>
-                    </span>`;
-                }).join('')}
-            </div>`;
-        }
-
-        htmlBlock += `</div>`;
-        blocksContainer.innerHTML += htmlBlock;
-    }
-}
-
-// Funzione globale per cambiare tab
-window.cambiaGiornoGruppo = function(giornoIdx) {
-    giornoSelezionatoGruppo = giornoIdx;
-    caricaSettimana(dataRiferimento); // Ricarica sfruttando la cache veloce
-};
