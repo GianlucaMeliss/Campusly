@@ -24,6 +24,10 @@ $router->post('/api/corsi-nascosti/toggle', function (): void { (new ApiControll
 $router->get('/api/calendario', function (): void { (new ApiController())->getCalendarEvents(); });
 $router->post('/api/richiesta-onboarding', function () { (new \App\Controllers\ApiController())->submitOnboardingRequest(); });
 
+$router->post('/api/gruppi/crea', function (): void { (new ApiController())->createGroup(); });
+$router->post('/api/gruppi/unisciti', function (): void { (new ApiController())->joinGroup(); });
+$router->get('/api/calendario/gruppo/{id}', function (string $id): void { (new ApiController())->getGroupCalendar($id); });
+
 // Middleware/Controllo di Sicurezza (Funzione helper)
 $requireAuth = function() {
     if (!isset($_SESSION['user_id'])) {

@@ -6,16 +6,19 @@ namespace App\Controllers;
 use App\Core\View;
 use App\Models\UserModel;
 use App\Models\HiddenCourseModel;
+use App\Models\GroupModel;
 
 class ProfileController
 {
     private UserModel $userModel;
     private HiddenCourseModel $hiddenCourseModel;
+    private GroupModel $groupModel;
 
     public function __construct()
     {
         $this->userModel = new UserModel();
         $this->hiddenCourseModel = new HiddenCourseModel();
+        $this->groupModel = new GroupModel();
     }
 
     public function showProfile(): void
@@ -24,6 +27,7 @@ class ProfileController
         
         $courses = $this->userModel->getUserCourses($userId);
         $hiddenCourses = $this->hiddenCourseModel->getHiddenCourses($userId);
+        $groups = $this->groupModel->getUserGroups($userId);
 
         \App\Core\View::render('pages/profile', [
             'pageTitle' => 'Il Mio Profilo - Campusly',
@@ -31,7 +35,8 @@ class ProfileController
             'pageCss' => 'profile',
             'user' => ['name' => $_SESSION['user_name']],
             'courses' => $courses,
-            'hiddenCourses' => $hiddenCourses
+            'hiddenCourses' => $hiddenCourses,
+            'groups' => $groups 
         ]);
     }
 
@@ -68,7 +73,6 @@ class ProfileController
         exit;
     }
 
-    // API per salvare il tema (Light/Dark)
     public function syncTheme(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;

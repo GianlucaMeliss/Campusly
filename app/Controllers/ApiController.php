@@ -474,4 +474,225 @@ class ApiController
         echo json_encode(['status' => 'success']);
         exit;
     }
+
+    // --- SEZIONE GRUPPI ---
+
+    public function createGroup(): void
+    {
+        header("Content-Type: application/json; charset=UTF-8");
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Non autenticato']);
+            exit;
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        if (!isset($data['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $data['csrf_token'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Token CSRF non valido']);
+            exit;
+        }
+
+        $name = trim(htmlspecialchars($data['name'] ?? ''));
+        $privacy = $data['privacy_level'] ?? 'transparent';
+        
+        if (empty($name)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Nome gruppo mancante']);
+            exit;
+        }
+
+        $model = new \App\Models\GroupModel();
+        $result = $model->createGroup((int)$_SESSION['user_id'], $name, $privacy);
+        echo json_encode($result);
+        exit;
+    }
+
+    public function joinGroup(): void
+    {
+        header("Content-Type: application/json; charset=UTF-8");
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Non autenticato']);
+            exit;
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        if (!isset($data['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $data['csrf_token'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Token CSRF non valido']);
+            exit;
+        }
+
+        $code = trim(htmlspecialchars($data['invite_code'] ?? ''));
+        $privacy = $data['privacy_level'] ?? 'logistical';
+        
+        if (empty($code)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Codice mancante']);
+            exit;
+        }
+
+        $model = new \App\Models\GroupModel();
+        $result = $model->joinGroup((int)$_SESSION['user_id'], $code, $privacy);
+        echo json_encode($result);
+        exit;
+    }
+
+    public function getGroupCalendar(string $groupId): void
+    {
+        header("Access-Control-Allow-Origin: *");
+        header("Content-Type: application/json; charset=UTF-8");
+
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Utente non autenticato']);
+            exit;
+        }
+        $userId = (int)$_SESSION['user_id'];
+        $groupId = (int)$groupId;
+
+        $groupModel = new \App\Models\GroupModel();
+        $members = $groupModel->getGroupMembers($groupId);
+        
+        // Controllo di sicurezza: l'utente che fa la richiesta fa parte del gruppo?
+        $isMember = false;
+        foreach ($members as $m) {
+            if ($m['id'] === $userId) $isMember = true;
+        }
+
+        if (!$isMember) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Accesso negato al gruppo']);
+            exit;
+        }
+
+        $dataInizio = $_GET['inizio'] ?? date('Y-m-d\T00:00:00.000\Z');
+        $dataFine = $_GET['fine'] ?? date('Y-m-d\T23:59:59.000\Z', strtotime('+7 days'));
+
+        $megaEvents = [];
+        $userModel = new \App\Models\UserModel();
+        $hiddenCourseModel = new \App\Models\HiddenCourseModel();
+        $personalEventModel = new \App\Models\PersonalEventModel();
+
+        foreach ($members as $member) {
+            $memberId = (int)$member['id'];
+            $privacy = $member['privacy_level'];
+            $isMe = ($memberId === $userId);
+
+            // 1. Recupera corsi nascosti dell'utente
+            $hiddenCourses = $hiddenCourseModel->getHiddenCourses($memberId);
+            
+            // 2. Recupera eventi universitari dalla Cache (o li genera se non esistono)
+            $userCourses = $userModel->getUserCourses($memberId);
+            $eventiUniv = $this->getInternalUserEventsCached($memberId, $userCourses, $dataInizio, $dataFine);
+            
+            // 3. Recupera eventi personali
+            $eventiPers = $personalEventModel->getUserEvents($memberId);
+            
+            // Filtro e Merge Eventi Universitari
+            foreach ($eventiUniv as $ev) {
+                // Salta gli eventi annullati o i corsi nascosti per questo utente
+                if (isset($ev['stato']) && $ev['stato'] === 'A') continue;
+                $nomeCorso = strtoupper($ev['nome'] ?? '');
+                $isHidden = false;
+                foreach ($hiddenCourses as $hc) {
+                    if (strpos($nomeCorso, strtoupper($hc)) !== false) $isHidden = true;
+                }
+                if ($isHidden) continue;
+
+                // Applica Privacy Mask se NON sono io
+                if (!$isMe) {
+                    if ($privacy === 'opaque') {
+                        $ev['nome'] = "Occupato";
+                        unset($ev['risorse']);
+                        unset($ev['dettagliDidattici']);
+                    } elseif ($privacy === 'logistical') {
+                        $ev['nome'] = "Occupato (" . $member['first_name'] . ")";
+                        unset($ev['dettagliDidattici']);
+                        // Manteniamo le risorse per sapere la sede, ma togliamo il prof per privacy
+                        if (isset($ev['risorse'])) {
+                            foreach ($ev['risorse'] as &$r) unset($r['docente']);
+                        }
+                    } elseif ($privacy === 'transparent') {
+                        $ev['nome'] = $ev['nome'] . " (" . $member['first_name'] . ")";
+                    }
+                }
+                $ev['member_id'] = $memberId; // Aggiungiamo un flag per riconoscere il proprietario nel frontend
+                $megaEvents[] = $ev;
+            }
+
+            // Filtro e Merge Eventi Personali
+            foreach ($eventiPers as $ep) {
+                $evFormat = [
+                    'idPersonale' => $ep['id'],
+                    'dataInizio' => str_replace(' ', 'T', $ep['start_time']) . 'Z',
+                    'dataFine' => str_replace(' ', 'T', $ep['end_time']) . 'Z',
+                    'isPersonale' => true,
+                    'member_id' => $memberId
+                ];
+
+                if ($isMe || $privacy === 'transparent') {
+                    $evFormat['nome'] = $isMe ? $ep['title'] : $ep['title'] . " (" . $member['first_name'] . ")";
+                    $evFormat['luogo'] = $ep['location'];
+                } else {
+                    $evFormat['nome'] = "Occupato (" . $member['first_name'] . ")";
+                    $evFormat['luogo'] = "Non condiviso";
+                }
+                
+                $megaEvents[] = $evFormat;
+            }
+        }
+
+        echo json_encode($megaEvents);
+        exit;
+    }
+
+    /**
+     * Helper per recuperare la cache di un utente specifico internamente (senza passare per l'HTTP).
+     * Simula il comportamento di getCalendarEvents ma lo restituisce come array.
+     */
+    private function getInternalUserEventsCached(int $userId, array $userCourses, string $dataInizio, string $dataFine): array
+    {
+        if (empty($userCourses)) return [];
+
+        $hashCorsi = md5(serialize(array_column($userCourses, 'external_course_id')));
+        $dataPulita = substr(preg_replace('/[^0-9]/', '', $dataInizio), 0, 8);
+        $cacheDir = BASE_PATH . '/data/cache';
+        $cacheFile = $cacheDir . '/settimana_' . $dataPulita . '_' . $hashCorsi . '.json';
+
+        // Se la cache è valida (meno di 5 minuti), usala
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
+            $data = json_decode(file_get_contents($cacheFile), true);
+            return is_array($data) ? $data : [];
+        }
+
+        // Altrimenti, recupera le API per questo utente
+        $tuttiGliEventi = [];
+        try {
+            foreach ($userCourses as $courseData) {
+                $extConfig = json_decode($courseData['external_course_id'], true);
+                if (isset($extConfig['linkCalendarioId']) && $extConfig['linkCalendarioId'] === 'AUTO') continue;
+
+                $adapterClass = $courseData['adapter_class'];
+                if (class_exists($adapterClass)) {
+                    $adapter = new $adapterClass();
+                    $eventiCorso = $adapter->getSchedule($dataInizio, $dataFine, $extConfig);
+                    $tuttiGliEventi = array_merge($tuttiGliEventi, $eventiCorso);
+                }
+            }
+            if (!is_dir($cacheDir)) mkdir($cacheDir, 0755, true);
+            file_put_contents($cacheFile, json_encode($tuttiGliEventi));
+        } catch (\Exception $e) {
+            // Se fallisce, usiamo la cache vecchia (stale) se esiste per non rompere il gruppo
+            if (file_exists($cacheFile)) {
+                $data = json_decode(file_get_contents($cacheFile), true);
+                return is_array($data) ? $data : [];
+            }
+        }
+
+        return $tuttiGliEventi;
+    }
 }
