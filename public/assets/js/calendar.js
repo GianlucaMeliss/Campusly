@@ -465,9 +465,9 @@ function renderizzaAgendaGruppo(payload, lunedi) {
     const boxEvidenza = document.getElementById('box-evidenza-main');
     if (boxEvidenza) boxEvidenza.style.display = 'none';
 
+    // 1. Tabs Giorni (L M M G V)
     let htmlTabs = `<div class="group-day-tabs">`;
     const giorniNomi = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'];
-    
     for (let i = 0; i < 5; i++) {
         let d = new Date(lunedi);
         d.setDate(lunedi.getDate() + i);
@@ -476,89 +476,134 @@ function renderizzaAgendaGruppo(payload, lunedi) {
             ${giorniNomi[i]} ${d.getDate()}
         </div>`;
     }
-    htmlTabs += `</div><div id="agenda-blocks-container"></div>`;
-    
+    htmlTabs += `</div>`;
     container.innerHTML = htmlTabs;
-    const blocksContainer = document.getElementById('agenda-blocks-container');
 
+    // 2. Logica Orari (Dalle 8:00 alle 20:00)
+    const oraInizio = 8;
+    const oraFine = 20;
+    const altezzaOra = 65; 
+    const fattoreScala = altezzaOra / 60;
+    const altezzaTotale = (oraFine - oraInizio) * altezzaOra;
+    const headerAltezza = 45;
+
+    // Contenitore Principale
+    const doodle = document.createElement('div');
+    doodle.className = 'doodle-container';
+    
+    // Colonna Tempi a sinistra
+    const timesCol = document.createElement('div');
+    timesCol.className = 'doodle-times';
+    timesCol.style.height = `${altezzaTotale + headerAltezza}px`;
+    timesCol.innerHTML = `<div class="doodle-header" style="height:${headerAltezza}px; border-bottom:none; background:transparent;"></div>`;
+    
+    for (let h = oraInizio; h <= oraFine; h++) {
+        const topPx = (h - oraInizio) * altezzaOra + headerAltezza;
+        timesCol.innerHTML += `<div class="doodle-time-label" style="top: ${topPx}px">${h}:00</div>`;
+    }
+    doodle.appendChild(timesCol);
+
+    // Contenitore scrollabile orizzontalmente per i membri
+    const wrapper = document.createElement('div');
+    wrapper.className = 'doodle-members-wrapper';
+    wrapper.style.height = `${altezzaTotale + headerAltezza}px`;
+
+    // Griglia orizzontale di sfondo (Linee delle ore)
+    const bgGrid = document.createElement('div');
+    bgGrid.style.cssText = `position:absolute; top:${headerAltezza}px; left:0; right:0; height:${altezzaTotale}px; pointer-events:none; z-index:0; min-width:100%;`;
+    for (let h = oraInizio; h <= oraFine; h++) {
+        const topPx = (h - oraInizio) * altezzaOra;
+        bgGrid.innerHTML += `<div style="position:absolute; top:${topPx}px; width:100%; border-top:1px solid var(--border-color); opacity:0.6;"></div>`;
+    }
+    wrapper.appendChild(bgGrid);
+
+    // Estraiamo gli eventi SOLO del giorno selezionato
     const dataRifGiorno = new Date(lunedi);
     dataRifGiorno.setDate(lunedi.getDate() + (giornoSelezionatoGruppo - 1));
+    const strDataRif = dataRifGiorno.toISOString().split('T')[0];
     
-    const eventiGiorno = eventiTutti.filter(ev => {
-        if (!ev.dataInizio) return false;
-        const d = new Date(ev.dataInizio);
-        return d.getFullYear() === dataRifGiorno.getFullYear() && 
-               d.getMonth() === dataRifGiorno.getMonth() && 
-               d.getDate() === dataRifGiorno.getDate();
-    });
+    const eventiGiorno = eventiTutti.filter(ev => ev.dataInizio && ev.dataInizio.startsWith(strDataRif));
 
-    let boundaries = new Set(["08:00", "20:00"]); 
-    
-    eventiGiorno.forEach(ev => {
-        const dStart = new Date(ev.dataInizio);
-        const dEnd = new Date(ev.dataFine);
-        const tStart = dStart.getHours().toString().padStart(2, '0') + ':' + dStart.getMinutes().toString().padStart(2, '0');
-        const tEnd = dEnd.getHours().toString().padStart(2, '0') + ':' + dEnd.getMinutes().toString().padStart(2, '0');
+    // Ordiniamo i Membri: "Tu" stai sempre nella prima colonna a sinistra
+    let keysMembri = Object.keys(membri);
+    let mioId = null;
+    const evMio = eventiTutti.find(e => e.is_me);
+    if (evMio) mioId = evMio.member_id.toString();
+
+    if (mioId && keysMembri.includes(mioId)) {
+        keysMembri = [mioId, ...keysMembri.filter(id => id !== mioId)];
+    }
+
+    // 3. Creiamo la corsia (colonna) per ogni membro
+    keysMembri.forEach(idMem => {
+        const isMe = (idMem === mioId);
+        const nome = isMe ? "Tu" : membri[idMem];
+
+        const col = document.createElement('div');
+        col.className = 'doodle-member-col';
+
+        const header = document.createElement('div');
+        header.className = `doodle-header ${isMe ? 'is-me' : ''}`;
+        header.style.height = `${headerAltezza}px`;
+        header.textContent = nome;
+        col.appendChild(header);
+
+        const grid = document.createElement('div');
+        grid.className = 'doodle-grid';
+        grid.style.height = `${altezzaTotale}px`;
+        grid.style.overflow = 'hidden'; // Taglia fuori gli eventi prima delle 8 e dopo le 20
+
+        let eventiMembro = eventiGiorno.filter(e => e.member_id.toString() === idMem);
         
-        if (tStart >= "08:00" && tStart <= "20:00") boundaries.add(tStart);
-        if (tEnd >= "08:00" && tEnd <= "20:00") boundaries.add(tEnd);
-    });
+        // Calcola le sovrapposizioni usando la funzione che già abbiamo!
+        gestisciSovrapposizioni(eventiMembro); 
 
-    const sortedBoundaries = Array.from(boundaries).sort();
-    
-    for (let i = 0; i < sortedBoundaries.length - 1; i++) {
-        let start = sortedBoundaries[i];
-        let end = sortedBoundaries[i+1];
-        
-        let liberi = [];
-        let occupati = [];
+        eventiMembro.forEach(ev => {
+            const dInizio = new Date(ev.dataInizio);
+            const dFine = new Date(ev.dataFine);
 
-        Object.keys(membri).forEach(idMem => {
-            const memId = parseInt(idMem);
-            const memNome = membri[idMem];
+            const topPx = (((dInizio.getHours() - oraInizio) * 60) + dInizio.getMinutes()) * fattoreScala;
+            const hPx = ((dFine.getTime() - dInizio.getTime()) / 60000) * fattoreScala;
+
+            const card = document.createElement('div');
+            card.className = 'doodle-card';
+            card.style.top = `${topPx}px`;
+            card.style.height = `${hPx}px`;
             
-            const evOccupante = eventiGiorno.find(ev => {
-                if (ev.member_id !== memId) return false;
-                const eStart = new Date(ev.dataInizio).getHours().toString().padStart(2, '0') + ':' + new Date(ev.dataInizio).getMinutes().toString().padStart(2, '0');
-                const eEnd = new Date(ev.dataFine).getHours().toString().padStart(2, '0') + ':' + new Date(ev.dataFine).getMinutes().toString().padStart(2, '0');
-                return (start >= eStart && start < eEnd); 
-            });
+            card.style.width = ev.widthCSS ? `calc(${ev.widthCSS} - 6px)` : 'calc(100% - 8px)';
+            card.style.left = ev.leftCSS ? `calc(${ev.leftCSS} + 2px)` : '4px';
+            card.style.zIndex = ev.zIndex || 10;
 
-            if (evOccupante) occupati.push({ nome: memNome, evento: evOccupante });
-            else liberi.push(memNome);
+            const isOccupatoGenerico = ev.nome && ev.nome.includes("Occupato");
+            
+            // Colori eleganti e leggibili (stile pastello per le card)
+            if (isOccupatoGenerico) {
+                card.style.background = "var(--bg-main)";
+                card.style.borderLeftColor = "var(--text-muted)";
+                card.style.color = "var(--text-secondary)";
+            } else {
+                const hue = getColoreHue(ev.nome || "");
+                card.style.background = `hsl(${hue}, 85%, 94%)`;
+                card.style.borderLeftColor = `hsl(${hue}, 70%, 50%)`;
+                card.style.color = `hsl(${hue}, 85%, 25%)`;
+            }
+
+            card.innerHTML = `
+                <div class="doodle-card-title">${formattaTitolo(ev.nome)}</div>
+                <div>${dInizio.getHours()}:${dInizio.getMinutes().toString().padStart(2,'0')} - ${dFine.getHours()}:${dFine.getMinutes().toString().padStart(2,'0')}</div>
+            `;
+            
+            // Cliccando si apre la modale standard
+            card.addEventListener('click', () => window.apriModaleDettagli(ev));
+            grid.appendChild(card);
         });
 
-        const isAllFree = occupati.length === 0;
-        let htmlBlock = `<div class="time-slot ${isAllFree ? 'all-free' : ''}">
-            <div class="time-slot-header">
-                <span>🕒 ${start} - ${end}</span>
-                ${isAllFree ? '<span style="color: #10b981; font-size: 0.9rem;">✨ Tutti Liberi</span>' : ''}
-            </div>`;
+        col.appendChild(grid);
+        wrapper.appendChild(col);
+    });
 
-        if (liberi.length > 0) {
-            htmlBlock += `<div class="slot-section">
-                <div class="slot-section-title">✅ Liberi (${liberi.length})</div>
-                ${liberi.map(n => `<span class="user-chip chip-free">${n}</span>`).join('')}
-            </div>`;
-        }
-
-        if (occupati.length > 0) {
-            htmlBlock += `<div class="slot-section">
-                <div class="slot-section-title">⛔ Occupati (${occupati.length})</div>
-                ${occupati.map(o => {
-                    let subText = o.evento.nome;
-                    if (o.evento.risorse && o.evento.risorse.length > 0 && o.evento.risorse[0].aula && o.evento.risorse[0].aula.descrizione) {
-                        subText += ` - ${o.evento.risorse[0].aula.descrizione}`;
-                    }
-                    return `<span class="user-chip chip-busy" title="${subText}">
-                        ${o.nome} <small style="margin-left: 6px; opacity: 0.8; font-weight: 400;">(${subText})</small>
-                    </span>`;
-                }).join('')}
-            </div>`;
-        }
-        htmlBlock += `</div>`;
-        blocksContainer.innerHTML += htmlBlock;
-    }
+    doodle.appendChild(wrapper);
+    container.appendChild(doodle);
 }
 
 // ==========================================
