@@ -38,6 +38,11 @@ class AuthController
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_name'] = $user['first_name'];
 
+            $db = \App\Core\Database::getInstance();
+            $stmt = $db->prepare("SELECT theme FROM user_preferences WHERE user_id = ?");
+            $stmt->execute([$user['id']]);
+            $_SESSION['theme'] = $stmt->fetchColumn() ?: 'light';
+
             if ($remember) {
                 // Genera un token sicuro lungo 64 caratteri
                 $token = bin2hex(random_bytes(32)); 

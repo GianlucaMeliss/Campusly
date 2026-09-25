@@ -3,56 +3,27 @@ const basePath = window.APP_BASE_PATH || '';
 
 document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
-    // 1. GESTIONE TEMA (Light / Dark Mode)
+    // 1. GESTIONE TEMA (Sincronizzato in Cloud)
     // ==========================================
-    const btnTheme = document.getElementById('theme-toggle');
-    const iconMoon = document.getElementById('icon-moon');
-    const iconSun = document.getElementById('icon-sun');
-    
-    function impostaTema(scuro) {
-        if (scuro) {
+    window.cambiaTemaCloud = async function(nuovoTema) {
+        // Applica subito visivamente per un feedback istantaneo
+        if (nuovoTema === 'dark') {
             document.body.classList.add('dark-mode');
-            if (iconMoon) iconMoon.style.display = 'none';
-            if (iconSun) iconSun.style.display = 'block';
         } else {
             document.body.classList.remove('dark-mode');
-            if (iconMoon) iconMoon.style.display = 'block';
-            if (iconSun) iconSun.style.display = 'none';
         }
-    }
 
-    // Controlla il tema salvato o le preferenze di sistema
-    const temaSalvato = localStorage.getItem('theme');
-    if (temaSalvato === 'dark') {
-        impostaTema(true);
-    } else if (temaSalvato === 'light') {
-        impostaTema(false);
-    } else {
-        const sistemaScuro = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        impostaTema(sistemaScuro);
-    }
-
-    // Toggle Tema
-    if (btnTheme) {
-        btnTheme.addEventListener('click', async () => {
-            const diventaScuro = !document.body.classList.contains('dark-mode');
-            impostaTema(diventaScuro);
-            
-            const stringaTema = diventaScuro ? 'dark' : 'light';
-            localStorage.setItem('theme', stringaTema);
-            
-            // Sincronizzazione in Cloud (silenziosa)
-            try {
-                await fetch(`${basePath}/api/preferenze/tema`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ theme: stringaTema })
-                });
-            } catch (e) {
-                console.warn("Impossibile sincronizzare il tema in cloud.");
-            }
-        });
-    }
+        // Salva in cloud e aggiorna la sessione PHP
+        try {
+            await fetch(`${basePath}/api/preferenze/tema`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ theme: nuovoTema })
+            });
+        } catch (e) {
+            console.warn("Impossibile sincronizzare il tema in cloud.");
+        }
+    };
 
     // ==========================================
     // 2. GESTIONE GLOBALE MODALI (Chiusura generica)

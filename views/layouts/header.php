@@ -51,7 +51,7 @@ $activePage = $activeMenu ?? ($pageCss ?? 'home');
         <link rel="stylesheet" href="<?= $url('/assets/css/' . $pageCss . '.css') ?>">
     <?php endif; ?>
 </head>
-<body>
+<body class="<?= (isset($_SESSION['theme']) && $_SESSION['theme'] === 'dark') ? 'dark-mode' : '' ?>">
     <header class="site-header">
         <div class="container site-header__inner">
             <!-- USA IL ROUTE HELPER ($route) PER I COLLEGAMENTI ALLE PAGINE -->

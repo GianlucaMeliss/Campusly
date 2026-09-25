@@ -85,6 +85,7 @@ class ProfileController
         ");
         $stmt->execute(['uid' => $userId, 'theme' => $theme, 'theme_update' => $theme]);
         
+        $_SESSION['theme'] = $theme;
         echo json_encode(['status' => 'success']);
         exit;
     }

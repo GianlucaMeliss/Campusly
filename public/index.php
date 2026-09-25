@@ -49,6 +49,11 @@ if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_me'])) {
     if ($user) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_name'] = $user['first_name'];
+
+        $db = \App\Core\Database::getInstance();
+        $stmt = $db->prepare("SELECT theme FROM user_preferences WHERE user_id = ?");
+        $stmt->execute([$user['id']]);
+        $_SESSION['theme'] = $stmt->fetchColumn() ?: 'light';
     } else {
         // Se il token è scaduto o non valido, rimuoviamo il cookie orfano
         setcookie('remember_me', '', time() - 3600, '/');
