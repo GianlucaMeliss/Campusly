@@ -403,3 +403,32 @@ body.dark-mode .lezione-card {
         right: 16px; 
     }
 }
+
+/* =========================================
+   STATO SINCRONIZZAZIONE (Cloud/Sync)
+   ========================================= */
+.sync-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    color: var(--text-secondary);
+}
+
+.icon-sync.spinning {
+    animation: spinSync 1.2s linear infinite;
+    color: var(--primary-color);
+}
+
+.icon-success {
+    color: #10b981; /* Verde */
+}
+
+.icon-offline {
+    color: #ef4444; /* Rosso */
+}
+
+@keyframes spinSync {
+    100% { transform: rotate(360deg); }
+}

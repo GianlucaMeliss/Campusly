@@ -20,6 +20,9 @@ const icnAula = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const icnProf = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
 const icnData = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
 const icnPartizione = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
+const svgSync = `<svg class="icon-sync spinning" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>`;
+const svgSuccess = `<svg class="icon-success" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+const svgOffline = `<svg class="icon-offline" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.61 10.61A6 6 0 0 0 4 15.5"></path><path d="M17.39 17.39A6 6 0 0 1 4 15.5"></path><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16 16l-4-4"></path><path d="M12 12l-4 4"></path></svg>`;
 
 // ==========================================
 // HELPER FUNCTIONS (Da vecchio JS)
@@ -83,6 +86,8 @@ async function caricaDatiUtente() {
 
 async function caricaSettimana(dataRif) {
     const labelSettimana = document.getElementById('label-settimana');
+    const syncStatus = document.getElementById('sync-status');
+    
     const lunedi = ottieniLunedi(dataRif);
     lunedi.setHours(0, 0, 0, 0);
     const domenica = new Date(lunedi);
@@ -93,6 +98,12 @@ async function caricaSettimana(dataRif) {
         labelSettimana.textContent = `${lunedi.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })} - ${domenica.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}`;
     }
 
+    // 1. Imposta lo stato su "Sincronizzazione in corso"
+    if (syncStatus) {
+        syncStatus.innerHTML = svgSync;
+        syncStatus.title = "Aggiornamento dati in corso...";
+    }
+
     mostraSkeleton();
     await caricaDatiUtente();
 
@@ -100,9 +111,10 @@ async function caricaSettimana(dataRif) {
         ? `/api/calendario/gruppo/${window.ACTIVE_GROUP_ID}` 
         : `/api/calendario`;
     const urlProxy = `${API_BASE_PATH}${endpoint}?inizio=${encodeURIComponent(lunedi.toISOString())}&fine=${encodeURIComponent(domenica.toISOString())}`;
-
+    
     let datiCacheText = null;
 
+    // 2. Lettura immediata dalla Cache (Stale)
     try {
         if ('caches' in window) {
             const cacheResponse = await caches.match(urlProxy);
@@ -116,6 +128,7 @@ async function caricaSettimana(dataRif) {
         console.warn("Nessuna cache trovata:", e);
     }
 
+    // 3. Chiamata in background (Revalidate)
     try {
         const response = await fetch(urlProxy);
         if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
@@ -130,10 +143,24 @@ async function caricaSettimana(dataRif) {
             const eventiGrezzi = JSON.parse(datiReteText);
             renderizzaCalendario(eventiGrezzi, lunedi, datiCacheText === null); 
         }
+
+        // Rete OK: Mostra la spunta verde
+        if (syncStatus) {
+            syncStatus.innerHTML = svgSuccess;
+            syncStatus.title = "Calendario aggiornato";
+            setTimeout(() => { if (syncStatus.innerHTML === svgSuccess) syncStatus.innerHTML = ''; }, 3000); // Scompare dopo 3 sec
+        }
+
     } catch (error) {
+        // Nessuna rete: Mostra l'icona cloud sbarrata
+        if (syncStatus) {
+            syncStatus.innerHTML = svgOffline;
+            syncStatus.title = "Modalità Offline (Nessuna connessione)";
+        }
+        
         if (!datiCacheText) {
             const container = document.getElementById('calendario-container');
-            if (container) container.innerHTML = `<div class="errore" style="color:red; padding:20px; text-align:center;">⚠️ Errore di connessione al calendario. Riprova.</div>`;
+            if (container) container.innerHTML = `<div class="errore" style="color:red; padding:20px; text-align:center;">⚠️ Nessuna connessione internet e nessun dato in memoria.</div>`;
         }
     }
 }
