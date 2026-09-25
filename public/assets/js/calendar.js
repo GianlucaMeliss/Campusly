@@ -72,16 +72,32 @@ function isAulaValida(aula) {
 // ==========================================
 // CORE DEL CALENDARIO: CARICAMENTO DATI
 // ==========================================
-async function caricaDatiUtente() {
-    try {
-        const resCorsi = await fetch(`${API_BASE_PATH}/api/corsi-nascosti`);
-        if(resCorsi.ok) corsiDaNascondere = await resCorsi.json();
+function caricaDatiUtente() {
+    // 1. Caricamento ISTANTANEO dalla memoria locale (nessun blocco)
+    const cacheCorsi = localStorage.getItem('campusly_corsi_nascosti');
+    const cacheEventi = localStorage.getItem('campusly_eventi_personali');
+    
+    if (cacheCorsi) corsiDaNascondere = JSON.parse(cacheCorsi);
+    if (cacheEventi) eventiPersonaliCloud = JSON.parse(cacheEventi);
 
-        const resEventi = await fetch(`${API_BASE_PATH}/api/eventi-personali`);
-        if(resEventi.ok) eventiPersonaliCloud = await resEventi.json();
-    } catch (e) {
-        console.warn("Errore caricamento preferenze in Cloud, uso default.", e);
-    }
+    // 2. Chiamate API in BACKGROUND per aggiornare i dati per il futuro
+    fetch(`${API_BASE_PATH}/api/corsi-nascosti`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+            if (data) {
+                corsiDaNascondere = data;
+                localStorage.setItem('campusly_corsi_nascosti', JSON.stringify(data));
+            }
+        }).catch(() => {});
+
+    fetch(`${API_BASE_PATH}/api/eventi-personali`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+            if (data) {
+                eventiPersonaliCloud = data;
+                localStorage.setItem('campusly_eventi_personali', JSON.stringify(data));
+            }
+        }).catch(() => {});
 }
 
 async function caricaSettimana(dataRif) {
@@ -105,7 +121,7 @@ async function caricaSettimana(dataRif) {
     }
 
     mostraSkeleton();
-    await caricaDatiUtente();
+    caricaDatiUtente();
 
     let endpoint = window.ACTIVE_GROUP_ID 
         ? `/api/calendario/gruppo/${window.ACTIVE_GROUP_ID}` 
