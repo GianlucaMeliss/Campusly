@@ -511,26 +511,28 @@ class ApiController
 
     public function joinGroup(int $userId, string $inviteCode, string $privacyLevel = 'logistical'): array
     {
-        $stmt = $this->db->prepare("SELECT id FROM study_groups WHERE invite_code = :code");
-        $stmt->execute(['code' => $inviteCode]);
+        // 1. Usiamo il ? invece del nome
+        $stmt = $this->db->prepare("SELECT id FROM study_groups WHERE invite_code = ?");
+        $stmt->execute([$inviteCode]);
         $group = $stmt->fetch();
 
         if (!$group) {
             return ['status' => 'error', 'message' => 'Codice invito non valido'];
         }
 
-        // Usiamo due parametri distinti (:privacy1 e :privacy2) per evitare il crash PDO
+        // 2. Usiamo i ? sequenziali per aggirare qualsiasi bug di PDO
         $stmtIns = $this->db->prepare("
             INSERT INTO group_members (group_id, user_id, privacy_level) 
-            VALUES (:group_id, :user_id, :privacy1)
-            ON DUPLICATE KEY UPDATE privacy_level = :privacy2
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE privacy_level = ?
         ");
         
+        // Passiamo l'array esattamente nello stesso ordine dei ?
         $stmtIns->execute([
-            'group_id' => $group['id'],
-            'user_id' => $userId,
-            'privacy1' => $privacyLevel,
-            'privacy2' => $privacyLevel
+            $group['id'],
+            $userId,
+            $privacyLevel,
+            $privacyLevel
         ]);
 
         return ['status' => 'success', 'group_id' => $group['id']];
