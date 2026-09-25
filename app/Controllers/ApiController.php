@@ -573,6 +573,7 @@ class ApiController
                     }
                 }
                 $ev['member_id'] = $memberId; 
+                $ev['is_me'] = $isMe;
                 $megaEvents[] = $ev;
             }
 
@@ -582,7 +583,8 @@ class ApiController
                     'dataInizio' => str_replace(' ', 'T', $ep['start_time']) . 'Z',
                     'dataFine' => str_replace(' ', 'T', $ep['end_time']) . 'Z',
                     'isPersonale' => true,
-                    'member_id' => $memberId
+                    'member_id' => $memberId,
+                    'is_me' => $isMe
                 ];
 
                 if ($isMe || $privacy === 'transparent') {

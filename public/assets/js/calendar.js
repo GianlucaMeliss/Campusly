@@ -96,7 +96,11 @@ async function caricaSettimana(dataRif) {
     mostraSkeleton();
     await caricaDatiUtente();
 
-    const urlProxy = `${API_BASE_PATH}/api/calendario?inizio=${encodeURIComponent(lunedi.toISOString())}&fine=${encodeURIComponent(domenica.toISOString())}`;
+    let endpoint = window.ACTIVE_GROUP_ID 
+        ? `/api/calendario/gruppo/${window.ACTIVE_GROUP_ID}` 
+        : `/api/calendario`;
+    const urlProxy = `${API_BASE_PATH}${endpoint}?inizio=${encodeURIComponent(lunedi.toISOString())}&fine=${encodeURIComponent(domenica.toISOString())}`;
+
     let datiCacheText = null;
 
     try {
@@ -350,12 +354,35 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
 
             const card = document.createElement('div');
             card.className = 'lezione-card';
+
             card.style.top = `${topPx}px`;
             card.style.height = `${altezzaPx}px`;
             card.style.width = evento.widthCSS;
             card.style.left = evento.leftCSS;
             card.style.zIndex = evento.zIndex;
             card.style.cursor = 'pointer'; 
+
+            if (window.ACTIVE_GROUP_ID && evento.is_me === false) {
+                // Stile "Blocco Fantasma" per gli amici
+                card.style.backgroundColor = 'transparent';
+                card.style.border = '2px dashed var(--text-secondary)';
+                card.style.opacity = '0.7';
+                card.style.color = 'var(--text-secondary)';
+                // Se c'è scritto "Occupato", la facciamo grigia, altrimenti usiamo il colore base
+                if (evento.nome && evento.nome.includes("Occupato")) {
+                    card.style.borderColor = 'var(--text-muted)';
+                } else {
+                    card.style.borderColor = 'var(--primary-color)';
+                }
+            } else {
+                // Stile normale per te (colore materia o evento personale)
+                const hueMateria = getColoreHue(evento.nome || "");
+                card.style.setProperty('--card-hue', hueMateria);
+                if (evento.isPersonale) {
+                    card.style.backgroundColor = 'var(--brand-fuchsia)';
+                    card.style.color = '#fff';
+                }
+            }
             
             card.addEventListener('click', () => window.apriModaleDettagli(evento));
             

@@ -1,6 +1,6 @@
 <?php
 // MAPPING COLORI UNIVERSITÀ (In futuro gestito dinamicamente dal DB)
-$uniId = $course['university_id'] ?? 1; // 1 = Insubria
+$uniId = $course['university_id'] ?? 1;
 $uniColors = [
     1 => '#007161', // Insubria (Verde)
     2 => '#003366', // Statale Milano (Blu)
@@ -12,8 +12,10 @@ $activeUniColor = $uniColors[$uniId] ?? '#E83E8C';
 ?>
 
 <!-- Passiamo il path a JavaScript -->
+<?php $groupId = $_GET['group'] ?? 'null'; ?>
 <script>
     window.APP_BASE_PATH = '<?= htmlspecialchars($basePath ?? '') ?>';
+    window.ACTIVE_GROUP_ID = <?= htmlspecialchars($groupId) ?>;
 </script>
 
 <!-- WRAPPER TEMA UNIVERSITÀ: Passa il colore dinamicamente al CSS -->
@@ -29,6 +31,12 @@ $activeUniColor = $uniColors[$uniId] ?? '#E83E8C';
     
     <!-- 1. TOOLBAR CALENDARIO -->
     <div class="toolbar-calendario">
+        <?php if ($groupId !== 'null'): ?>
+            <div style="background: var(--brand-purple); color: white; text-align: center; padding: 8px; font-weight: 600; font-size: 0.9rem; display: flex; justify-content: center; align-items: center; gap: 10px;">
+                <span>👥 Stai visualizzando il calendario di gruppo</span>
+                <a href="<?= htmlspecialchars($route('/dashboard')) ?>" class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 4px 10px;">Torna al mio</a>
+            </div>
+        <?php endif; ?>
         <div class="container toolbar-inner">
             
             <!-- Controlli Settimana -->
