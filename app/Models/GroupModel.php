@@ -7,10 +7,8 @@ use App\Core\Model;
 
 class GroupModel extends Model
 {
-    // Crea un nuovo gruppo e vi aggiunge il creatore
     public function createGroup(int $userId, string $groupName, string $privacyLevel = 'transparent'): array
     {
-        // Genera un codice di invito univoco di 8 caratteri
         $inviteCode = strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
 
         try {
@@ -30,7 +28,6 @@ class GroupModel extends Model
         }
     }
 
-    // Aggiunge un utente a un gruppo tramite codice
     public function joinGroup(int $userId, string $inviteCode, string $privacyLevel = 'logistical'): array
     {
         $stmt = $this->db->prepare("SELECT id FROM study_groups WHERE invite_code = :code");
@@ -43,22 +40,21 @@ class GroupModel extends Model
 
         $groupId = $group['id'];
 
-        $stmtIns = $this->db->prepare("
-            INSERT IGNORE INTO group_members (group_id, user_id, privacy_level) 
-            VALUES (:group_id, :user_id, :privacy)
-            ON DUPLICATE KEY UPDATE privacy_level = :privacy
-        ");
-        
-        $stmtIns->execute([
-            'group_id' => $groupId,
-            'user_id' => $userId,
-            'privacy' => $privacyLevel
-        ]);
+        // Controllo esplicito per evitare errori PDO
+        $check = $this->db->prepare("SELECT user_id FROM group_members WHERE group_id = :gid AND user_id = :uid");
+        $check->execute(['gid' => $groupId, 'uid' => $userId]);
+
+        if ($check->fetch()) {
+            $upd = $this->db->prepare("UPDATE group_members SET privacy_level = :priv WHERE group_id = :gid AND user_id = :uid");
+            $upd->execute(['priv' => $privacyLevel, 'gid' => $groupId, 'uid' => $userId]);
+        } else {
+            $ins = $this->db->prepare("INSERT INTO group_members (group_id, user_id, privacy_level) VALUES (:gid, :uid, :priv)");
+            $ins->execute(['gid' => $groupId, 'uid' => $userId, 'priv' => $privacyLevel]);
+        }
 
         return ['status' => 'success', 'group_id' => $groupId];
     }
 
-    // Recupera i gruppi di cui fa parte l'utente
     public function getUserGroups(int $userId): array
     {
         $stmt = $this->db->prepare("
@@ -71,7 +67,6 @@ class GroupModel extends Model
         return $stmt->fetchAll() ?: [];
     }
 
-    // Recupera tutti i membri di un gruppo (necessario per il merge degli orari)
     public function getGroupMembers(int $groupId): array
     {
         $stmt = $this->db->prepare("
