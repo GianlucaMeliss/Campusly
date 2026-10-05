@@ -45,7 +45,7 @@ class UsiAdapter implements UniversityAdapterInterface // Assicurati di avere l'
                 continue;
             }
 
-            // 1. Estrazione Materia
+            /// 1. Estrazione Materia
             $materia = $eventoUSI['course']['name_it'] ?? $eventoUSI['course']['name_en'] ?? $eventoUSI['title'] ?? 'Lezione USI';
             
             // 2. Estrazione Aula ed Edificio (Padiglione)
@@ -61,11 +61,8 @@ class UsiAdapter implements UniversityAdapterInterface // Assicurati di avere l'
                 $professore = implode(', ', array_filter($profNomi));
             }
 
-            // 4. Composizione del titolo visivo per il calendario
+            // 4. TITOLO PULITO: Solo la materia (con eventuale docente a capo se vuoi, altrimenti solo $materia)
             $titoloCard = $materia;
-            if ($aula !== 'Aula non assegnata') {
-                $titoloCard = $aula . ' - ' . $materia;
-            }
             if ($professore !== 'Non assegnato') {
                 $titoloCard .= "\n" . $professore; 
             }
