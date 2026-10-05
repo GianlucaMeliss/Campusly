@@ -225,6 +225,35 @@ body.dark-mode .lezione-card {
     flex-shrink: 0; width: 12px; height: 12px; 
 }
 
+.lezione-card.lezione-breve {
+    padding: 4px 8px;
+    flex-direction: row; /* Mette gli elementi affiancati invece che impilati */
+    align-items: center;
+    gap: 8px;
+}
+
+.lezione-card.lezione-breve .lezione-titolo {
+    margin: 0;
+    -webkit-line-clamp: 1; /* Forza su una sola riga */
+    flex: 1; /* Occupa lo spazio rimanente */
+}
+
+/* Nascondiamo l'aula per le lezioni brevi, sarà visibile nel modale al click */
+.lezione-card.lezione-breve .lezione-dettaglio {
+    display: none;
+}
+
+.lezione-card.lezione-breve .lezione-orario {
+    margin: 0;
+    flex-shrink: 0; /* Impedisce che l'orario venga schiacciato */
+}
+
+/* Su mobile lo spazio è pochissimo: nascondiamo anche l'orario per far leggere il titolo */
+@media (max-width: 768px) {
+    .lezione-card.lezione-breve .lezione-orario {
+        display: none;
+    }
+}
 /* =========================================
    5. SKELETON LOADER
    ========================================= */

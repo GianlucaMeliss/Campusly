@@ -400,9 +400,14 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
 
             const topPx = (((dataInizio.getHours() - oraInizioCalendario) * 60) + dataInizio.getMinutes()) * fattoreScala;
             const altezzaPx = ((dataFine.getTime() - dataInizio.getTime()) / 60000) * fattoreScala;
+            
+            // NUOVO: Calcoliamo la durata per compattare la UI
+            const durataMinuti = (dataFine.getTime() - dataInizio.getTime()) / 60000;
+            const classeBreve = durataMinuti <= 45 ? ' lezione-breve' : '';
 
             const card = document.createElement('div');
-            card.className = 'lezione-card';
+            // Aggiungiamo la classe dinamica
+            card.className = 'lezione-card' + classeBreve;
             card.style.top = `${topPx}px`;
             card.style.height = `${altezzaPx}px`;
             card.style.width = evento.widthCSS;
