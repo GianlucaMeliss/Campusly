@@ -48,14 +48,19 @@ class UsiAdapter
             // 1. Estrazione Materia
             $materia = $eventoUSI['course']['name_it'] ?? $eventoUSI['course']['name_en'] ?? $eventoUSI['title'] ?? 'Lezione USI';
             
-            // 2. Estrazione Aula (Dal campo 'place' -> 'office')
-            $aula = $eventoUSI['place']['office'] ?? '';
+            // 2. Estrazione Aula e Padiglione (Es. "A11 (Palazzo rosso)")
+            $codiceAula = $eventoUSI['place']['office'] ?? '';
+            $padiglione = $eventoUSI['place']['building']['name_it'] ?? '';
+            
+            $aula = $codiceAula;
+            if (!empty($padiglione)) {
+                $aula .= $aula ? " ($padiglione)" : $padiglione;
+            }
 
-            // 3. Estrazione Docente (Dal campo 'course' -> 'lecturers' -> 'data')
+            // 3. Estrazione Docente
             $professore = '';
             if (!empty($eventoUSI['course']['lecturers']['data']) && is_array($eventoUSI['course']['lecturers']['data'])) {
                 $profNomi = array_map(function($l) { 
-                    // Usiamo lo 'short_name' (es. "Langenmayr T.") se disponibile, altrimenti nome completo o cognome
                     return $l['person']['short_name'] ?? $l['person']['last_name'] ?? trim(($l['person']['first_name'] ?? '') . ' ' . ($l['person']['last_name'] ?? '')); 
                 }, $eventoUSI['course']['lecturers']['data']);
                 $professore = implode(', ', array_filter($profNomi));
@@ -64,7 +69,7 @@ class UsiAdapter
             // 4. ASSEMBLAGGIO INTELLIGENTE DEL TITOLO
             $aulaFormattata = $aula ?: 'Da definire';
             
-            // Creiamo il titolo base (es. "A31 - Advanced Skills in English")
+            // Creiamo il titolo base (es. "A11 (Palazzo rosso) - Corporate Strategy")
             $titoloCard = $materia;
             if (!empty($aula)) {
                 $titoloCard = $aula . ' - ' . $materia;
