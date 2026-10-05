@@ -5,9 +5,9 @@ namespace App\Adapters;
 
 use Exception;
 
-class UsiAdapter
+class UsiAdapter implements UniversityAdapterInterface // Assicurati di avere l'interfaccia se la usi
 {
-    public function getSchedule(string $dataInizio, string $dataFine, array $config): array
+    public function getSchedule(string $startDate, string $endDate, array $config): array
     {
         $urlWeb = $config['url'] ?? '';
         if (empty($urlWeb)) {
@@ -30,9 +30,9 @@ class UsiAdapter
 
         $eventi = [];
         
-        // Convertiamo le date richieste da Campusly in timestamp (numeri) per fare confronti veloci
-        $filtroInizioTs = strtotime($dataInizio);
-        $filtroFineTs = strtotime($dataFine);
+        // Conversione per il filtro sulle date
+        $filtroInizioTs = strtotime($startDate);
+        $filtroFineTs = strtotime($endDate);
 
         foreach ($datiUSI as $eventoUSI) {
             $start = $eventoUSI['start'] ?? '';
@@ -48,12 +48,12 @@ class UsiAdapter
             // 1. Estrazione Materia
             $materia = $eventoUSI['course']['name_it'] ?? $eventoUSI['course']['name_en'] ?? $eventoUSI['title'] ?? 'Lezione USI';
             
-            // 2. Estrazione Aula e Padiglione separati
-            $aula = $eventoUSI['place']['office'] ?? '';
-            $padiglione = $eventoUSI['place']['building']['name_it'] ?? '';
+            // 2. Estrazione Aula ed Edificio (Padiglione)
+            $aula = $eventoUSI['place']['office'] ?? 'Aula non assegnata';
+            $edificio = $eventoUSI['place']['building']['name_it'] ?? '';
 
             // 3. Estrazione Docente
-            $professore = '';
+            $professore = 'Non assegnato';
             if (!empty($eventoUSI['course']['lecturers']['data']) && is_array($eventoUSI['course']['lecturers']['data'])) {
                 $profNomi = array_map(function($l) { 
                     return $l['person']['short_name'] ?? $l['person']['last_name'] ?? trim(($l['person']['first_name'] ?? '') . ' ' . ($l['person']['last_name'] ?? '')); 
@@ -61,31 +61,50 @@ class UsiAdapter
                 $professore = implode(', ', array_filter($profNomi));
             }
 
-            // 4. Assemblaggio del titolo visivo (es. "A11 - Corporate Strategy")
+            // 4. Composizione del titolo visivo per il calendario
             $titoloCard = $materia;
-            if (!empty($aula)) {
+            if ($aula !== 'Aula non assegnata') {
                 $titoloCard = $aula . ' - ' . $materia;
             }
-            if (!empty($professore)) {
+            if ($professore !== 'Non assegnato') {
                 $titoloCard .= "\n" . $professore; 
             }
 
-            // 5. Inserimento nel formato Campusly
+            // 5. Date Formattate come la Statale (.000 al posto della Z)
+            $isoStart = date('Y-m-d\TH:i:s.000', $lezioneTs);
+            $isoEnd = date('Y-m-d\TH:i:s.000', !empty($end) ? strtotime($end) : $lezioneTs);
+
+            // 6. MAPPA EVENTO ESATTA PER IL CALENDARIO FRONTEND
             $eventi[] = [
+                'idPersonale' => null,
                 'nome' => trim($titoloCard),
-                'dataInizio' => (new \DateTime($start))->format('Y-m-d\TH:i:s\Z'),
-                'dataFine' => !empty($end) ? (new \DateTime($end))->format('Y-m-d\TH:i:s\Z') : (new \DateTime($start))->format('Y-m-d\TH:i:s\Z'),
+                'dataInizio' => $isoStart,
+                'dataFine' => $isoEnd,
                 'stato' => 'C',
                 'tipoAbbreviazione' => 'Lezione',
+                
+                'dettagliDidattici' => [
+                    [
+                        'partizione' => [
+                            'descrizione' => '' // Lasciato vuoto o riempibile se USI fornisce percorsi
+                        ]
+                    ]
+                ],
+
                 'risorse' => [
                     [
                         'aula' => [
-                            'descrizione' => $aula ?: 'Da definire',
-                            'padiglione' => $padiglione // Il tuo campo separato
+                            'descrizione' => $aula,
+                            'edificio' => [
+                                'descrizione' => $edificio
+                            ]
                         ],
-                        'docente' => ['cognome' => trim($professore)]
+                        'docente' => [
+                            'cognome' => trim($professore)
+                        ]
                     ]
-                ]
+                ],
+                'isPersonale' => false
             ];
         }
 
@@ -99,10 +118,15 @@ class UsiAdapter
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        
+        if (curl_errno($ch)) {
+            throw new Exception("Errore cURL (USI): " . curl_error($ch));
+        }
         curl_close($ch);
 
         return ($httpCode === 200 && $response) ? $response : null;
