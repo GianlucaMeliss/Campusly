@@ -3,107 +3,95 @@ declare(strict_types=1);
 
 namespace App\Adapters;
 
-use DOMDocument;
-use DOMXPath;
 use Exception;
 
 class UsiAdapter
 {
     public function getSchedule(string $dataInizio, string $dataFine, array $config): array
     {
-        $url = $config['url'] ?? '';
-        if (empty($url)) {
+        $urlWeb = $config['url'] ?? '';
+        if (empty($urlWeb)) {
             throw new Exception("URL USI mancante nella configurazione del corso");
         }
 
-        $html = $this->fetchHtml($url);
-        if (!$html) return [];
+        // Magia: Trasformiamo l'URL della pagina web in quello dell'API segreta
+        // Da: https://search.usi.ch/it/offerte-formative/100/.../61/3
+        // A:  https://search.usi.ch/api/educations/100/schedules/61/3
+        $apiUrl = preg_replace('/\/[a-z]{2}\/offerte-formative\/(\d+)\/.*\/piano-orari\/(\d+)\/(\d+)/', '/api/educations/$1/schedules/$2/$3', $urlWeb);
 
-        $dom = new DOMDocument();
-        libxml_use_internal_errors(true);
-        // Usa mb_convert_encoding per evitare problemi con gli accenti (es. "Shorokiy")
-        $dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
-        libxml_clear_errors();
-        $xpath = new DOMXPath($dom);
+        if (!$apiUrl || $apiUrl === $urlWeb) {
+            throw new Exception("L'URL fornito non è nel formato USI corretto");
+        }
+
+        $jsonGrezzo = $this->fetchJson($apiUrl);
+        if (!$jsonGrezzo) return [];
+
+        $datiUSI = json_decode($jsonGrezzo, true);
+        if (!is_array($datiUSI)) return [];
 
         $eventi = [];
 
-        // 1. Troviamo tutte le colonne dei giorni (es. data-date="2026-10-05")
-        $nodiGiorni = $xpath->query("//td[@role='gridcell' and @data-date]");
+        foreach ($datiUSI as $eventoUSI) {
+            // Estrazione dati grezzi (basato sullo standard FullCalendar)
+            $titoloGrezzo = $eventoUSI['title'] ?? 'Lezione';
+            $start = $eventoUSI['start'] ?? '';
+            $end = $eventoUSI['end'] ?? '';
 
-        foreach ($nodiGiorni as $nodoGiorno) {
-            $dataString = $nodoGiorno->getAttribute('data-date'); // 2026-10-05
+            if (empty($start)) continue;
 
-            // 2. Cerchiamo tutti gli eventi dentro quella colonna
-            $nodiEventi = $xpath->query(".//a[contains(@class, 'fc-event')]", $nodoGiorno);
+            // Il titolo dell'USI contiene "Aula", "Materia" e "Professore" separati da '\n' o ' - '
+            $aula = 'Da definire';
+            $titolo = $titoloGrezzo;
+            $professore = '';
 
-            foreach ($nodiEventi as $nodoEvento) {
-                // Estraiamo orario e blocco di testo
-                $orarioTesto = $xpath->query(".//div[contains(@class, 'fc-event-time')]", $nodoEvento)->item(0)?->nodeValue ?? '';
-                $testoGrezzo = $xpath->query(".//div[contains(@class, 'fc-event-title')]", $nodoEvento)->item(0)?->nodeValue ?? '';
-
-                if (empty($orarioTesto) || empty($testoGrezzo)) continue;
-
-                // A. Parsing dell'orario (es. "15:30 - 17:00")
-                $orari = explode('-', $orarioTesto);
-                $oraInizio = trim($orari[0]);
-                $oraFine = trim($orari[1] ?? $orari[0]);
-
-                // Ricostruiamo le date ISO (aggiungiamo Z per semplicità, poi il JS le adatta)
-                $startIso = $dataString . 'T' . $oraInizio . ':00Z';
-                $endIso   = $dataString . 'T' . $oraFine . ':00Z';
-
-                // B. Parsing intelligente di Aula, Titolo e Professore
-                $testoGrezzo = trim($testoGrezzo);
-                $linee = array_values(array_filter(array_map('trim', explode("\n", $testoGrezzo))));
+            // Pulizia del Titolo
+            $linee = array_filter(array_map('trim', explode("\n", $titoloGrezzo)));
+            if (!empty($linee)) {
+                $primaRiga = array_shift($linee); // "A11 - Household Economics"
                 
-                $primaRiga = $linee[0] ?? '';
-                $secondaRiga = $linee[1] ?? ''; // Spesso contiene il prof
-                
-                $parti = explode(' - ', $primaRiga, 3);
-                
-                $aula = 'Da definire';
-                $titolo = $primaRiga;
-                $prof = $secondaRiga;
-
-                // Se la prima riga è formattata come "A11 - Titolo Corso"
-                if (count($parti) >= 2) {
-                    $aula = trim($parti[0]);
-                    $titolo = trim($parti[1]);
-                    // A volte il prof è sulla stessa riga (es. "A12 - Business - Bostock")
-                    if (count($parti) === 3 && empty($secondaRiga)) {
-                        $prof = trim($parti[2]);
-                    }
+                // Separiamo eventuale Aula all'inizio
+                $parti = explode(' - ', $primaRiga, 2);
+                if (count($parti) === 2) {
+                    $aula = trim($parti[0]); // "A11"
+                    $titolo = trim($parti[1]); // "Household Economics"
+                } else {
+                    $titolo = trim($primaRiga);
                 }
 
-                // C. Inserimento nel formato standard
-                $eventi[] = [
-                    'nome' => $titolo,
-                    'dataInizio' => $startIso,
-                    'dataFine' => $endIso,
-                    'stato' => 'C',
-                    'tipoAbbreviazione' => 'Lezione',
-                    'risorse' => [
-                        [
-                            'aula' => ['descrizione' => $aula],
-                            'docente' => ['cognome' => $prof]
-                        ]
-                    ]
-                ];
+                // Le righe successive di solito contengono il professore
+                if (!empty($linee)) {
+                    $professore = implode(', ', $linee);
+                }
             }
+
+            // Aggiunta al formato standard Campusly
+            $eventi[] = [
+                'nome' => $titolo,
+                'dataInizio' => (new \DateTime($start))->format('Y-m-d\TH:i:s\Z'),
+                'dataFine' => !empty($end) ? (new \DateTime($end))->format('Y-m-d\TH:i:s\Z') : (new \DateTime($start))->format('Y-m-d\TH:i:s\Z'),
+                'stato' => 'C', // Confermato
+                'tipoAbbreviazione' => 'Lezione',
+                'risorse' => [
+                    [
+                        'aula' => ['descrizione' => $aula],
+                        'docente' => ['cognome' => $professore]
+                    ]
+                ]
+            ];
         }
 
         return $eventi;
     }
 
-    private function fetchHtml(string $url): ?string
+    private function fetchJson(string $url): ?string
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        // È importante fingersi un browser per evitare blocchi Cloudflare
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36');
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
