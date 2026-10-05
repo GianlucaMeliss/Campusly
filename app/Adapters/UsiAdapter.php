@@ -48,14 +48,9 @@ class UsiAdapter
             // 1. Estrazione Materia
             $materia = $eventoUSI['course']['name_it'] ?? $eventoUSI['course']['name_en'] ?? $eventoUSI['title'] ?? 'Lezione USI';
             
-            // 2. Estrazione Aula e Padiglione (Es. "A11 (Palazzo rosso)")
-            $codiceAula = $eventoUSI['place']['office'] ?? '';
+            // 2. Estrazione Aula e Padiglione separati
+            $aula = $eventoUSI['place']['office'] ?? '';
             $padiglione = $eventoUSI['place']['building']['name_it'] ?? '';
-            
-            $aula = $codiceAula;
-            if (!empty($padiglione)) {
-                $aula .= $aula ? " ($padiglione)" : $padiglione;
-            }
 
             // 3. Estrazione Docente
             $professore = '';
@@ -66,16 +61,11 @@ class UsiAdapter
                 $professore = implode(', ', array_filter($profNomi));
             }
 
-            // 4. ASSEMBLAGGIO INTELLIGENTE DEL TITOLO
-            $aulaFormattata = $aula ?: 'Da definire';
-            
-            // Creiamo il titolo base (es. "A11 (Palazzo rosso) - Corporate Strategy")
+            // 4. Assemblaggio del titolo visivo (es. "A11 - Corporate Strategy")
             $titoloCard = $materia;
             if (!empty($aula)) {
                 $titoloCard = $aula . ' - ' . $materia;
             }
-            
-            // Aggiungiamo i professori a capo
             if (!empty($professore)) {
                 $titoloCard .= "\n" . $professore; 
             }
@@ -89,7 +79,10 @@ class UsiAdapter
                 'tipoAbbreviazione' => 'Lezione',
                 'risorse' => [
                     [
-                        'aula' => ['descrizione' => $aulaFormattata],
+                        'aula' => [
+                            'descrizione' => $aula ?: 'Da definire',
+                            'padiglione' => $padiglione // Il tuo campo separato
+                        ],
                         'docente' => ['cognome' => trim($professore)]
                     ]
                 ]
