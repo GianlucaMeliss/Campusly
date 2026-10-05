@@ -14,9 +14,7 @@ class UsiAdapter
             throw new Exception("URL USI mancante nella configurazione del corso");
         }
 
-        // Magia: Trasformiamo l'URL della pagina web in quello dell'API segreta
-        // Da: https://search.usi.ch/it/offerte-formative/100/.../61/3
-        // A:  https://search.usi.ch/api/educations/100/schedules/61/3
+        // Conversione URL da Web ad API
         $apiUrl = preg_replace('/\/[a-z]{2}\/offerte-formative\/(\d+)\/.*\/piano-orari\/(\d+)\/(\d+)/', '/api/educations/$1/schedules/$2/$3', $urlWeb);
 
         if (!$apiUrl || $apiUrl === $urlWeb) {
@@ -26,47 +24,42 @@ class UsiAdapter
         $jsonGrezzo = $this->fetchJson($apiUrl);
         if (!$jsonGrezzo) return [];
 
-        $datiUSI = json_decode($jsonGrezzo, true);
+        $risposta = json_decode($jsonGrezzo, true);
+        
+        // IL SEGRETO ERA QUI: I dati sono dentro la chiave "data"
+        $datiUSI = $risposta['data'] ?? [];
         if (!is_array($datiUSI)) return [];
 
         $eventi = [];
 
         foreach ($datiUSI as $eventoUSI) {
-            // Estrazione dati grezzi (basato sullo standard FullCalendar)
-            $titoloGrezzo = $eventoUSI['title'] ?? 'Lezione';
             $start = $eventoUSI['start'] ?? '';
             $end = $eventoUSI['end'] ?? '';
 
             if (empty($start)) continue;
 
-            // Il titolo dell'USI contiene "Aula", "Materia" e "Professore" separati da '\n' o ' - '
+            // Il nome del corso si trova annidato dentro "course" > "name_it"
+            $titolo = $eventoUSI['course']['name_it'] ?? $eventoUSI['course']['name_en'] ?? 'Lezione USI';
+            
+            // Cerchiamo le aule (spesso sono in un array "rooms")
             $aula = 'Da definire';
-            $titolo = $titoloGrezzo;
+            if (!empty($eventoUSI['rooms']) && is_array($eventoUSI['rooms'])) {
+                $auleNomi = array_map(function($r) { return $r['name'] ?? ''; }, $eventoUSI['rooms']);
+                $aula = implode(' + ', array_filter($auleNomi));
+            } elseif (!empty($eventoUSI['room'])) {
+                $aula = is_array($eventoUSI['room']) ? ($eventoUSI['room']['name'] ?? '') : $eventoUSI['room'];
+            }
+
+            // Cerchiamo i professori (spesso in un array "teachers")
             $professore = '';
-
-            // Pulizia del Titolo
-            $linee = array_filter(array_map('trim', explode("\n", $titoloGrezzo)));
-            if (!empty($linee)) {
-                $primaRiga = array_shift($linee); // "A11 - Household Economics"
-                
-                // Separiamo eventuale Aula all'inizio
-                $parti = explode(' - ', $primaRiga, 2);
-                if (count($parti) === 2) {
-                    $aula = trim($parti[0]); // "A11"
-                    $titolo = trim($parti[1]); // "Household Economics"
-                } else {
-                    $titolo = trim($primaRiga);
-                }
-
-                // Le righe successive di solito contengono il professore
-                if (!empty($linee)) {
-                    $professore = implode(', ', $linee);
-                }
+            if (!empty($eventoUSI['teachers']) && is_array($eventoUSI['teachers'])) {
+                $profNomi = array_map(function($t) { return ($t['last_name'] ?? '') . ' ' . ($t['first_name'] ?? ''); }, $eventoUSI['teachers']);
+                $professore = implode(', ', array_filter($profNomi));
             }
 
             // Aggiunta al formato standard Campusly
             $eventi[] = [
-                'nome' => $titolo,
+                'nome' => trim($titolo),
                 'dataInizio' => (new \DateTime($start))->format('Y-m-d\TH:i:s\Z'),
                 'dataFine' => !empty($end) ? (new \DateTime($end))->format('Y-m-d\TH:i:s\Z') : (new \DateTime($start))->format('Y-m-d\TH:i:s\Z'),
                 'stato' => 'C', // Confermato
@@ -74,7 +67,7 @@ class UsiAdapter
                 'risorse' => [
                     [
                         'aula' => ['descrizione' => $aula],
-                        'docente' => ['cognome' => $professore]
+                        'docente' => ['cognome' => trim($professore)]
                     ]
                 ]
             ];
@@ -89,8 +82,7 @@ class UsiAdapter
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        // È importante fingersi un browser per evitare blocchi Cloudflare
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36');
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         
         $response = curl_exec($ch);
