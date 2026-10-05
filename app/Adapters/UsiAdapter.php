@@ -48,38 +48,29 @@ class UsiAdapter
             // 1. Estrazione Materia
             $materia = $eventoUSI['course']['name_it'] ?? $eventoUSI['course']['name_en'] ?? $eventoUSI['title'] ?? 'Lezione USI';
             
-            // 2. Estrazione Aula (Cerchiamo in tutte le varianti usate dalle API)
-            $aula = '';
-            if (!empty($eventoUSI['rooms']) && is_array($eventoUSI['rooms'])) {
-                $auleNomi = array_map(fn($r) => $r['name'] ?? '', $eventoUSI['rooms']);
-                $aula = implode(' + ', array_filter($auleNomi));
-            } elseif (!empty($eventoUSI['locations']) && is_array($eventoUSI['locations'])) {
-                $auleNomi = array_map(fn($l) => $l['name'] ?? '', $eventoUSI['locations']);
-                $aula = implode(' + ', array_filter($auleNomi));
-            } elseif (!empty($eventoUSI['room'])) {
-                $aula = is_array($eventoUSI['room']) ? ($eventoUSI['room']['name'] ?? '') : $eventoUSI['room'];
-            }
+            // 2. Estrazione Aula (Dal campo 'place' -> 'office')
+            $aula = $eventoUSI['place']['office'] ?? '';
 
-            // 3. Estrazione Docente
+            // 3. Estrazione Docente (Dal campo 'course' -> 'lecturers' -> 'data')
             $professore = '';
-            if (!empty($eventoUSI['teachers']) && is_array($eventoUSI['teachers'])) {
-                $profNomi = array_map(fn($t) => trim(($t['last_name'] ?? '') . ' ' . ($t['first_name'] ?? '')), $eventoUSI['teachers']);
-                $professore = implode(', ', array_filter($profNomi));
-            } elseif (!empty($eventoUSI['professors']) && is_array($eventoUSI['professors'])) {
-                $profNomi = array_map(fn($t) => trim(($t['last_name'] ?? '') . ' ' . ($t['first_name'] ?? '')), $eventoUSI['professors']);
+            if (!empty($eventoUSI['course']['lecturers']['data']) && is_array($eventoUSI['course']['lecturers']['data'])) {
+                $profNomi = array_map(function($l) { 
+                    // Usiamo lo 'short_name' (es. "Langenmayr T.") se disponibile, altrimenti nome completo o cognome
+                    return $l['person']['short_name'] ?? $l['person']['last_name'] ?? trim(($l['person']['first_name'] ?? '') . ' ' . ($l['person']['last_name'] ?? '')); 
+                }, $eventoUSI['course']['lecturers']['data']);
                 $professore = implode(', ', array_filter($profNomi));
             }
 
             // 4. ASSEMBLAGGIO INTELLIGENTE DEL TITOLO
             $aulaFormattata = $aula ?: 'Da definire';
             
-            // Se c'è un'aula, la mettiamo all'inizio come fa l'USI (es. "A31 - Advanced Skills")
+            // Creiamo il titolo base (es. "A31 - Advanced Skills in English")
             $titoloCard = $materia;
             if (!empty($aula)) {
                 $titoloCard = $aula . ' - ' . $materia;
             }
             
-            // Opzionale: Se vuoi che il nome del prof si veda subito sulla card (e non solo cliccandoci)
+            // Aggiungiamo i professori a capo
             if (!empty($professore)) {
                 $titoloCard .= "\n" . $professore; 
             }
