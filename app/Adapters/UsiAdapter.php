@@ -14,7 +14,6 @@ class UsiAdapter
             throw new Exception("URL USI mancante nella configurazione del corso");
         }
 
-        // Conversione URL da Web ad API
         $apiUrl = preg_replace('/\/[a-z]{2}\/offerte-formative\/(\d+)\/.*\/piano-orari\/(\d+)\/(\d+)/', '/api/educations/$1/schedules/$2/$3', $urlWeb);
 
         if (!$apiUrl || $apiUrl === $urlWeb) {
@@ -26,11 +25,14 @@ class UsiAdapter
 
         $risposta = json_decode($jsonGrezzo, true);
         
-        // IL SEGRETO ERA QUI: I dati sono dentro la chiave "data"
         $datiUSI = $risposta['data'] ?? [];
         if (!is_array($datiUSI)) return [];
 
         $eventi = [];
+        
+        // Convertiamo le date richieste da Campusly in timestamp (numeri) per fare confronti veloci
+        $filtroInizioTs = strtotime($dataInizio);
+        $filtroFineTs = strtotime($dataFine);
 
         foreach ($datiUSI as $eventoUSI) {
             $start = $eventoUSI['start'] ?? '';
@@ -38,10 +40,17 @@ class UsiAdapter
 
             if (empty($start)) continue;
 
-            // Il nome del corso si trova annidato dentro "course" > "name_it"
+            // Convertiamo l'orario della lezione USI in timestamp
+            $lezioneTs = strtotime($start);
+
+            // IL FILTRO MAGICO: Se la lezione è prima dell'inizio richiesto o dopo la fine, la scartiamo!
+            // Usiamo il segno '<' e '>' per un controllo rigoroso
+            if ($lezioneTs < $filtroInizioTs || $lezioneTs > $filtroFineTs) {
+                continue;
+            }
+
             $titolo = $eventoUSI['course']['name_it'] ?? $eventoUSI['course']['name_en'] ?? 'Lezione USI';
             
-            // Cerchiamo le aule (spesso sono in un array "rooms")
             $aula = 'Da definire';
             if (!empty($eventoUSI['rooms']) && is_array($eventoUSI['rooms'])) {
                 $auleNomi = array_map(function($r) { return $r['name'] ?? ''; }, $eventoUSI['rooms']);
@@ -50,19 +59,17 @@ class UsiAdapter
                 $aula = is_array($eventoUSI['room']) ? ($eventoUSI['room']['name'] ?? '') : $eventoUSI['room'];
             }
 
-            // Cerchiamo i professori (spesso in un array "teachers")
             $professore = '';
             if (!empty($eventoUSI['teachers']) && is_array($eventoUSI['teachers'])) {
                 $profNomi = array_map(function($t) { return ($t['last_name'] ?? '') . ' ' . ($t['first_name'] ?? ''); }, $eventoUSI['teachers']);
                 $professore = implode(', ', array_filter($profNomi));
             }
 
-            // Aggiunta al formato standard Campusly
             $eventi[] = [
                 'nome' => trim($titolo),
                 'dataInizio' => (new \DateTime($start))->format('Y-m-d\TH:i:s\Z'),
                 'dataFine' => !empty($end) ? (new \DateTime($end))->format('Y-m-d\TH:i:s\Z') : (new \DateTime($start))->format('Y-m-d\TH:i:s\Z'),
-                'stato' => 'C', // Confermato
+                'stato' => 'C',
                 'tipoAbbreviazione' => 'Lezione',
                 'risorse' => [
                     [
