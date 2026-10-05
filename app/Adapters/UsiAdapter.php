@@ -61,11 +61,8 @@ class UsiAdapter implements UniversityAdapterInterface // Assicurati di avere l'
                 $professore = implode(', ', array_filter($profNomi));
             }
 
-            // 4. TITOLO PULITO: Solo la materia (con eventuale docente a capo se vuoi, altrimenti solo $materia)
-            $titoloCard = $materia;
-            if ($professore !== 'Non assegnato') {
-                $titoloCard .= "\n" . $professore; 
-            }
+            // 4. TITOLO PULITO: Solo la materia
+            $titoloCard = trim($materia);
 
             // 5. Date Formattate come la Statale (.000 al posto della Z)
             $isoStart = date('Y-m-d\TH:i:s.000', $lezioneTs);
