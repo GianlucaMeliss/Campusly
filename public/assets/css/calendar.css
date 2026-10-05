@@ -225,49 +225,37 @@ body.dark-mode .lezione-card {
     flex-shrink: 0; width: 12px; height: 12px; 
 }
 /* =========================================
-   CARD EVENTI BREVI (<= 45 min)
+   CARD EVENTI BREVI (<= 60 min) - LAYOUT VERTICALE
    ========================================= */
 .lezione-card.lezione-breve {
-    padding: 2px 8px; /* Drastica riduzione del padding verticale */
+    padding: 4px 6px; /* Riduciamo il padding per guadagnare spazio interno */
     display: flex;
-    flex-direction: row; 
-    align-items: center;
-    justify-content: space-between; /* Titolo a sinistra, orario a destra */
-    gap: 8px;
-    min-height: 24px; /* Salvezza UI: garantisce leggibilità anche per eventi di 15 min */
+    flex-direction: column; /* Manteniamo l'impaginazione originale */
+    justify-content: flex-start;
+    gap: 2px; /* Spazio minimo tra titolo e orario */
 }
 
+/* 1. Mostriamo il titolo su una sola riga (con i puntini se è lungo) */
 .lezione-card.lezione-breve .lezione-titolo {
     margin: 0;
-    font-size: 0.75rem; /* Font leggermente ridotto */
-    font-weight: 700;
-    line-height: 1;
-    white-space: nowrap; /* Forza il testo su una sola riga */
+    font-size: 0.75rem;
+    line-height: 1.1;
+    white-space: nowrap; 
     overflow: hidden;
     text-overflow: ellipsis;
-    flex: 1 1 auto;
 }
 
+/* 2. Manteniamo l'orario compatto */
 .lezione-card.lezione-breve .lezione-orario {
     margin: 0;
     font-size: 0.7rem;
-    font-weight: 600;
-    line-height: 1;
+    line-height: 1.1;
     opacity: 0.9;
-    flex: 0 0 auto;
 }
 
-/* Pulizia: nascondiamo dettagli secondari e icone SVG per fare spazio */
-.lezione-card.lezione-breve .lezione-dettaglio,
-.lezione-card.lezione-breve .lezione-orario svg {
+/* 3. NASCONDIAMO L'AULA per fare spazio */
+.lezione-card.lezione-breve .lezione-dettaglio {
     display: none !important;
-}
-
-/* Su mobile lo spazio orizzontale è minuscolo: nascondiamo l'orario */
-@media (max-width: 768px) {
-    .lezione-card.lezione-breve .lezione-orario {
-        display: none !important;
-    }
 }
 /* =========================================
    5. SKELETON LOADER
