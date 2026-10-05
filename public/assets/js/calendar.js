@@ -576,7 +576,6 @@ function renderizzaAgendaGruppo(payload, lunedi) {
 
             const isOccupatoGenerico = ev.nome && ev.nome.includes("Occupato");
             
-            // Colori eleganti e leggibili (stile pastello per le card)
             if (isOccupatoGenerico) {
                 card.style.background = "var(--bg-main)";
                 card.style.borderLeftColor = "var(--text-muted)";
@@ -593,7 +592,6 @@ function renderizzaAgendaGruppo(payload, lunedi) {
                 <div>${dInizio.getHours()}:${dInizio.getMinutes().toString().padStart(2,'0')} - ${dFine.getHours()}:${dFine.getMinutes().toString().padStart(2,'0')}</div>
             `;
             
-            // Cliccando si apre la modale standard
             card.addEventListener('click', () => window.apriModaleDettagli(ev));
             grid.appendChild(card);
         });
