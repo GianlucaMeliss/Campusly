@@ -29,6 +29,26 @@ const svgOffline = `<svg class="icon-offline" viewBox="0 0 24 24" width="20" hei
 // ==========================================
 // HELPER FUNCTIONS
 // ==========================================
+
+// Escape HTML: da usare su OGNI dato esterno/utente inserito in innerHTML
+function esc(v) {
+    return String(v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function csrfToken() {
+    const m = document.querySelector('meta[name="csrf-token"]');
+    return m ? m.getAttribute('content') : '';
+}
+
+function stessoGiornoLocale(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
 function estraiPartizione(evento) {
     let part = null;
     if (evento.evento && evento.evento.dettagliDidattici && evento.evento.dettagliDidattici.length > 0) {
@@ -417,11 +437,11 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
             
             card.addEventListener('click', () => window.apriModaleDettagli(evento));
             
-            let titolo = formattaTitolo(evento.nome);
+            let titolo = esc(formattaTitolo(evento.nome));
             const partizione = estraiPartizione(evento);
             if (partizione && partizione.descrizione) {
                 const descShort = partizione.descrizione.replace(/cognomi\s*/i, "").trim();
-                titolo += ` <span style="font-size: 0.85em; opacity: 0.9;">(${descShort})</span>`;
+                titolo += ` <span style="font-size: 0.85em; opacity: 0.9;">(${esc(descShort)})</span>`;
             }
 
             const orario = `${dataInizio.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })} - ${dataFine.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })}`;
@@ -445,7 +465,7 @@ function renderizzaCalendario(eventiGrezzi, lunedi, faiScroll = false) {
             card.innerHTML = `
                 <div class="lezione-titolo">${titolo}</div>
                 <div class="lezione-orario">${icnOra} ${orario}</div>
-                <div class="lezione-dettaglio">${icnAula} ${evento.isPersonale ? (evento.luogo || 'Personale') : auleTesto}</div>
+                <div class="lezione-dettaglio">${icnAula} ${esc(evento.isPersonale ? (evento.luogo || 'Personale') : auleTesto)}</div>
             `;
             colonna.appendChild(card);
         });
@@ -525,9 +545,8 @@ function renderizzaAgendaGruppo(payload, lunedi) {
     // Estraiamo gli eventi SOLO del giorno selezionato
     const dataRifGiorno = new Date(lunedi);
     dataRifGiorno.setDate(lunedi.getDate() + (giornoSelezionatoGruppo - 1));
-    const strDataRif = dataRifGiorno.toISOString().split('T')[0];
-    
-    const eventiGiorno = eventiTutti.filter(ev => ev.dataInizio && ev.dataInizio.startsWith(strDataRif));
+    // Confronto sul giorno LOCALE (toISOString() converte in UTC e farebbe slittare di un giorno)
+    const eventiGiorno = eventiTutti.filter(ev => ev.dataInizio && stessoGiornoLocale(new Date(ev.dataInizio), dataRifGiorno));
 
     // Ordiniamo i Membri: "Tu" stai sempre nella prima colonna a sinistra
     let keysMembri = Object.keys(membri);
@@ -593,7 +612,7 @@ function renderizzaAgendaGruppo(payload, lunedi) {
             }
 
             card.innerHTML = `
-                <div class="doodle-card-title">${formattaTitolo(ev.nome)}</div>
+                <div class="doodle-card-title">${esc(formattaTitolo(ev.nome))}</div>
                 <div>${dInizio.getHours()}:${dInizio.getMinutes().toString().padStart(2,'0')} - ${dFine.getHours()}:${dFine.getMinutes().toString().padStart(2,'0')}</div>
             `;
             
@@ -664,7 +683,7 @@ function aggiornaBoxEvidenza() {
     let partizioneHtml = "";
     const partizione = estraiPartizione(evento);
     if (partizione && partizione.descrizione) {
-        partizioneHtml = `<div class="hl-riga">${icnPartizione} <span>${partizione.codice ? partizione.codice + ' - ' : ''}${partizione.descrizione}</span></div>`;
+        partizioneHtml = `<div class="hl-riga">${icnPartizione} <span>${esc((partizione.codice ? partizione.codice + ' - ' : '') + partizione.descrizione)}</span></div>`;
     }
 
     box.innerHTML = `
@@ -683,13 +702,13 @@ function aggiornaBoxEvidenza() {
                 </button>
             </div>
         </div>
-        <h2 class="hl-titolo">${titoloFormattato}</h2>
+        <h2 class="hl-titolo">${esc(titoloFormattato)}</h2>
         <div class="hl-dettagli">
             <div class="hl-riga">${icnData} <span>${dataTesto.charAt(0).toUpperCase() + dataTesto.slice(1)}</span></div>
             <div class="hl-riga">${icnOra} <strong>${orario}</strong></div>
             ${partizioneHtml}
-            <div class="hl-riga">${icnAula} <span>${auleTesto}</span></div>
-            ${!evento.isPersonale ? `<div class="hl-riga">${icnProf} <span>Prof.${docentiTesto}</span></div>` : ''}
+            <div class="hl-riga">${icnAula} <span>${esc(auleTesto)}</span></div>
+            ${!evento.isPersonale ? `<div class="hl-riga">${icnProf} <span>Prof.${esc(docentiTesto)}</span></div>` : ''}
         </div>
     `;
     document.getElementById('box-evidenza-main').style.setProperty('--card-hue', hueMateria);
@@ -768,7 +787,7 @@ window.apriModaleDettagli = function(evento) {
                 const nomeAula = r.aula.descrizione || "Aula non specificata";
                 const edificio = (r.aula.edificio && r.aula.edificio.descrizione) ? r.aula.edificio.descrizione : "Padiglione non specificato";
                 const capienza = r.aula.capienza ? `Capienza: ${r.aula.capienza} posti` : "Capienza ignota";
-                infoAule.push(`<li><strong>${nomeAula}</strong><small>${edificio} • ${capienza}</small></li>`);
+                infoAule.push(`<li><strong>${esc(nomeAula)}</strong><small>${esc(edificio)} • ${esc(capienza)}</small></li>`);
             }
             if (r.docente) {
                 infoDocenti.push(`${r.docente.nome || ""} ${r.docente.cognome || ""}`.trim());
@@ -776,7 +795,7 @@ window.apriModaleDettagli = function(evento) {
         });
     }
     
-    const auleHtml = infoAule.length > 0 ? `<ul class="lista-aule" style="padding-left:24px; margin:4px 0;">${infoAule.join('')}</ul>` : `<span style='margin-left: 8px;'>${evento.luogo || 'Da definire'}</span>`;
+    const auleHtml = infoAule.length > 0 ? `<ul class="lista-aule" style="padding-left:24px; margin:4px 0;">${infoAule.join('')}</ul>` : `<span style='margin-left: 8px;'>${esc(evento.luogo || 'Da definire')}</span>`;
     const docentiTesto = infoDocenti.length > 0 ? infoDocenti.join(', ') : "Non assegnato";
     const tipoLezione = evento.tipoAbbreviazione || (evento.isPersonale ? "Evento Personale" : "Lezione");
     const stato = evento.stato === "A" ? " - ANNULLATA" : "";
@@ -784,7 +803,7 @@ window.apriModaleDettagli = function(evento) {
     let partizioneHtml = "";
     const partizione = estraiPartizione(evento);
     if (partizione && partizione.descrizione) {
-        partizioneHtml = `<div class="hl-riga">${icnPartizione} <span><strong>Partizione:</strong> ${partizione.codice ? partizione.codice + ' - ' : ''}${partizione.descrizione}</span></div>`;
+        partizioneHtml = `<div class="hl-riga">${icnPartizione} <span><strong>Partizione:</strong> ${esc((partizione.codice ? partizione.codice + ' - ' : '') + partizione.descrizione)}</span></div>`;
     }
 
     document.querySelector('.modale-content').style.setProperty('--card-hue', hueMateria);
@@ -793,14 +812,14 @@ window.apriModaleDettagli = function(evento) {
     const toggleBtnColor = isHidden ? "#10b981" : "#ef4444";
 
     modaleBody.innerHTML = `
-        <span class="hl-badge ${evento.stato === 'A' ? 'badge-now' : 'badge-future'} modale-badge">${tipoLezione}${stato}</span>
-        <h2 class="hl-titolo" style="margin-top: 0;">${titoloFormattato}</h2>
+        <span class="hl-badge ${evento.stato === 'A' ? 'badge-now' : 'badge-future'} modale-badge">${esc(tipoLezione)}${stato}</span>
+        <h2 class="hl-titolo" style="margin-top: 0;">${esc(titoloFormattato)}</h2>
         
         <div class="hl-dettagli" style="grid-template-columns: 1fr; gap: 16px;">
-            <div class="hl-riga">${icnData} <span style="text-transform: capitalize;">${dataTesto}</span></div>
+            <div class="hl-riga">${icnData} <span style="text-transform: capitalize;">${esc(dataTesto)}</span></div>
             <div class="hl-riga">${icnOra} <strong>${orario}</strong></div>
             ${partizioneHtml}
-            ${!evento.isPersonale ? `<div class="hl-riga">${icnProf} <span><strong>Docente:</strong>${docentiTesto}</span></div>` : ''}
+            ${!evento.isPersonale ? `<div class="hl-riga">${icnProf} <span><strong>Docente:</strong>${esc(docentiTesto)}</span></div>` : ''}
             <div class="hl-riga" style="align-items: flex-start;">
                 <div style="margin-top: 2px;">${icnAula}</div>
                 <div><strong>Luogo:</strong> ${auleHtml}</div>
@@ -808,19 +827,22 @@ window.apriModaleDettagli = function(evento) {
         </div>
     `;
 
-    if (!evento.isPersonale) {
-        const nomeCorsoSafe = (evento.nome || "").replace(/'/g, "\\'");
-        modaleBody.innerHTML += `
-            <button onclick="window.toggleCorsoNascosto('${nomeCorsoSafe}')" style="margin-top: 24px; width: 100%; padding: 14px; background: ${toggleBtnColor}; color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 700;">
-                ${toggleBtnText}
-            </button>
-        `;
-    } else {
-        modaleBody.innerHTML += `
-            <button onclick="window.eliminaEventoPersonale('${evento.idPersonale}')" style="margin-top: 24px; width: 100%; padding: 14px; background: #ef4444; color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 700;">
-                🗑️ Elimina Evento
-            </button>
-        `;
+    // Nel calendario di gruppo gli eventi degli altri membri sono in sola lettura
+    if (evento.is_me !== false) {
+        const btnAzione = document.createElement('button');
+        btnAzione.type = 'button';
+        btnAzione.style.cssText = 'margin-top: 24px; width: 100%; padding: 14px; color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 700;';
+
+        if (!evento.isPersonale) {
+            btnAzione.style.background = toggleBtnColor;
+            btnAzione.textContent = toggleBtnText;
+            btnAzione.addEventListener('click', () => window.toggleCorsoNascosto(evento.nome));
+        } else {
+            btnAzione.style.background = '#ef4444';
+            btnAzione.textContent = '🗑️ Elimina Evento';
+            btnAzione.addEventListener('click', () => window.eliminaEventoPersonale(evento.idPersonale));
+        }
+        modaleBody.appendChild(btnAzione);
     }
     modale.style.display = 'flex';
 };
@@ -830,7 +852,7 @@ window.toggleCorsoNascosto = async function(nomeCorso) {
     try {
         const response = await fetch(`${API_BASE_PATH}/api/corsi-nascosti/toggle`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
             body: JSON.stringify({ course_name: nomeCorso })
         });
         if (response.ok) {
@@ -845,7 +867,11 @@ window.toggleCorsoNascosto = async function(nomeCorso) {
 window.eliminaEventoPersonale = async function(id) {
     if(confirm("Vuoi davvero eliminare questo evento personale?")) {
         try {
-            await fetch(`${API_BASE_PATH}/api/eventi-personali/delete/${id}`);
+            const res = await fetch(`${API_BASE_PATH}/api/eventi-personali/delete/${encodeURIComponent(id)}`, {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': csrfToken() }
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
             document.getElementById('modale-dettagli').style.display = 'none';
             localStorage.removeItem(`campusly_week_${ottieniLunedi(dataRiferimento).toISOString().split('T')[0]}_gme`);
             caricaSettimana(dataRiferimento);
@@ -897,16 +923,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 luogo: document.getElementById('form-luogo').value || "Luogo non specificato"
             };
             try {
-                await fetch(`${API_BASE_PATH}/api/eventi-personali`, {
+                const res = await fetch(`${API_BASE_PATH}/api/eventi-personali`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
                     body: JSON.stringify(payload)
                 });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
                 modaleForm.style.display = 'none';
                 form.reset();
                 localStorage.removeItem(`campusly_week_${ottieniLunedi(dataRiferimento).toISOString().split('T')[0]}_gme`);
                 caricaSettimana(dataRiferimento);
-            } catch (error) { alert("Errore durante il salvataggio in Cloud dell'evento"); }
+            } catch (error) { alert("Impossibile salvare l'evento. Controlla che l'ora di fine sia successiva all'inizio e riprova."); }
         });
     }
     caricaSettimana(dataRiferimento);

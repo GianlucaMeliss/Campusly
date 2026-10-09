@@ -35,6 +35,7 @@ $activePage = $activeMenu ?? ($pageCss ?? 'home');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title><?= htmlspecialchars($pageTitle ?? 'Campusly') ?></title>
+    <meta name="csrf-token" content="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
     
     <meta name="theme-color" content="#F8F7FA">
     <link rel="manifest" href="<?= $url('/manifest.json') ?>">

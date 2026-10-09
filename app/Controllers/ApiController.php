@@ -6,6 +6,8 @@ namespace App\Controllers;
 
 class ApiController
 {
+    private const PRIVACY_LEVELS = ['transparent', 'logistical', 'opaque'];
+
     public function sendContact(): void
     {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -138,7 +140,6 @@ class ApiController
 
     public function getCalendarEvents(): void
     {
-        header("Access-Control-Allow-Origin: *");
         header("Content-Type: application/json; charset=UTF-8");
 
         if (!isset($_SESSION['user_id'])) {
@@ -194,8 +195,9 @@ class ApiController
             echo $jsonResponse;
 
         } catch (\Exception $e) {
+            error_log('[getCalendarEvents] ' . $e->getMessage());
             http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            echo json_encode(['status' => 'error', 'message' => 'Servizio orari temporaneamente non disponibile']);
         }
         exit;
     }
@@ -250,6 +252,7 @@ class ApiController
 
     public function savePersonalEvent(): void
     {
+        header("Content-Type: application/json; charset=UTF-8");
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
         
         if (!isset($_SESSION['user_id'])) {
@@ -260,20 +263,26 @@ class ApiController
         $userId = (int)$_SESSION['user_id'];
         $data = json_decode(file_get_contents('php://input'), true);
 
-        if ($data) {
-            $model = new \App\Models\PersonalEventModel();
-            $startTime = date('Y-m-d H:i:s', strtotime($data['dataInizio']));
-            $endTime = date('Y-m-d H:i:s', strtotime($data['dataFine']));
-            
-            $model->createEvent($userId, [
-                'title' => $data['nome'],
-                'start_time' => $startTime,
-                'end_time' => $endTime,
-                'location' => $data['luogo']
-            ]);
-            
-            echo json_encode(['status' => 'success']);
+        $title = is_array($data) && isset($data['nome']) && is_string($data['nome']) ? trim($data['nome']) : '';
+        $location = is_array($data) && isset($data['luogo']) && is_string($data['luogo']) ? trim($data['luogo']) : '';
+        $startTs = is_array($data) && isset($data['dataInizio']) && is_string($data['dataInizio']) ? strtotime($data['dataInizio']) : false;
+        $endTs = is_array($data) && isset($data['dataFine']) && is_string($data['dataFine']) ? strtotime($data['dataFine']) : false;
+
+        if ($title === '' || $startTs === false || $endTs === false || $endTs <= $startTs) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Dati evento non validi']);
+            exit;
         }
+
+        $model = new \App\Models\PersonalEventModel();
+        $model->createEvent($userId, [
+            'title' => \App\Core\Str::cut($title, 255),
+            'start_time' => date('Y-m-d H:i:s', $startTs),
+            'end_time' => date('Y-m-d H:i:s', $endTs),
+            'location' => \App\Core\Str::cut($location !== '' ? $location : 'Non specificato', 255)
+        ]);
+
+        echo json_encode(['status' => 'success']);
         exit;
     }
 
@@ -296,6 +305,7 @@ class ApiController
 
     public function deletePersonalEvent(string $eventId): void
     {
+        header("Content-Type: application/json; charset=UTF-8");
         if (!isset($_SESSION['user_id'])) {
             http_response_code(401);
             echo json_encode(['error' => 'Non autenticato']);
@@ -327,6 +337,7 @@ class ApiController
 
     public function toggleHiddenCourse(): void
     {
+        header("Content-Type: application/json; charset=UTF-8");
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
         
         if (!isset($_SESSION['user_id'])) {
@@ -338,9 +349,13 @@ class ApiController
 
         $data = json_decode(file_get_contents('php://input'), true);
 
-        if (isset($data['course_name'])) {
+        $courseName = is_array($data) && isset($data['course_name']) && is_string($data['course_name'])
+            ? \App\Core\Str::cut(trim($data['course_name']), 255)
+            : '';
+
+        if ($courseName !== '') {
             $model = new \App\Models\HiddenCourseModel();
-            $result = $model->toggleCourse($userId, strtoupper(trim($data['course_name'])));
+            $result = $model->toggleCourse($userId, strtoupper($courseName));
             echo json_encode($result);
         } else {
             http_response_code(400);
@@ -456,12 +471,18 @@ class ApiController
             exit;
         }
 
-        $name = trim(htmlspecialchars($data['name'] ?? ''));
+        $name = is_array($data) && isset($data['name']) && is_string($data['name']) ? \App\Core\Str::cut(trim($data['name']), 100) : '';
         $privacy = $data['privacy_level'] ?? 'transparent';
         
-        if (empty($name)) {
+        if ($name === '') {
             http_response_code(400);
             echo json_encode(['error' => 'Nome gruppo mancante']);
+            exit;
+        }
+
+        if (!is_string($privacy) || !in_array($privacy, self::PRIVACY_LEVELS, true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Livello di privacy non valido']);
             exit;
         }
 
@@ -488,12 +509,20 @@ class ApiController
             exit;
         }
 
-        $code = trim(htmlspecialchars($data['invite_code'] ?? ''));
+        $code = is_array($data) && isset($data['invite_code']) && is_string($data['invite_code'])
+            ? strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $data['invite_code']))
+            : '';
         $privacy = $data['privacy_level'] ?? 'logistical';
         
-        if (empty($code)) {
+        if ($code === '') {
             http_response_code(400);
             echo json_encode(['error' => 'Codice mancante']);
+            exit;
+        }
+
+        if (!is_string($privacy) || !in_array($privacy, self::PRIVACY_LEVELS, true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Livello di privacy non valido']);
             exit;
         }
 
@@ -505,7 +534,6 @@ class ApiController
 
     public function getGroupCalendar(string $groupId): void
     {
-        header("Access-Control-Allow-Origin: *");
         header("Content-Type: application/json; charset=UTF-8");
 
         if (!isset($_SESSION['user_id'])) {
@@ -521,7 +549,7 @@ class ApiController
         
         $isMember = false;
         foreach ($members as $m) {
-            if ($m['id'] === $userId) $isMember = true;
+            if ((int)$m['id'] === $userId) $isMember = true;
         }
 
         if (!$isMember) {

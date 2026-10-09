@@ -2,6 +2,16 @@
 declare(strict_types=1);
 
 if (session_status() === PHP_SESSION_NONE) {
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path'     => '/',
+        'secure'   => $isHttps,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 
@@ -47,6 +57,7 @@ if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_me'])) {
     $user = $userModel->findUserByToken($tokenHash);
 
     if ($user) {
+        session_regenerate_id(true);
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_name'] = $user['first_name'];
 
@@ -63,5 +74,10 @@ if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_me'])) {
 $router = new \App\Core\Router();
 
 require BASEPATH . '/config/routes.php';
+
+// Protezione CSRF centralizzata: ogni POST deve portare il token di sessione
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    \App\Core\Csrf::verifyOrFail();
+}
 
 $router->dispatch($_SERVER['REQUEST_URI'] ?? '/', $_SERVER['REQUEST_METHOD'] ?? 'GET');

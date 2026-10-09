@@ -19,6 +19,7 @@
                                 <p><?= htmlspecialchars($c['uni_name']) ?> &bull; <?= htmlspecialchars($c['campus_location']) ?> &bull; <?= $c['year'] ?>&deg; Anno</p>
                             </div>
                             <form action="<?= htmlspecialchars($route('/profilo/rimuovi-corso')) ?>" method="POST" onsubmit="return confirm('Vuoi davvero rimuovere questo corso dal calendario?');">
+                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                                 <input type="hidden" name="profile_id" value="<?= $c['profile_id'] ?>">
                                 <button type="submit" class="btn-danger" title="Rimuovi corso">X</button>
                             </form>
@@ -216,7 +217,7 @@
         try {
             const response = await fetch(window.APP_BASE_PATH + '/api/corsi-nascosti/toggle', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.CSRF_TOKEN },
                 body: JSON.stringify({ course_name: nomeCorso })
             });
             if (response.ok) location.reload(); 

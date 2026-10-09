@@ -11,6 +11,29 @@ let wizardData = {
 // Usa la variabile globale dichiarata nella vista
 const apiBasePath = window.APP_BASE_PATH || '';
 
+// Escape HTML per ogni dato dinamico inserito in innerHTML
+function esc(v) {
+    return String(v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Crea un bottone "toggle" senza usare onclick inline
+function creaToggle(testo, { selected = false, locked = false, onClick = null } = {}) {
+    const el = document.createElement('div');
+    el.className = 'toggle-btn' + (selected ? ' selected' : '');
+    if (locked) {
+        el.style.cursor = 'default';
+        el.style.pointerEvents = 'none';
+    }
+    el.textContent = testo;
+    if (onClick) el.addEventListener('click', () => onClick(el));
+    return el;
+}
+
 function vaiAStep(stepNum) {
     document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
     document.getElementById('step-' + stepNum).classList.add('active');
@@ -36,9 +59,11 @@ async function selezionaUni(id, nome) {
         
         if (corsi.length > 0) {
             corsi.forEach(corso => {
-                const nomeSafe = corso.name.replace(/'/g, "\\'");
-                // AGGIUNTO IL PASSAGGIO DELL'ID CORSO:
-                list.innerHTML += `<div class="course-item" onclick="selezionaCorso(${corso.id}, '${nomeSafe}')">${corso.name}</div>`;
+                const item = document.createElement('div');
+                item.className = 'course-item';
+                item.textContent = corso.name;
+                item.addEventListener('click', () => selezionaCorso(corso.id, corso.name));
+                list.appendChild(item);
             });
         } else {
             list.innerHTML = `<div style="text-align:center; padding: 20px;"><button class="btn btn-secondary" onclick="apriRichiesta('course')">Nessun corso, richiedilo ora</button></div>`;
@@ -91,7 +116,7 @@ async function selezionaCorso(courseId, nomeCorso) {
                 const sedeScelta = sedi[0];
                 wizardData.sede = sedeScelta;
                 document.getElementById('input-sede').value = sedeScelta;
-                containerSede.innerHTML = `<div class="toggle-btn selected" style="cursor:default; pointer-events:none;">${sedeScelta} (Unica)</div>`;
+                containerSede.replaceChildren(creaToggle(`${sedeScelta} (Unica)`, { selected: true, locked: true }));
                 
                 // Filtriamo gli anni per questa unica sede
                 const curriculumsSede = curriculums.filter(c => c.campus_location === sedeScelta);
@@ -101,15 +126,15 @@ async function selezionaCorso(courseId, nomeCorso) {
                     // C'è pure un solo anno! (Caso perfetto, sblocca il bottone submit)
                     wizardData.anno = anniSede[0];
                     document.getElementById('input-anno').value = anniSede[0];
-                    containerAnno.innerHTML = `<div class="toggle-btn selected" style="cursor:default; pointer-events:none;">${anniSede[0]}° Anno (Unico)</div>`;
+                    containerAnno.replaceChildren(creaToggle(`${anniSede[0]}° Anno (Unico)`, { selected: true, locked: true }));
                     document.getElementById('btn-submit').removeAttribute('disabled');
                 } else if (anniSede.length > 1) {
                     // Ci sono più anni per l'unica sede, falli scegliere
-                    containerAnno.innerHTML = anniSede.map(a => `<div class="toggle-btn" onclick="selezionaToggle(this, 'anno', '${a}')">${a}° Anno</div>`).join('');
+                    containerAnno.replaceChildren(...anniSede.map(a => creaToggle(`${a}° Anno`, { onClick: el => selezionaToggle(el, 'anno', a) })));
                 }
             } else {
                 // CASO 2: Ci sono più sedi. L'utente deve cliccarne una per sbloccare gli anni.
-                containerSede.innerHTML = sedi.map(s => `<div class="toggle-btn" onclick="selezionaToggle(this, 'sede', '${s}')">${s}</div>`).join('');
+                containerSede.replaceChildren(...sedi.map(s => creaToggle(s, { onClick: el => selezionaToggle(el, 'sede', s) })));
                 containerAnno.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem;">Seleziona prima una sede</p>';
             }
         } else {
@@ -117,8 +142,8 @@ async function selezionaCorso(courseId, nomeCorso) {
             wizardData.sede = 'Principale'; wizardData.anno = 1;
             document.getElementById('input-sede').value = 'Principale';
             document.getElementById('input-anno').value = 1;
-            containerSede.innerHTML = `<div class="toggle-btn selected" style="pointer-events:none;">Principale</div>`;
-            containerAnno.innerHTML = `<div class="toggle-btn selected" style="pointer-events:none;">1° Anno</div>`;
+            containerSede.replaceChildren(creaToggle('Principale', { selected: true, locked: true }));
+            containerAnno.replaceChildren(creaToggle('1° Anno', { selected: true, locked: true }));
             document.getElementById('btn-submit').removeAttribute('disabled');
         }
 
@@ -152,10 +177,10 @@ function selezionaToggle(element, type, value) {
         if (anniSede.length === 1) {
             wizardData.anno = anniSede[0];
             document.getElementById('input-anno').value = anniSede[0];
-            containerAnno.innerHTML = `<div class="toggle-btn selected" style="cursor:default; pointer-events:none;">${anniSede[0]}° Anno (Unico)</div>`;
+            containerAnno.replaceChildren(creaToggle(`${anniSede[0]}° Anno (Unico)`, { selected: true, locked: true }));
             document.getElementById('btn-submit').removeAttribute('disabled');
         } else if (anniSede.length > 1) {
-            containerAnno.innerHTML = anniSede.map(a => `<div class="toggle-btn" onclick="selezionaToggle(this, 'anno', '${a}')">${a}° Anno</div>`).join('');
+            containerAnno.replaceChildren(...anniSede.map(a => creaToggle(`${a}° Anno`, { onClick: el => selezionaToggle(el, 'anno', a) })));
         } else {
             containerAnno.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem;">Nessun anno trovato</p>';
         }
@@ -221,12 +246,12 @@ function apriRichiesta(tipo) {
     } else if (tipo === 'course') {
         titolo.textContent = "Richiedi Corso";
         // Mostriamo il contesto all'utente
-        label.innerHTML = `Nome del Corso per <strong>${wizardData.uniName}</strong>`;
+        label.innerHTML = `Nome del Corso per <strong>${esc(wizardData.uniName)}</strong>`;
         inputNome.placeholder = "Es. Ingegneria Informatica";
         gruppoCorsoExtra.style.display = 'none';
     } else if (tipo === 'curriculum') {
         titolo.textContent = "Segnala Dati Mancanti";
-        label.innerHTML = `Cosa manca per <strong>${wizardData.courseName}</strong>?`;
+        label.innerHTML = `Cosa manca per <strong>${esc(wizardData.courseName)}</strong>?`;
         inputNome.placeholder = "Es. Manca la sede di Como, oppure manca il 2° Anno";
         gruppoCorsoExtra.style.display = 'none';
     }
