@@ -52,6 +52,27 @@ class ProfileController
         }
     }
 
+    public function updateCourse(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
+        
+        $userId = (int)$_SESSION['user_id'];
+        $uniId = (int)($_POST['university_id'] ?? 1);
+        $courseName = trim($_POST['course_name']);
+        
+        $configJson = json_encode([
+            'linkCalendarioId' => trim($_POST['link_calendario_id']),
+            'clienteId' => trim($_POST['cliente_id'])
+        ]);
+
+        // Sovrascriviamo o creiamo il nuovo profilo accademico
+        $this->userModel->saveAcademicProfile($userId, $uniId, $courseName, $configJson);
+
+        // Reindirizziamo con un flag di successo
+        header('Location: ' . BASE_PATH . '/profilo?status=updated');
+        exit;
+    }
+
     public function syncTheme(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
@@ -59,12 +80,6 @@ class ProfileController
         $userId = (int)$_SESSION['user_id'];
         $data = json_decode(file_get_contents('php://input'), true);
         $theme = $data['theme'] ?? 'system';
-
-        if (!is_string($theme) || !in_array($theme, ['light', 'dark', 'system'], true)) {
-            http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'Tema non valido']);
-            exit;
-        }
 
         // Inseriamo o aggiorniamo la preferenza nella tabella user_preferences
         $db = \App\Core\Database::getInstance();

@@ -86,83 +86,46 @@ class UserModel extends Model
         return $user ?: null;
     }
 
-    public function deleteToken(string $tokenHash): void
+    public function saveAcademicProfile(int $userId, int $universityId, string $courseName, string $sede, int $anno, string $apiConfig): void
     {
-        $stmt = $this->db->prepare("DELETE FROM user_tokens WHERE token_hash = :token_hash");
-        $stmt->execute(['token_hash' => $tokenHash]);
-    }
-
-    /**
-     * Collega l'utente a un curriculum ESISTENTE (corso + sede + anno).
-     *
-     * - Non crea mai nuovi corsi e non modifica mai api_config (è condiviso da tutti gli iscritti).
-     * - L'unica eccezione: se il corso non ha ancora nessun curriculum, ne crea uno "AUTO"
-     *   (in attesa di configurazione da parte dell'admin), come faceva il fallback del wizard.
-     *
-     * @return bool false se i dati non corrispondono a niente di esistente
-     */
-    public function saveAcademicProfile(int $userId, int $universityId, string $courseName, string $sede, int $anno): bool
-    {
-        $autoConfig = '{"linkCalendarioId":"AUTO","clienteId":"AUTO"}';
-
-        try {
-            $this->db->beginTransaction();
-
-            // 1. Il corso deve esistere ed appartenere a un ateneo attivo
-            $stmt = $this->db->prepare("
-                SELECT c.id
-                FROM courses c
-                JOIN universities u ON u.id = c.university_id
-                WHERE c.name = :name AND c.university_id = :uni_id AND u.is_active = 1
-                LIMIT 1
-            ");
-            $stmt->execute(['name' => $courseName, 'uni_id' => $universityId]);
-            $course = $stmt->fetch();
-
-            if (!$course) {
-                $this->db->rollBack();
-                return false;
-            }
+        // 1. Cerca il corso principale
+        $stmt = $this->db->prepare("SELECT id FROM courses WHERE name = :name AND university_id = :uni_id");
+        $stmt->execute(['name' => $courseName, 'uni_id' => $universityId]);
+        $course = $stmt->fetch();
+        
+        if ($course) {
             $courseId = (int)$course['id'];
+        } else {
+            $stmtIns = $this->db->prepare("INSERT INTO courses (university_id, name) VALUES (:uni_id, :name)");
+            $stmtIns->execute(['uni_id' => $universityId, 'name' => $courseName]);
+            $courseId = (int)$this->db->lastInsertId();
+        }
 
-            // 2. Cerca la combinazione Sede + Anno
-            $stmtCurr = $this->db->prepare("SELECT id FROM course_curriculums WHERE course_id = :cid AND campus_location = :sede AND year = :anno LIMIT 1");
-            $stmtCurr->execute(['cid' => $courseId, 'sede' => $sede, 'anno' => $anno]);
-            $curriculum = $stmtCurr->fetch();
+        // 2. Cerca se esiste già la combinazione specifica Anno + Sede nel DB
+        $stmtCurr = $this->db->prepare("SELECT id FROM course_curriculums WHERE course_id = :cid AND campus_location = :sede AND year = :anno LIMIT 1");
+        $stmtCurr->execute(['cid' => $courseId, 'sede' => $sede, 'anno' => $anno]);
+        $curriculum = $stmtCurr->fetch();
 
-            if ($curriculum) {
-                $curriculumId = (int)$curriculum['id'];
-            } else {
-                // Fallback consentito solo se il corso non ha alcun curriculum
-                $stmtAny = $this->db->prepare("SELECT COUNT(*) FROM course_curriculums WHERE course_id = :cid");
-                $stmtAny->execute(['cid' => $courseId]);
-
-                if ((int)$stmtAny->fetchColumn() > 0) {
-                    $this->db->rollBack();
-                    return false;
-                }
-
-                $stmtInsC = $this->db->prepare("INSERT INTO course_curriculums (course_id, campus_location, year, api_config) VALUES (:cid, :sede, :anno, :conf)");
-                $stmtInsC->execute(['cid' => $courseId, 'sede' => $sede, 'anno' => $anno, 'conf' => $autoConfig]);
-                $curriculumId = (int)$this->db->lastInsertId();
+        if ($curriculum) {
+            $curriculumId = (int)$curriculum['id'];
+            // Aggiorna API config se non è quello automatico
+            if ($apiConfig !== '{"linkCalendarioId":"AUTO","clienteId":"AUTO"}') {
+                $upd = $this->db->prepare("UPDATE course_curriculums SET api_config = :conf WHERE id = :id");
+                $upd->execute(['conf' => $apiConfig, 'id' => $curriculumId]);
             }
+        } else {
+            $stmtInsC = $this->db->prepare("INSERT INTO course_curriculums (course_id, campus_location, year, api_config) VALUES (:cid, :sede, :anno, :conf)");
+            $stmtInsC->execute(['cid' => $courseId, 'sede' => $sede, 'anno' => $anno, 'conf' => $apiConfig]);
+            $curriculumId = (int)$this->db->lastInsertId();
+        }
 
-            // 3. Collegamento utente-curriculum solo se non esiste già
-            $stmtCheck = $this->db->prepare("SELECT id FROM user_academic_profiles WHERE user_id = :uid AND curriculum_id = :currid");
-            $stmtCheck->execute(['uid' => $userId, 'currid' => $curriculumId]);
-
-            if (!$stmtCheck->fetch()) {
-                $insProf = $this->db->prepare("INSERT INTO user_academic_profiles (user_id, course_id, curriculum_id, enrollment_year) VALUES (:uid, :cid, :currid, :year)");
-                $insProf->execute(['uid' => $userId, 'cid' => $courseId, 'currid' => $curriculumId, 'year' => date('Y')]);
-            }
-
-            $this->db->commit();
-            return true;
-        } catch (\Throwable $e) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
-            }
-            throw $e;
+        // 3. IL FIX FINALE: Inserisce il collegamento utente-curriculum solo se non esiste già
+        $stmtCheck = $this->db->prepare("SELECT id FROM user_academic_profiles WHERE user_id = :uid AND curriculum_id = :currid");
+        $stmtCheck->execute(['uid' => $userId, 'currid' => $curriculumId]);
+        
+        if (!$stmtCheck->fetch()) {
+            $insProf = $this->db->prepare("INSERT INTO user_academic_profiles (user_id, course_id, curriculum_id, enrollment_year) VALUES (:uid, :cid, :currid, :year)");
+            $insProf->execute(['uid' => $userId, 'cid' => $courseId, 'currid' => $curriculumId, 'year' => date('Y')]);
         }
     }
 

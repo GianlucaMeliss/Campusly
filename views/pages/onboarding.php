@@ -2,12 +2,6 @@
     <div class="container narrow">
         <div class="highlight-box wizard-container">
             
-            <?php if (($_GET['error'] ?? '') === 'invalid'): ?>
-                <div style="background: #fee2e2; color: #ef4444; padding: 10px; border-radius: 6px; margin-bottom: 1rem; text-align: center;">
-                    Selezione non valida. Scegli di nuovo università, corso, sede e anno.
-                </div>
-            <?php endif; ?>
-
             <!-- STEP 1: UNIVERSITÀ -->
             <div id="step-1" class="wizard-step active">
                 <h1 class="page-title">Scegli la tua Università</h1>
@@ -63,7 +57,6 @@
                 <p class="page-subtitle" id="subtitle-course-name">Nome Corso</p>
                 
                 <form action="<?= htmlspecialchars($route('/onboarding')) ?>" method="POST" id="form-onboarding">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                     <!-- Campi nascosti per inviare i dati al PHP -->
                     <input type="hidden" name="university_id" id="input-uni-id">
                     <input type="hidden" name="course_name" id="input-course-name">

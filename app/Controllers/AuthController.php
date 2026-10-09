@@ -15,12 +15,6 @@ class AuthController
         $this->userModel = new UserModel();
     }
 
-    private function isHttps(): bool
-    {
-        return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-            || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
-    }
-
     public function showLogin(): void
     {
         View::render('auth/login', ['pageTitle' => 'Accedi a Campusly']);
@@ -40,8 +34,7 @@ class AuthController
         $user = $this->userModel->findByEmail($email);
 
         if ($user && password_verify($password, $user['password_hash'])) {
-            // Login riuscito: nuovo ID di sessione contro la session fixation
-            session_regenerate_id(true);
+            // Login riuscito
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_name'] = $user['first_name'];
 
@@ -60,13 +53,7 @@ class AuthController
                 $this->userModel->storeRememberToken($user['id'], $tokenHash, $expiresAt);
                 
                 // Imposta il cookie in modo sicuro (HttpOnly)
-                setcookie('remember_me', $token, [
-                    'expires'  => time() + (365 * 24 * 60 * 60),
-                    'path'     => '/',
-                    'secure'   => $this->isHttps(),
-                    'httponly' => true,
-                    'samesite' => 'Lax',
-                ]);
+                setcookie('remember_me', $token, time() + (365 * 24 * 60 * 60), '/', '', false, true);
             }
 
             header('Location: ' . BASE_PATH . '/dashboard');
@@ -80,21 +67,15 @@ class AuthController
 
     public function logout(): void
     {
-        // Invalida il token "ricordami" anche lato database
-        if (isset($_COOKIE['remember_me']) && is_string($_COOKIE['remember_me'])) {
-            $this->userModel->deleteToken(hash('sha256', $_COOKIE['remember_me']));
-            setcookie('remember_me', '', [
-                'expires'  => time() - 3600,
-                'path'     => '/',
-                'secure'   => $this->isHttps(),
-                'httponly' => true,
-                'samesite' => 'Lax',
-            ]);
-        }
-
         // Rimuovi sessione
         session_unset();
         session_destroy();
+
+        // Rimuovi cookie
+        if (isset($_COOKIE['remember_me'])) {
+            setcookie('remember_me', '', time() - 3600, '/');
+            // Nota: Andrebbe anche cancellato il token dal DB per sicurezza
+        }
 
         header('Location: ' . BASE_PATH . '/');
         exit;
@@ -118,23 +99,10 @@ class AuthController
         $lastName = trim($_POST['last_name'] ?? '');
 
         // Validazione base
-        if ($email === '' || $password === '' || $firstName === '') {
+        if (empty($email) || empty($password) || empty($firstName)) {
             header('Location: ' . BASE_PATH . '/register?error=empty_fields');
             exit;
         }
-
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255) {
-            header('Location: ' . BASE_PATH . '/register?error=invalid_email');
-            exit;
-        }
-
-        if (strlen($password) < 8) {
-            header('Location: ' . BASE_PATH . '/register?error=weak_password');
-            exit;
-        }
-
-        $firstName = \App\Core\Str::cut($firstName, 100);
-        $lastName = \App\Core\Str::cut($lastName, 100);
 
         // Verifica se l'email esiste già
         if ($this->userModel->findByEmail($email)) {
@@ -142,29 +110,20 @@ class AuthController
             exit;
         }
 
-        // Crea l'utente (la UNIQUE su email protegge anche dalla doppia richiesta simultanea)
-        try {
-            $userId = $this->userModel->create([
-                'email' => $email,
-                'password' => $password,
-                'first_name' => $firstName,
-                'last_name' => $lastName
-            ]);
-        } catch (\PDOException $e) {
-            if ($e->getCode() === '23000') {
-                header('Location: ' . BASE_PATH . '/register?error=email_exists');
-                exit;
-            }
-            throw $e;
-        }
+        // Crea l'utente
+        $userId = $this->userModel->create([
+            'email' => $email,
+            'password' => $password,
+            'first_name' => $firstName,
+            'last_name' => $lastName
+        ]);
 
         if ($userId) {
             // Autenticazione automatica dopo la registrazione
-            session_regenerate_id(true);
             $_SESSION['user_id'] = $userId;
             $_SESSION['user_name'] = $firstName;
-
-            // Mandalo all'onboarding, non alla dashboard
+            
+            // CORREZIONE: Mandalo all'onboarding, non alla dashboard!
             header('Location: ' . BASE_PATH . '/onboarding');
             exit;
         }
@@ -200,29 +159,25 @@ class AuthController
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
 
         $userId = (int)$_SESSION['user_id'];
+        
+        // Dati in arrivo dal nuovo form Wizard o Manuale
+        $uniId = (int)($_POST['university_id'] ?? 1);
+        $courseName = trim($_POST['course_name'] ?? '');
+        $sede = trim($_POST['sede'] ?? 'Non specificata');
+        $anno = (int)($_POST['anno'] ?? 1);
+        
+        // Se l'utente usa il Wizard, il JS invia "AUTO" nei codici. 
+        // Se usa il manuale (Step 4), invia i codici reali.
+        $linkId = trim($_POST['link_calendario_id'] ?? '');
+        $clienteId = trim($_POST['cliente_id'] ?? '');
 
-        $uniId = (int)($_POST['university_id'] ?? 0);
-        $courseName = trim((string)($_POST['course_name'] ?? ''));
-        $sede = trim((string)($_POST['sede'] ?? ''));
-        $anno = (int)($_POST['anno'] ?? 0);
+        // Creiamo il JSON di configurazione
+        $configJson = json_encode([
+            'linkCalendarioId' => $linkId,
+            'clienteId' => $clienteId
+        ]);
 
-        if ($sede === '') {
-            $sede = 'Non specificata';
-        }
-        $sede = \App\Core\Str::cut($sede, 100);
-
-        if ($uniId <= 0 || $courseName === '' || $anno < 1 || $anno > 8) {
-            header('Location: ' . BASE_PATH . '/onboarding?add=1&error=invalid');
-            exit;
-        }
-
-        // I codici del calendario NON arrivano più dal client: li gestisce solo l'admin.
-        $saved = (new \App\Models\UserModel())->saveAcademicProfile($userId, $uniId, $courseName, $sede, $anno);
-
-        if (!$saved) {
-            header('Location: ' . BASE_PATH . '/onboarding?add=1&error=invalid');
-            exit;
-        }
+        (new \App\Models\UserModel())->saveAcademicProfile($userId, $uniId, $courseName, $sede, $anno, $configJson);
 
         header('Location: ' . BASE_PATH . '/dashboard');
         exit;

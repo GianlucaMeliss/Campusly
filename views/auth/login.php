@@ -6,13 +6,12 @@
 
             <?php if (isset($_GET['error'])): ?>
                 <div style="background: #fee2e2; color: #ef4444; padding: 10px; border-radius: 6px; margin-bottom: 1rem; text-align: center;">
-                    <?= ($_GET['error'] ?? '') === 'csrf' ? 'Sessione scaduta. Riprova ad accedere.' : 'Credenziali non valide. Riprova.' ?>
+                    Credenziali non valide. Riprova.
                 </div>
             <?php endif; ?>
 
             <!-- Modificato $url('/login') con $route('/login') -->
             <form action="<?= htmlspecialchars($route('/login')) ?>" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <label for="email" style="font-size: 0.9rem; font-weight: 600;">Email universitaria</label>
                     <input type="email" name="email" id="email" placeholder="es. m.rossi@universita.it" required style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
