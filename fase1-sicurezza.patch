@@ -1,0 +1,1176 @@
+diff -ruN a/app/Controllers/ApiController.php b/app/Controllers/ApiController.php
+--- a/app/Controllers/ApiController.php	2026-10-09 08:00:02.565709807 +0000
++++ b/app/Controllers/ApiController.php	2026-10-09 08:00:02.567823872 +0000
+@@ -6,6 +6,8 @@
+ 
+ class ApiController
+ {
++    private const PRIVACY_LEVELS = ['transparent', 'logistical', 'opaque'];
++
+     public function sendContact(): void
+     {
+         if ($_SERVER["REQUEST_METHOD"] === "POST") {
+@@ -138,7 +140,6 @@
+ 
+     public function getCalendarEvents(): void
+     {
+-        header("Access-Control-Allow-Origin: *");
+         header("Content-Type: application/json; charset=UTF-8");
+ 
+         if (!isset($_SESSION['user_id'])) {
+@@ -194,8 +195,9 @@
+             echo $jsonResponse;
+ 
+         } catch (\Exception $e) {
++            error_log('[getCalendarEvents] ' . $e->getMessage());
+             http_response_code(500);
+-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
++            echo json_encode(['status' => 'error', 'message' => 'Servizio orari temporaneamente non disponibile']);
+         }
+         exit;
+     }
+@@ -250,6 +252,7 @@
+ 
+     public function savePersonalEvent(): void
+     {
++        header("Content-Type: application/json; charset=UTF-8");
+         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
+         
+         if (!isset($_SESSION['user_id'])) {
+@@ -260,20 +263,26 @@
+         $userId = (int)$_SESSION['user_id'];
+         $data = json_decode(file_get_contents('php://input'), true);
+ 
+-        if ($data) {
+-            $model = new \App\Models\PersonalEventModel();
+-            $startTime = date('Y-m-d H:i:s', strtotime($data['dataInizio']));
+-            $endTime = date('Y-m-d H:i:s', strtotime($data['dataFine']));
+-            
+-            $model->createEvent($userId, [
+-                'title' => $data['nome'],
+-                'start_time' => $startTime,
+-                'end_time' => $endTime,
+-                'location' => $data['luogo']
+-            ]);
+-            
+-            echo json_encode(['status' => 'success']);
++        $title = is_array($data) && isset($data['nome']) && is_string($data['nome']) ? trim($data['nome']) : '';
++        $location = is_array($data) && isset($data['luogo']) && is_string($data['luogo']) ? trim($data['luogo']) : '';
++        $startTs = is_array($data) && isset($data['dataInizio']) && is_string($data['dataInizio']) ? strtotime($data['dataInizio']) : false;
++        $endTs = is_array($data) && isset($data['dataFine']) && is_string($data['dataFine']) ? strtotime($data['dataFine']) : false;
++
++        if ($title === '' || $startTs === false || $endTs === false || $endTs <= $startTs) {
++            http_response_code(400);
++            echo json_encode(['error' => 'Dati evento non validi']);
++            exit;
+         }
++
++        $model = new \App\Models\PersonalEventModel();
++        $model->createEvent($userId, [
++            'title' => \App\Core\Str::cut($title, 255),
++            'start_time' => date('Y-m-d H:i:s', $startTs),
++            'end_time' => date('Y-m-d H:i:s', $endTs),
++            'location' => \App\Core\Str::cut($location !== '' ? $location : 'Non specificato', 255)
++        ]);
++
++        echo json_encode(['status' => 'success']);
+         exit;
+     }
+ 
+@@ -296,6 +305,7 @@
+ 
+     public function deletePersonalEvent(string $eventId): void
+     {
++        header("Content-Type: application/json; charset=UTF-8");
+         if (!isset($_SESSION['user_id'])) {
+             http_response_code(401);
+             echo json_encode(['error' => 'Non autenticato']);
+@@ -327,6 +337,7 @@
+ 
+     public function toggleHiddenCourse(): void
+     {
++        header("Content-Type: application/json; charset=UTF-8");
+         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
+         
+         if (!isset($_SESSION['user_id'])) {
+@@ -338,9 +349,13 @@
+ 
+         $data = json_decode(file_get_contents('php://input'), true);
+ 
+-        if (isset($data['course_name'])) {
++        $courseName = is_array($data) && isset($data['course_name']) && is_string($data['course_name'])
++            ? \App\Core\Str::cut(trim($data['course_name']), 255)
++            : '';
++
++        if ($courseName !== '') {
+             $model = new \App\Models\HiddenCourseModel();
+-            $result = $model->toggleCourse($userId, strtoupper(trim($data['course_name'])));
++            $result = $model->toggleCourse($userId, strtoupper($courseName));
+             echo json_encode($result);
+         } else {
+             http_response_code(400);
+@@ -456,15 +471,21 @@
+             exit;
+         }
+ 
+-        $name = trim(htmlspecialchars($data['name'] ?? ''));
++        $name = is_array($data) && isset($data['name']) && is_string($data['name']) ? \App\Core\Str::cut(trim($data['name']), 100) : '';
+         $privacy = $data['privacy_level'] ?? 'transparent';
+         
+-        if (empty($name)) {
++        if ($name === '') {
+             http_response_code(400);
+             echo json_encode(['error' => 'Nome gruppo mancante']);
+             exit;
+         }
+ 
++        if (!is_string($privacy) || !in_array($privacy, self::PRIVACY_LEVELS, true)) {
++            http_response_code(400);
++            echo json_encode(['error' => 'Livello di privacy non valido']);
++            exit;
++        }
++
+         $model = new \App\Models\GroupModel();
+         $result = $model->createGroup((int)$_SESSION['user_id'], $name, $privacy);
+         echo json_encode($result);
+@@ -488,15 +509,23 @@
+             exit;
+         }
+ 
+-        $code = trim(htmlspecialchars($data['invite_code'] ?? ''));
++        $code = is_array($data) && isset($data['invite_code']) && is_string($data['invite_code'])
++            ? strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $data['invite_code']))
++            : '';
+         $privacy = $data['privacy_level'] ?? 'logistical';
+         
+-        if (empty($code)) {
++        if ($code === '') {
+             http_response_code(400);
+             echo json_encode(['error' => 'Codice mancante']);
+             exit;
+         }
+ 
++        if (!is_string($privacy) || !in_array($privacy, self::PRIVACY_LEVELS, true)) {
++            http_response_code(400);
++            echo json_encode(['error' => 'Livello di privacy non valido']);
++            exit;
++        }
++
+         $model = new \App\Models\GroupModel();
+         $result = $model->joinGroup((int)$_SESSION['user_id'], $code, $privacy);
+         echo json_encode($result);
+@@ -505,7 +534,6 @@
+ 
+     public function getGroupCalendar(string $groupId): void
+     {
+-        header("Access-Control-Allow-Origin: *");
+         header("Content-Type: application/json; charset=UTF-8");
+ 
+         if (!isset($_SESSION['user_id'])) {
+@@ -521,7 +549,7 @@
+         
+         $isMember = false;
+         foreach ($members as $m) {
+-            if ($m['id'] === $userId) $isMember = true;
++            if ((int)$m['id'] === $userId) $isMember = true;
+         }
+ 
+         if (!$isMember) {
+diff -ruN a/app/Controllers/AuthController.php b/app/Controllers/AuthController.php
+--- a/app/Controllers/AuthController.php	2026-10-09 08:00:02.565735408 +0000
++++ b/app/Controllers/AuthController.php	2026-10-09 08:00:02.567853280 +0000
+@@ -15,6 +15,12 @@
+         $this->userModel = new UserModel();
+     }
+ 
++    private function isHttps(): bool
++    {
++        return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
++            || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
++    }
++
+     public function showLogin(): void
+     {
+         View::render('auth/login', ['pageTitle' => 'Accedi a Campusly']);
+@@ -34,7 +40,8 @@
+         $user = $this->userModel->findByEmail($email);
+ 
+         if ($user && password_verify($password, $user['password_hash'])) {
+-            // Login riuscito
++            // Login riuscito: nuovo ID di sessione contro la session fixation
++            session_regenerate_id(true);
+             $_SESSION['user_id'] = $user['id'];
+             $_SESSION['user_name'] = $user['first_name'];
+ 
+@@ -53,7 +60,13 @@
+                 $this->userModel->storeRememberToken($user['id'], $tokenHash, $expiresAt);
+                 
+                 // Imposta il cookie in modo sicuro (HttpOnly)
+-                setcookie('remember_me', $token, time() + (365 * 24 * 60 * 60), '/', '', false, true);
++                setcookie('remember_me', $token, [
++                    'expires'  => time() + (365 * 24 * 60 * 60),
++                    'path'     => '/',
++                    'secure'   => $this->isHttps(),
++                    'httponly' => true,
++                    'samesite' => 'Lax',
++                ]);
+             }
+ 
+             header('Location: ' . BASE_PATH . '/dashboard');
+@@ -67,16 +80,22 @@
+ 
+     public function logout(): void
+     {
++        // Invalida il token "ricordami" anche lato database
++        if (isset($_COOKIE['remember_me']) && is_string($_COOKIE['remember_me'])) {
++            $this->userModel->deleteToken(hash('sha256', $_COOKIE['remember_me']));
++            setcookie('remember_me', '', [
++                'expires'  => time() - 3600,
++                'path'     => '/',
++                'secure'   => $this->isHttps(),
++                'httponly' => true,
++                'samesite' => 'Lax',
++            ]);
++        }
++
+         // Rimuovi sessione
+         session_unset();
+         session_destroy();
+ 
+-        // Rimuovi cookie
+-        if (isset($_COOKIE['remember_me'])) {
+-            setcookie('remember_me', '', time() - 3600, '/');
+-            // Nota: Andrebbe anche cancellato il token dal DB per sicurezza
+-        }
+-
+         header('Location: ' . BASE_PATH . '/');
+         exit;
+     }
+@@ -99,31 +118,53 @@
+         $lastName = trim($_POST['last_name'] ?? '');
+ 
+         // Validazione base
+-        if (empty($email) || empty($password) || empty($firstName)) {
++        if ($email === '' || $password === '' || $firstName === '') {
+             header('Location: ' . BASE_PATH . '/register?error=empty_fields');
+             exit;
+         }
+ 
++        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255) {
++            header('Location: ' . BASE_PATH . '/register?error=invalid_email');
++            exit;
++        }
++
++        if (strlen($password) < 8) {
++            header('Location: ' . BASE_PATH . '/register?error=weak_password');
++            exit;
++        }
++
++        $firstName = \App\Core\Str::cut($firstName, 100);
++        $lastName = \App\Core\Str::cut($lastName, 100);
++
+         // Verifica se l'email esiste già
+         if ($this->userModel->findByEmail($email)) {
+             header('Location: ' . BASE_PATH . '/register?error=email_exists');
+             exit;
+         }
+ 
+-        // Crea l'utente
+-        $userId = $this->userModel->create([
+-            'email' => $email,
+-            'password' => $password,
+-            'first_name' => $firstName,
+-            'last_name' => $lastName
+-        ]);
++        // Crea l'utente (la UNIQUE su email protegge anche dalla doppia richiesta simultanea)
++        try {
++            $userId = $this->userModel->create([
++                'email' => $email,
++                'password' => $password,
++                'first_name' => $firstName,
++                'last_name' => $lastName
++            ]);
++        } catch (\PDOException $e) {
++            if ($e->getCode() === '23000') {
++                header('Location: ' . BASE_PATH . '/register?error=email_exists');
++                exit;
++            }
++            throw $e;
++        }
+ 
+         if ($userId) {
+             // Autenticazione automatica dopo la registrazione
++            session_regenerate_id(true);
+             $_SESSION['user_id'] = $userId;
+             $_SESSION['user_name'] = $firstName;
+-            
+-            // CORREZIONE: Mandalo all'onboarding, non alla dashboard!
++
++            // Mandalo all'onboarding, non alla dashboard
+             header('Location: ' . BASE_PATH . '/onboarding');
+             exit;
+         }
+@@ -159,25 +200,29 @@
+         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
+ 
+         $userId = (int)$_SESSION['user_id'];
+-        
+-        // Dati in arrivo dal nuovo form Wizard o Manuale
+-        $uniId = (int)($_POST['university_id'] ?? 1);
+-        $courseName = trim($_POST['course_name'] ?? '');
+-        $sede = trim($_POST['sede'] ?? 'Non specificata');
+-        $anno = (int)($_POST['anno'] ?? 1);
+-        
+-        // Se l'utente usa il Wizard, il JS invia "AUTO" nei codici. 
+-        // Se usa il manuale (Step 4), invia i codici reali.
+-        $linkId = trim($_POST['link_calendario_id'] ?? '');
+-        $clienteId = trim($_POST['cliente_id'] ?? '');
+-
+-        // Creiamo il JSON di configurazione
+-        $configJson = json_encode([
+-            'linkCalendarioId' => $linkId,
+-            'clienteId' => $clienteId
+-        ]);
+ 
+-        (new \App\Models\UserModel())->saveAcademicProfile($userId, $uniId, $courseName, $sede, $anno, $configJson);
++        $uniId = (int)($_POST['university_id'] ?? 0);
++        $courseName = trim((string)($_POST['course_name'] ?? ''));
++        $sede = trim((string)($_POST['sede'] ?? ''));
++        $anno = (int)($_POST['anno'] ?? 0);
++
++        if ($sede === '') {
++            $sede = 'Non specificata';
++        }
++        $sede = \App\Core\Str::cut($sede, 100);
++
++        if ($uniId <= 0 || $courseName === '' || $anno < 1 || $anno > 8) {
++            header('Location: ' . BASE_PATH . '/onboarding?add=1&error=invalid');
++            exit;
++        }
++
++        // I codici del calendario NON arrivano più dal client: li gestisce solo l'admin.
++        $saved = (new \App\Models\UserModel())->saveAcademicProfile($userId, $uniId, $courseName, $sede, $anno);
++
++        if (!$saved) {
++            header('Location: ' . BASE_PATH . '/onboarding?add=1&error=invalid');
++            exit;
++        }
+ 
+         header('Location: ' . BASE_PATH . '/dashboard');
+         exit;
+diff -ruN a/app/Controllers/ProfileController.php b/app/Controllers/ProfileController.php
+--- a/app/Controllers/ProfileController.php	2026-10-09 08:00:02.565808147 +0000
++++ b/app/Controllers/ProfileController.php	2026-10-09 08:00:02.567886065 +0000
+@@ -52,27 +52,6 @@
+         }
+     }
+ 
+-    public function updateCourse(): void
+-    {
+-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
+-        
+-        $userId = (int)$_SESSION['user_id'];
+-        $uniId = (int)($_POST['university_id'] ?? 1);
+-        $courseName = trim($_POST['course_name']);
+-        
+-        $configJson = json_encode([
+-            'linkCalendarioId' => trim($_POST['link_calendario_id']),
+-            'clienteId' => trim($_POST['cliente_id'])
+-        ]);
+-
+-        // Sovrascriviamo o creiamo il nuovo profilo accademico
+-        $this->userModel->saveAcademicProfile($userId, $uniId, $courseName, $configJson);
+-
+-        // Reindirizziamo con un flag di successo
+-        header('Location: ' . BASE_PATH . '/profilo?status=updated');
+-        exit;
+-    }
+-
+     public function syncTheme(): void
+     {
+         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
+@@ -81,6 +60,12 @@
+         $data = json_decode(file_get_contents('php://input'), true);
+         $theme = $data['theme'] ?? 'system';
+ 
++        if (!is_string($theme) || !in_array($theme, ['light', 'dark', 'system'], true)) {
++            http_response_code(400);
++            echo json_encode(['status' => 'error', 'message' => 'Tema non valido']);
++            exit;
++        }
++
+         // Inseriamo o aggiorniamo la preferenza nella tabella user_preferences
+         $db = \App\Core\Database::getInstance();
+         $stmt = $db->prepare("
+diff -ruN a/app/Core/Csrf.php b/app/Core/Csrf.php
+--- a/app/Core/Csrf.php	1970-01-01 00:00:00.000000000 +0000
++++ b/app/Core/Csrf.php	2026-10-09 08:00:02.567970405 +0000
+@@ -0,0 +1,63 @@
++<?php
++declare(strict_types=1);
++
++namespace App\Core;
++
++/**
++ * Verifica centralizzata del token CSRF per TUTTE le richieste POST.
++ * Il token può arrivare da: header X-CSRF-Token, campo form "csrf_token"
++ * oppure campo "csrf_token" nel body JSON.
++ */
++final class Csrf
++{
++    public static function token(): string
++    {
++        return (string)($_SESSION['csrf_token'] ?? '');
++    }
++
++    private static function provided(): string
++    {
++        $header = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
++        if (is_string($header) && $header !== '') {
++            return $header;
++        }
++
++        if (isset($_POST['csrf_token']) && is_string($_POST['csrf_token'])) {
++            return $_POST['csrf_token'];
++        }
++
++        $raw = file_get_contents('php://input');
++        if (is_string($raw) && $raw !== '') {
++            $data = json_decode($raw, true);
++            if (is_array($data) && isset($data['csrf_token']) && is_string($data['csrf_token'])) {
++                return $data['csrf_token'];
++            }
++        }
++
++        return '';
++    }
++
++    public static function verifyOrFail(): void
++    {
++        $expected = self::token();
++        $given = self::provided();
++
++        if ($expected !== '' && $given !== '' && hash_equals($expected, $given)) {
++            return;
++        }
++
++        http_response_code(403);
++
++        $isApi = strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') !== false;
++        if ($isApi) {
++            header('Content-Type: application/json; charset=UTF-8');
++            echo json_encode(['error' => 'Token CSRF non valido']);
++            exit;
++        }
++
++        // Form HTML: sessione scaduta o token mancante -> torna a una pagina sicura
++        $target = isset($_SESSION['user_id']) ? '/dashboard' : '/login?error=csrf';
++        header('Location: ' . BASE_PATH . $target);
++        exit;
++    }
++}
+diff -ruN a/app/Core/Str.php b/app/Core/Str.php
+--- a/app/Core/Str.php	1970-01-01 00:00:00.000000000 +0000
++++ b/app/Core/Str.php	2026-10-09 08:00:02.567979986 +0000
+@@ -0,0 +1,13 @@
++<?php
++declare(strict_types=1);
++
++namespace App\Core;
++
++final class Str
++{
++    /** Tronca a $max caratteri (usa mbstring se disponibile, altrimenti byte). */
++    public static function cut(string $value, int $max): string
++    {
++        return function_exists('mb_substr') ? mb_substr($value, 0, $max) : substr($value, 0, $max);
++    }
++}
+diff -ruN a/app/Models/GroupModel.php b/app/Models/GroupModel.php
+--- a/app/Models/GroupModel.php	2026-10-09 08:00:02.565898875 +0000
++++ b/app/Models/GroupModel.php	2026-10-09 08:00:02.568001407 +0000
+@@ -35,7 +35,7 @@
+         $group = $stmt->fetch();
+ 
+         if (!$group) {
+-            return ['status' => 'error', 'message' => 'Codice invito non valido'];
++            return ['status' => 'error', 'error' => 'Codice invito non valido', 'message' => 'Codice invito non valido'];
+         }
+ 
+         $groupId = $group['id'];
+diff -ruN a/app/Models/UserModel.php b/app/Models/UserModel.php
+--- a/app/Models/UserModel.php	2026-10-09 08:00:02.565954057 +0000
++++ b/app/Models/UserModel.php	2026-10-09 08:00:02.568048511 +0000
+@@ -86,46 +86,83 @@
+         return $user ?: null;
+     }
+ 
+-    public function saveAcademicProfile(int $userId, int $universityId, string $courseName, string $sede, int $anno, string $apiConfig): void
++    public function deleteToken(string $tokenHash): void
+     {
+-        // 1. Cerca il corso principale
+-        $stmt = $this->db->prepare("SELECT id FROM courses WHERE name = :name AND university_id = :uni_id");
+-        $stmt->execute(['name' => $courseName, 'uni_id' => $universityId]);
+-        $course = $stmt->fetch();
+-        
+-        if ($course) {
++        $stmt = $this->db->prepare("DELETE FROM user_tokens WHERE token_hash = :token_hash");
++        $stmt->execute(['token_hash' => $tokenHash]);
++    }
++
++    /**
++     * Collega l'utente a un curriculum ESISTENTE (corso + sede + anno).
++     *
++     * - Non crea mai nuovi corsi e non modifica mai api_config (è condiviso da tutti gli iscritti).
++     * - L'unica eccezione: se il corso non ha ancora nessun curriculum, ne crea uno "AUTO"
++     *   (in attesa di configurazione da parte dell'admin), come faceva il fallback del wizard.
++     *
++     * @return bool false se i dati non corrispondono a niente di esistente
++     */
++    public function saveAcademicProfile(int $userId, int $universityId, string $courseName, string $sede, int $anno): bool
++    {
++        $autoConfig = '{"linkCalendarioId":"AUTO","clienteId":"AUTO"}';
++
++        try {
++            $this->db->beginTransaction();
++
++            // 1. Il corso deve esistere ed appartenere a un ateneo attivo
++            $stmt = $this->db->prepare("
++                SELECT c.id
++                FROM courses c
++                JOIN universities u ON u.id = c.university_id
++                WHERE c.name = :name AND c.university_id = :uni_id AND u.is_active = 1
++                LIMIT 1
++            ");
++            $stmt->execute(['name' => $courseName, 'uni_id' => $universityId]);
++            $course = $stmt->fetch();
++
++            if (!$course) {
++                $this->db->rollBack();
++                return false;
++            }
+             $courseId = (int)$course['id'];
+-        } else {
+-            $stmtIns = $this->db->prepare("INSERT INTO courses (university_id, name) VALUES (:uni_id, :name)");
+-            $stmtIns->execute(['uni_id' => $universityId, 'name' => $courseName]);
+-            $courseId = (int)$this->db->lastInsertId();
+-        }
+ 
+-        // 2. Cerca se esiste già la combinazione specifica Anno + Sede nel DB
+-        $stmtCurr = $this->db->prepare("SELECT id FROM course_curriculums WHERE course_id = :cid AND campus_location = :sede AND year = :anno LIMIT 1");
+-        $stmtCurr->execute(['cid' => $courseId, 'sede' => $sede, 'anno' => $anno]);
+-        $curriculum = $stmtCurr->fetch();
+-
+-        if ($curriculum) {
+-            $curriculumId = (int)$curriculum['id'];
+-            // Aggiorna API config se non è quello automatico
+-            if ($apiConfig !== '{"linkCalendarioId":"AUTO","clienteId":"AUTO"}') {
+-                $upd = $this->db->prepare("UPDATE course_curriculums SET api_config = :conf WHERE id = :id");
+-                $upd->execute(['conf' => $apiConfig, 'id' => $curriculumId]);
++            // 2. Cerca la combinazione Sede + Anno
++            $stmtCurr = $this->db->prepare("SELECT id FROM course_curriculums WHERE course_id = :cid AND campus_location = :sede AND year = :anno LIMIT 1");
++            $stmtCurr->execute(['cid' => $courseId, 'sede' => $sede, 'anno' => $anno]);
++            $curriculum = $stmtCurr->fetch();
++
++            if ($curriculum) {
++                $curriculumId = (int)$curriculum['id'];
++            } else {
++                // Fallback consentito solo se il corso non ha alcun curriculum
++                $stmtAny = $this->db->prepare("SELECT COUNT(*) FROM course_curriculums WHERE course_id = :cid");
++                $stmtAny->execute(['cid' => $courseId]);
++
++                if ((int)$stmtAny->fetchColumn() > 0) {
++                    $this->db->rollBack();
++                    return false;
++                }
++
++                $stmtInsC = $this->db->prepare("INSERT INTO course_curriculums (course_id, campus_location, year, api_config) VALUES (:cid, :sede, :anno, :conf)");
++                $stmtInsC->execute(['cid' => $courseId, 'sede' => $sede, 'anno' => $anno, 'conf' => $autoConfig]);
++                $curriculumId = (int)$this->db->lastInsertId();
+             }
+-        } else {
+-            $stmtInsC = $this->db->prepare("INSERT INTO course_curriculums (course_id, campus_location, year, api_config) VALUES (:cid, :sede, :anno, :conf)");
+-            $stmtInsC->execute(['cid' => $courseId, 'sede' => $sede, 'anno' => $anno, 'conf' => $apiConfig]);
+-            $curriculumId = (int)$this->db->lastInsertId();
+-        }
+ 
+-        // 3. IL FIX FINALE: Inserisce il collegamento utente-curriculum solo se non esiste già
+-        $stmtCheck = $this->db->prepare("SELECT id FROM user_academic_profiles WHERE user_id = :uid AND curriculum_id = :currid");
+-        $stmtCheck->execute(['uid' => $userId, 'currid' => $curriculumId]);
+-        
+-        if (!$stmtCheck->fetch()) {
+-            $insProf = $this->db->prepare("INSERT INTO user_academic_profiles (user_id, course_id, curriculum_id, enrollment_year) VALUES (:uid, :cid, :currid, :year)");
+-            $insProf->execute(['uid' => $userId, 'cid' => $courseId, 'currid' => $curriculumId, 'year' => date('Y')]);
++            // 3. Collegamento utente-curriculum solo se non esiste già
++            $stmtCheck = $this->db->prepare("SELECT id FROM user_academic_profiles WHERE user_id = :uid AND curriculum_id = :currid");
++            $stmtCheck->execute(['uid' => $userId, 'currid' => $curriculumId]);
++
++            if (!$stmtCheck->fetch()) {
++                $insProf = $this->db->prepare("INSERT INTO user_academic_profiles (user_id, course_id, curriculum_id, enrollment_year) VALUES (:uid, :cid, :currid, :year)");
++                $insProf->execute(['uid' => $userId, 'cid' => $courseId, 'currid' => $curriculumId, 'year' => date('Y')]);
++            }
++
++            $this->db->commit();
++            return true;
++        } catch (\Throwable $e) {
++            if ($this->db->inTransaction()) {
++                $this->db->rollBack();
++            }
++            throw $e;
+         }
+     }
+ 
+diff -ruN a/config/routes.php b/config/routes.php
+--- a/config/routes.php	2026-10-09 08:00:02.565991554 +0000
++++ b/config/routes.php	2026-10-09 08:00:02.568084086 +0000
+@@ -18,7 +18,7 @@
+ $router->get('/logout', function (): void { (new AuthController())->logout(); });
+ $router->get('/api/eventi-personali', function (): void { (new ApiController())->getPersonalEvents(); });
+ $router->post('/api/eventi-personali', function (): void { (new ApiController())->savePersonalEvent(); });
+-$router->get('/api/eventi-personali/delete/{id}', function (string $id): void { (new ApiController())->deletePersonalEvent($id); });
++$router->post('/api/eventi-personali/delete/{id}', function (string $id): void { (new ApiController())->deletePersonalEvent($id); });
+ $router->get('/api/corsi-nascosti', function (): void { (new ApiController())->getHiddenCourses(); });
+ $router->post('/api/corsi-nascosti/toggle', function (): void { (new ApiController())->toggleHiddenCourse(); });
+ $router->get('/api/calendario', function (): void { (new ApiController())->getCalendarEvents(); });
+@@ -73,11 +73,6 @@
+     $requireAuth();
+     (new ProfileController())->showProfile();
+ });
+-$router->post('/profilo/aggiorna-corso', function () use ($requireAuth): void {
+-    $requireAuth();
+-    (new ProfileController())->updateCourse();
+-});
+-
+ // API Sincronizzazione Tema
+ $router->post('/api/preferenze/tema', function () use ($requireAuth): void {
+     $requireAuth();
+diff -ruN a/public/assets/js/app.js b/public/assets/js/app.js
+--- a/public/assets/js/app.js	2026-10-09 08:00:02.566062957 +0000
++++ b/public/assets/js/app.js	2026-10-09 08:00:02.568156414 +0000
+@@ -17,7 +17,10 @@
+         try {
+             await fetch(`${basePath}/api/preferenze/tema`, {
+                 method: 'POST',
+-                headers: { 'Content-Type': 'application/json' },
++                headers: {
++                    'Content-Type': 'application/json',
++                    'X-CSRF-Token': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''
++                },
+                 body: JSON.stringify({ theme: nuovoTema })
+             });
+         } catch (e) {
+diff -ruN a/public/assets/js/calendar.js b/public/assets/js/calendar.js
+--- a/public/assets/js/calendar.js	2026-10-09 08:00:02.566078373 +0000
++++ b/public/assets/js/calendar.js	2026-10-09 08:00:02.568173829 +0000
+@@ -29,6 +29,26 @@
+ // ==========================================
+ // HELPER FUNCTIONS
+ // ==========================================
++
++// Escape HTML: da usare su OGNI dato esterno/utente inserito in innerHTML
++function esc(v) {
++    return String(v ?? '')
++        .replace(/&/g, '&amp;')
++        .replace(/</g, '&lt;')
++        .replace(/>/g, '&gt;')
++        .replace(/"/g, '&quot;')
++        .replace(/'/g, '&#39;');
++}
++
++function csrfToken() {
++    const m = document.querySelector('meta[name="csrf-token"]');
++    return m ? m.getAttribute('content') : '';
++}
++
++function stessoGiornoLocale(a, b) {
++    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
++}
++
+ function estraiPartizione(evento) {
+     let part = null;
+     if (evento.evento && evento.evento.dettagliDidattici && evento.evento.dettagliDidattici.length > 0) {
+@@ -417,11 +437,11 @@
+             
+             card.addEventListener('click', () => window.apriModaleDettagli(evento));
+             
+-            let titolo = formattaTitolo(evento.nome);
++            let titolo = esc(formattaTitolo(evento.nome));
+             const partizione = estraiPartizione(evento);
+             if (partizione && partizione.descrizione) {
+                 const descShort = partizione.descrizione.replace(/cognomi\s*/i, "").trim();
+-                titolo += ` <span style="font-size: 0.85em; opacity: 0.9;">(${descShort})</span>`;
++                titolo += ` <span style="font-size: 0.85em; opacity: 0.9;">(${esc(descShort)})</span>`;
+             }
+ 
+             const orario = `${dataInizio.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })} - ${dataFine.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })}`;
+@@ -445,7 +465,7 @@
+             card.innerHTML = `
+                 <div class="lezione-titolo">${titolo}</div>
+                 <div class="lezione-orario">${icnOra} ${orario}</div>
+-                <div class="lezione-dettaglio">${icnAula} ${evento.isPersonale ? (evento.luogo || 'Personale') : auleTesto}</div>
++                <div class="lezione-dettaglio">${icnAula} ${esc(evento.isPersonale ? (evento.luogo || 'Personale') : auleTesto)}</div>
+             `;
+             colonna.appendChild(card);
+         });
+@@ -525,9 +545,8 @@
+     // Estraiamo gli eventi SOLO del giorno selezionato
+     const dataRifGiorno = new Date(lunedi);
+     dataRifGiorno.setDate(lunedi.getDate() + (giornoSelezionatoGruppo - 1));
+-    const strDataRif = dataRifGiorno.toISOString().split('T')[0];
+-    
+-    const eventiGiorno = eventiTutti.filter(ev => ev.dataInizio && ev.dataInizio.startsWith(strDataRif));
++    // Confronto sul giorno LOCALE (toISOString() converte in UTC e farebbe slittare di un giorno)
++    const eventiGiorno = eventiTutti.filter(ev => ev.dataInizio && stessoGiornoLocale(new Date(ev.dataInizio), dataRifGiorno));
+ 
+     // Ordiniamo i Membri: "Tu" stai sempre nella prima colonna a sinistra
+     let keysMembri = Object.keys(membri);
+@@ -593,7 +612,7 @@
+             }
+ 
+             card.innerHTML = `
+-                <div class="doodle-card-title">${formattaTitolo(ev.nome)}</div>
++                <div class="doodle-card-title">${esc(formattaTitolo(ev.nome))}</div>
+                 <div>${dInizio.getHours()}:${dInizio.getMinutes().toString().padStart(2,'0')} - ${dFine.getHours()}:${dFine.getMinutes().toString().padStart(2,'0')}</div>
+             `;
+             
+@@ -664,7 +683,7 @@
+     let partizioneHtml = "";
+     const partizione = estraiPartizione(evento);
+     if (partizione && partizione.descrizione) {
+-        partizioneHtml = `<div class="hl-riga">${icnPartizione} <span>${partizione.codice ? partizione.codice + ' - ' : ''}${partizione.descrizione}</span></div>`;
++        partizioneHtml = `<div class="hl-riga">${icnPartizione} <span>${esc((partizione.codice ? partizione.codice + ' - ' : '') + partizione.descrizione)}</span></div>`;
+     }
+ 
+     box.innerHTML = `
+@@ -683,13 +702,13 @@
+                 </button>
+             </div>
+         </div>
+-        <h2 class="hl-titolo">${titoloFormattato}</h2>
++        <h2 class="hl-titolo">${esc(titoloFormattato)}</h2>
+         <div class="hl-dettagli">
+             <div class="hl-riga">${icnData} <span>${dataTesto.charAt(0).toUpperCase() + dataTesto.slice(1)}</span></div>
+             <div class="hl-riga">${icnOra} <strong>${orario}</strong></div>
+             ${partizioneHtml}
+-            <div class="hl-riga">${icnAula} <span>${auleTesto}</span></div>
+-            ${!evento.isPersonale ? `<div class="hl-riga">${icnProf} <span>Prof.${docentiTesto}</span></div>` : ''}
++            <div class="hl-riga">${icnAula} <span>${esc(auleTesto)}</span></div>
++            ${!evento.isPersonale ? `<div class="hl-riga">${icnProf} <span>Prof.${esc(docentiTesto)}</span></div>` : ''}
+         </div>
+     `;
+     document.getElementById('box-evidenza-main').style.setProperty('--card-hue', hueMateria);
+@@ -768,7 +787,7 @@
+                 const nomeAula = r.aula.descrizione || "Aula non specificata";
+                 const edificio = (r.aula.edificio && r.aula.edificio.descrizione) ? r.aula.edificio.descrizione : "Padiglione non specificato";
+                 const capienza = r.aula.capienza ? `Capienza: ${r.aula.capienza} posti` : "Capienza ignota";
+-                infoAule.push(`<li><strong>${nomeAula}</strong><small>${edificio} • ${capienza}</small></li>`);
++                infoAule.push(`<li><strong>${esc(nomeAula)}</strong><small>${esc(edificio)} • ${esc(capienza)}</small></li>`);
+             }
+             if (r.docente) {
+                 infoDocenti.push(`${r.docente.nome || ""} ${r.docente.cognome || ""}`.trim());
+@@ -776,7 +795,7 @@
+         });
+     }
+     
+-    const auleHtml = infoAule.length > 0 ? `<ul class="lista-aule" style="padding-left:24px; margin:4px 0;">${infoAule.join('')}</ul>` : `<span style='margin-left: 8px;'>${evento.luogo || 'Da definire'}</span>`;
++    const auleHtml = infoAule.length > 0 ? `<ul class="lista-aule" style="padding-left:24px; margin:4px 0;">${infoAule.join('')}</ul>` : `<span style='margin-left: 8px;'>${esc(evento.luogo || 'Da definire')}</span>`;
+     const docentiTesto = infoDocenti.length > 0 ? infoDocenti.join(', ') : "Non assegnato";
+     const tipoLezione = evento.tipoAbbreviazione || (evento.isPersonale ? "Evento Personale" : "Lezione");
+     const stato = evento.stato === "A" ? " - ANNULLATA" : "";
+@@ -784,7 +803,7 @@
+     let partizioneHtml = "";
+     const partizione = estraiPartizione(evento);
+     if (partizione && partizione.descrizione) {
+-        partizioneHtml = `<div class="hl-riga">${icnPartizione} <span><strong>Partizione:</strong> ${partizione.codice ? partizione.codice + ' - ' : ''}${partizione.descrizione}</span></div>`;
++        partizioneHtml = `<div class="hl-riga">${icnPartizione} <span><strong>Partizione:</strong> ${esc((partizione.codice ? partizione.codice + ' - ' : '') + partizione.descrizione)}</span></div>`;
+     }
+ 
+     document.querySelector('.modale-content').style.setProperty('--card-hue', hueMateria);
+@@ -793,14 +812,14 @@
+     const toggleBtnColor = isHidden ? "#10b981" : "#ef4444";
+ 
+     modaleBody.innerHTML = `
+-        <span class="hl-badge ${evento.stato === 'A' ? 'badge-now' : 'badge-future'} modale-badge">${tipoLezione}${stato}</span>
+-        <h2 class="hl-titolo" style="margin-top: 0;">${titoloFormattato}</h2>
++        <span class="hl-badge ${evento.stato === 'A' ? 'badge-now' : 'badge-future'} modale-badge">${esc(tipoLezione)}${stato}</span>
++        <h2 class="hl-titolo" style="margin-top: 0;">${esc(titoloFormattato)}</h2>
+         
+         <div class="hl-dettagli" style="grid-template-columns: 1fr; gap: 16px;">
+-            <div class="hl-riga">${icnData} <span style="text-transform: capitalize;">${dataTesto}</span></div>
++            <div class="hl-riga">${icnData} <span style="text-transform: capitalize;">${esc(dataTesto)}</span></div>
+             <div class="hl-riga">${icnOra} <strong>${orario}</strong></div>
+             ${partizioneHtml}
+-            ${!evento.isPersonale ? `<div class="hl-riga">${icnProf} <span><strong>Docente:</strong>${docentiTesto}</span></div>` : ''}
++            ${!evento.isPersonale ? `<div class="hl-riga">${icnProf} <span><strong>Docente:</strong>${esc(docentiTesto)}</span></div>` : ''}
+             <div class="hl-riga" style="align-items: flex-start;">
+                 <div style="margin-top: 2px;">${icnAula}</div>
+                 <div><strong>Luogo:</strong> ${auleHtml}</div>
+@@ -808,19 +827,22 @@
+         </div>
+     `;
+ 
+-    if (!evento.isPersonale) {
+-        const nomeCorsoSafe = (evento.nome || "").replace(/'/g, "\\'");
+-        modaleBody.innerHTML += `
+-            <button onclick="window.toggleCorsoNascosto('${nomeCorsoSafe}')" style="margin-top: 24px; width: 100%; padding: 14px; background: ${toggleBtnColor}; color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 700;">
+-                ${toggleBtnText}
+-            </button>
+-        `;
+-    } else {
+-        modaleBody.innerHTML += `
+-            <button onclick="window.eliminaEventoPersonale('${evento.idPersonale}')" style="margin-top: 24px; width: 100%; padding: 14px; background: #ef4444; color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 700;">
+-                🗑️ Elimina Evento
+-            </button>
+-        `;
++    // Nel calendario di gruppo gli eventi degli altri membri sono in sola lettura
++    if (evento.is_me !== false) {
++        const btnAzione = document.createElement('button');
++        btnAzione.type = 'button';
++        btnAzione.style.cssText = 'margin-top: 24px; width: 100%; padding: 14px; color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 700;';
++
++        if (!evento.isPersonale) {
++            btnAzione.style.background = toggleBtnColor;
++            btnAzione.textContent = toggleBtnText;
++            btnAzione.addEventListener('click', () => window.toggleCorsoNascosto(evento.nome));
++        } else {
++            btnAzione.style.background = '#ef4444';
++            btnAzione.textContent = '🗑️ Elimina Evento';
++            btnAzione.addEventListener('click', () => window.eliminaEventoPersonale(evento.idPersonale));
++        }
++        modaleBody.appendChild(btnAzione);
+     }
+     modale.style.display = 'flex';
+ };
+@@ -830,7 +852,7 @@
+     try {
+         const response = await fetch(`${API_BASE_PATH}/api/corsi-nascosti/toggle`, {
+             method: 'POST',
+-            headers: { 'Content-Type': 'application/json' },
++            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
+             body: JSON.stringify({ course_name: nomeCorso })
+         });
+         if (response.ok) {
+@@ -845,7 +867,11 @@
+ window.eliminaEventoPersonale = async function(id) {
+     if(confirm("Vuoi davvero eliminare questo evento personale?")) {
+         try {
+-            await fetch(`${API_BASE_PATH}/api/eventi-personali/delete/${id}`);
++            const res = await fetch(`${API_BASE_PATH}/api/eventi-personali/delete/${encodeURIComponent(id)}`, {
++                method: 'POST',
++                headers: { 'X-CSRF-Token': csrfToken() }
++            });
++            if (!res.ok) throw new Error('HTTP ' + res.status);
+             document.getElementById('modale-dettagli').style.display = 'none';
+             localStorage.removeItem(`campusly_week_${ottieniLunedi(dataRiferimento).toISOString().split('T')[0]}_gme`);
+             caricaSettimana(dataRiferimento);
+@@ -897,16 +923,17 @@
+                 luogo: document.getElementById('form-luogo').value || "Luogo non specificato"
+             };
+             try {
+-                await fetch(`${API_BASE_PATH}/api/eventi-personali`, {
++                const res = await fetch(`${API_BASE_PATH}/api/eventi-personali`, {
+                     method: 'POST',
+-                    headers: { 'Content-Type': 'application/json' },
++                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
+                     body: JSON.stringify(payload)
+                 });
++                if (!res.ok) throw new Error('HTTP ' + res.status);
+                 modaleForm.style.display = 'none';
+                 form.reset();
+                 localStorage.removeItem(`campusly_week_${ottieniLunedi(dataRiferimento).toISOString().split('T')[0]}_gme`);
+                 caricaSettimana(dataRiferimento);
+-            } catch (error) { alert("Errore durante il salvataggio in Cloud dell'evento"); }
++            } catch (error) { alert("Impossibile salvare l'evento. Controlla che l'ora di fine sia successiva all'inizio e riprova."); }
+         });
+     }
+     caricaSettimana(dataRiferimento);
+diff -ruN a/public/assets/js/onboarding.js b/public/assets/js/onboarding.js
+--- a/public/assets/js/onboarding.js	2026-10-09 08:00:02.566119069 +0000
++++ b/public/assets/js/onboarding.js	2026-10-09 08:00:02.568210137 +0000
+@@ -11,6 +11,29 @@
+ // Usa la variabile globale dichiarata nella vista
+ const apiBasePath = window.APP_BASE_PATH || '';
+ 
++// Escape HTML per ogni dato dinamico inserito in innerHTML
++function esc(v) {
++    return String(v ?? '')
++        .replace(/&/g, '&amp;')
++        .replace(/</g, '&lt;')
++        .replace(/>/g, '&gt;')
++        .replace(/"/g, '&quot;')
++        .replace(/'/g, '&#39;');
++}
++
++// Crea un bottone "toggle" senza usare onclick inline
++function creaToggle(testo, { selected = false, locked = false, onClick = null } = {}) {
++    const el = document.createElement('div');
++    el.className = 'toggle-btn' + (selected ? ' selected' : '');
++    if (locked) {
++        el.style.cursor = 'default';
++        el.style.pointerEvents = 'none';
++    }
++    el.textContent = testo;
++    if (onClick) el.addEventListener('click', () => onClick(el));
++    return el;
++}
++
+ function vaiAStep(stepNum) {
+     document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+     document.getElementById('step-' + stepNum).classList.add('active');
+@@ -36,9 +59,11 @@
+         
+         if (corsi.length > 0) {
+             corsi.forEach(corso => {
+-                const nomeSafe = corso.name.replace(/'/g, "\\'");
+-                // AGGIUNTO IL PASSAGGIO DELL'ID CORSO:
+-                list.innerHTML += `<div class="course-item" onclick="selezionaCorso(${corso.id}, '${nomeSafe}')">${corso.name}</div>`;
++                const item = document.createElement('div');
++                item.className = 'course-item';
++                item.textContent = corso.name;
++                item.addEventListener('click', () => selezionaCorso(corso.id, corso.name));
++                list.appendChild(item);
+             });
+         } else {
+             list.innerHTML = `<div style="text-align:center; padding: 20px;"><button class="btn btn-secondary" onclick="apriRichiesta('course')">Nessun corso, richiedilo ora</button></div>`;
+@@ -91,7 +116,7 @@
+                 const sedeScelta = sedi[0];
+                 wizardData.sede = sedeScelta;
+                 document.getElementById('input-sede').value = sedeScelta;
+-                containerSede.innerHTML = `<div class="toggle-btn selected" style="cursor:default; pointer-events:none;">${sedeScelta} (Unica)</div>`;
++                containerSede.replaceChildren(creaToggle(`${sedeScelta} (Unica)`, { selected: true, locked: true }));
+                 
+                 // Filtriamo gli anni per questa unica sede
+                 const curriculumsSede = curriculums.filter(c => c.campus_location === sedeScelta);
+@@ -101,15 +126,15 @@
+                     // C'è pure un solo anno! (Caso perfetto, sblocca il bottone submit)
+                     wizardData.anno = anniSede[0];
+                     document.getElementById('input-anno').value = anniSede[0];
+-                    containerAnno.innerHTML = `<div class="toggle-btn selected" style="cursor:default; pointer-events:none;">${anniSede[0]}° Anno (Unico)</div>`;
++                    containerAnno.replaceChildren(creaToggle(`${anniSede[0]}° Anno (Unico)`, { selected: true, locked: true }));
+                     document.getElementById('btn-submit').removeAttribute('disabled');
+                 } else if (anniSede.length > 1) {
+                     // Ci sono più anni per l'unica sede, falli scegliere
+-                    containerAnno.innerHTML = anniSede.map(a => `<div class="toggle-btn" onclick="selezionaToggle(this, 'anno', '${a}')">${a}° Anno</div>`).join('');
++                    containerAnno.replaceChildren(...anniSede.map(a => creaToggle(`${a}° Anno`, { onClick: el => selezionaToggle(el, 'anno', a) })));
+                 }
+             } else {
+                 // CASO 2: Ci sono più sedi. L'utente deve cliccarne una per sbloccare gli anni.
+-                containerSede.innerHTML = sedi.map(s => `<div class="toggle-btn" onclick="selezionaToggle(this, 'sede', '${s}')">${s}</div>`).join('');
++                containerSede.replaceChildren(...sedi.map(s => creaToggle(s, { onClick: el => selezionaToggle(el, 'sede', s) })));
+                 containerAnno.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem;">Seleziona prima una sede</p>';
+             }
+         } else {
+@@ -117,8 +142,8 @@
+             wizardData.sede = 'Principale'; wizardData.anno = 1;
+             document.getElementById('input-sede').value = 'Principale';
+             document.getElementById('input-anno').value = 1;
+-            containerSede.innerHTML = `<div class="toggle-btn selected" style="pointer-events:none;">Principale</div>`;
+-            containerAnno.innerHTML = `<div class="toggle-btn selected" style="pointer-events:none;">1° Anno</div>`;
++            containerSede.replaceChildren(creaToggle('Principale', { selected: true, locked: true }));
++            containerAnno.replaceChildren(creaToggle('1° Anno', { selected: true, locked: true }));
+             document.getElementById('btn-submit').removeAttribute('disabled');
+         }
+ 
+@@ -152,10 +177,10 @@
+         if (anniSede.length === 1) {
+             wizardData.anno = anniSede[0];
+             document.getElementById('input-anno').value = anniSede[0];
+-            containerAnno.innerHTML = `<div class="toggle-btn selected" style="cursor:default; pointer-events:none;">${anniSede[0]}° Anno (Unico)</div>`;
++            containerAnno.replaceChildren(creaToggle(`${anniSede[0]}° Anno (Unico)`, { selected: true, locked: true }));
+             document.getElementById('btn-submit').removeAttribute('disabled');
+         } else if (anniSede.length > 1) {
+-            containerAnno.innerHTML = anniSede.map(a => `<div class="toggle-btn" onclick="selezionaToggle(this, 'anno', '${a}')">${a}° Anno</div>`).join('');
++            containerAnno.replaceChildren(...anniSede.map(a => creaToggle(`${a}° Anno`, { onClick: el => selezionaToggle(el, 'anno', a) })));
+         } else {
+             containerAnno.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem;">Nessun anno trovato</p>';
+         }
+@@ -221,12 +246,12 @@
+     } else if (tipo === 'course') {
+         titolo.textContent = "Richiedi Corso";
+         // Mostriamo il contesto all'utente
+-        label.innerHTML = `Nome del Corso per <strong>${wizardData.uniName}</strong>`;
++        label.innerHTML = `Nome del Corso per <strong>${esc(wizardData.uniName)}</strong>`;
+         inputNome.placeholder = "Es. Ingegneria Informatica";
+         gruppoCorsoExtra.style.display = 'none';
+     } else if (tipo === 'curriculum') {
+         titolo.textContent = "Segnala Dati Mancanti";
+-        label.innerHTML = `Cosa manca per <strong>${wizardData.courseName}</strong>?`;
++        label.innerHTML = `Cosa manca per <strong>${esc(wizardData.courseName)}</strong>?`;
+         inputNome.placeholder = "Es. Manca la sede di Como, oppure manca il 2° Anno";
+         gruppoCorsoExtra.style.display = 'none';
+     }
+diff -ruN a/public/index.php b/public/index.php
+--- a/public/index.php	2026-10-09 08:00:02.566141479 +0000
++++ b/public/index.php	2026-10-09 08:00:02.568232454 +0000
+@@ -2,6 +2,16 @@
+ declare(strict_types=1);
+ 
+ if (session_status() === PHP_SESSION_NONE) {
++    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
++        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
++
++    session_set_cookie_params([
++        'lifetime' => 0,
++        'path'     => '/',
++        'secure'   => $isHttps,
++        'httponly' => true,
++        'samesite' => 'Lax',
++    ]);
+     session_start();
+ }
+ 
+@@ -47,6 +57,7 @@
+     $user = $userModel->findUserByToken($tokenHash);
+ 
+     if ($user) {
++        session_regenerate_id(true);
+         $_SESSION['user_id'] = $user['id'];
+         $_SESSION['user_name'] = $user['first_name'];
+ 
+@@ -64,4 +75,9 @@
+ 
+ require BASEPATH . '/config/routes.php';
+ 
++// Protezione CSRF centralizzata: ogni POST deve portare il token di sessione
++if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
++    \App\Core\Csrf::verifyOrFail();
++}
++
+ $router->dispatch($_SERVER['REQUEST_URI'] ?? '/', $_SERVER['REQUEST_METHOD'] ?? 'GET');
+diff -ruN a/views/auth/login.php b/views/auth/login.php
+--- a/views/auth/login.php	2026-10-09 08:00:02.566219647 +0000
++++ b/views/auth/login.php	2026-10-09 08:00:02.568307186 +0000
+@@ -6,12 +6,13 @@
+ 
+             <?php if (isset($_GET['error'])): ?>
+                 <div style="background: #fee2e2; color: #ef4444; padding: 10px; border-radius: 6px; margin-bottom: 1rem; text-align: center;">
+-                    Credenziali non valide. Riprova.
++                    <?= ($_GET['error'] ?? '') === 'csrf' ? 'Sessione scaduta. Riprova ad accedere.' : 'Credenziali non valide. Riprova.' ?>
+                 </div>
+             <?php endif; ?>
+ 
+             <!-- Modificato $url('/login') con $route('/login') -->
+             <form action="<?= htmlspecialchars($route('/login')) ?>" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
++                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                 <div style="display: flex; flex-direction: column; gap: 5px;">
+                     <label for="email" style="font-size: 0.9rem; font-weight: 600;">Email universitaria</label>
+                     <input type="email" name="email" id="email" placeholder="es. m.rossi@universita.it" required style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+diff -ruN a/views/auth/register.php b/views/auth/register.php
+--- a/views/auth/register.php	2026-10-09 08:00:02.566229272 +0000
++++ b/views/auth/register.php	2026-10-09 08:00:02.568315924 +0000
+@@ -2,9 +2,26 @@
+     <div class="container narrow" style="max-width: 400px; margin: 0 auto;">
+         <div class="highlight-box" style="padding: 2rem;">
+             <h1 style="text-align: center; color: var(--primary-color);">Crea Account</h1>
++
++            <?php
++            $registerErrors = [
++                'empty_fields'   => 'Compila tutti i campi obbligatori.',
++                'invalid_email'  => 'Inserisci un indirizzo email valido.',
++                'weak_password'  => 'La password deve avere almeno 8 caratteri.',
++                'email_exists'   => 'Esiste già un account con questa email.',
++                'server'         => 'Errore del server. Riprova tra poco.',
++            ];
++            $registerError = $registerErrors[$_GET['error'] ?? ''] ?? null;
++            ?>
++            <?php if ($registerError): ?>
++                <div style="background: #fee2e2; color: #ef4444; padding: 10px; border-radius: 6px; margin-top: 1rem; text-align: center;">
++                    <?= htmlspecialchars($registerError) ?>
++                </div>
++            <?php endif; ?>
+             
+             <!-- Modificato $url('/register') con $route('/register') -->
+             <form action="<?= htmlspecialchars($route('/register')) ?>" method="POST" style="display: flex; flex-direction: column; gap: 15px; margin-top: 2rem;">
++                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                 <div style="display: flex; gap: 10px;">
+                     <div style="display: flex; flex-direction: column; gap: 5px; flex: 1;">
+                         <label for="first_name" style="font-size: 0.9rem; font-weight: 600;">Nome</label>
+@@ -23,7 +40,7 @@
+ 
+                 <div style="display: flex; flex-direction: column; gap: 5px;">
+                     <label for="password" style="font-size: 0.9rem; font-weight: 600;">Password</label>
+-                    <input type="password" name="password" id="password" placeholder="Crea una password sicura" required style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
++                    <input type="password" name="password" id="password" placeholder="Almeno 8 caratteri" required minlength="8" style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                 </div>
+ 
+                 <button type="submit" style="background: var(--primary-color); color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px;">Registrati</button>
+diff -ruN a/views/layouts/header.php b/views/layouts/header.php
+--- a/views/layouts/header.php	2026-10-09 08:00:02.566287300 +0000
++++ b/views/layouts/header.php	2026-10-09 08:00:02.568371163 +0000
+@@ -35,6 +35,7 @@
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+     <title><?= htmlspecialchars($pageTitle ?? 'Campusly') ?></title>
++    <meta name="csrf-token" content="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+     
+     <meta name="theme-color" content="#F8F7FA">
+     <link rel="manifest" href="<?= $url('/manifest.json') ?>">
+diff -ruN a/views/pages/calendar.php b/views/pages/calendar.php
+--- a/views/pages/calendar.php	2026-10-09 08:00:02.566350568 +0000
++++ b/views/pages/calendar.php	2026-10-09 08:00:02.568433626 +0000
+@@ -12,10 +12,10 @@
+ ?>
+ 
+ <!-- Passiamo il path a JavaScript -->
+-<?php $groupId = $_GET['group'] ?? 'null'; ?>
++<?php $groupId = max(0, (int)($_GET['group'] ?? 0)); ?>
+ <script>
+     window.APP_BASE_PATH = '<?= htmlspecialchars($basePath ?? '') ?>';
+-    window.ACTIVE_GROUP_ID = <?= htmlspecialchars($groupId) ?>;
++    window.ACTIVE_GROUP_ID = <?= $groupId > 0 ? $groupId : 'null' ?>;
+ </script>
+ 
+ <!-- WRAPPER TEMA UNIVERSITÀ: Passa il colore dinamicamente al CSS -->
+@@ -31,7 +31,7 @@
+     
+     <!-- 1. TOOLBAR CALENDARIO -->
+     <div class="toolbar-calendario">
+-        <?php if ($groupId !== 'null'): ?>
++        <?php if ($groupId > 0): ?>
+             <div style="background: var(--brand-purple); color: white; text-align: center; padding: 8px; font-weight: 600; font-size: 0.9rem; display: flex; justify-content: center; align-items: center; gap: 10px;">
+                 <span>👥 Stai visualizzando il calendario di gruppo</span>
+                 <a href="<?= htmlspecialchars($route('/dashboard')) ?>" class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 4px 10px;">Torna al mio</a>
+diff -ruN a/views/pages/onboarding.php b/views/pages/onboarding.php
+--- a/views/pages/onboarding.php	2026-10-09 08:00:02.566382143 +0000
++++ b/views/pages/onboarding.php	2026-10-09 08:00:02.568464466 +0000
+@@ -2,6 +2,12 @@
+     <div class="container narrow">
+         <div class="highlight-box wizard-container">
+             
++            <?php if (($_GET['error'] ?? '') === 'invalid'): ?>
++                <div style="background: #fee2e2; color: #ef4444; padding: 10px; border-radius: 6px; margin-bottom: 1rem; text-align: center;">
++                    Selezione non valida. Scegli di nuovo università, corso, sede e anno.
++                </div>
++            <?php endif; ?>
++
+             <!-- STEP 1: UNIVERSITÀ -->
+             <div id="step-1" class="wizard-step active">
+                 <h1 class="page-title">Scegli la tua Università</h1>
+@@ -57,6 +63,7 @@
+                 <p class="page-subtitle" id="subtitle-course-name">Nome Corso</p>
+                 
+                 <form action="<?= htmlspecialchars($route('/onboarding')) ?>" method="POST" id="form-onboarding">
++                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                     <!-- Campi nascosti per inviare i dati al PHP -->
+                     <input type="hidden" name="university_id" id="input-uni-id">
+                     <input type="hidden" name="course_name" id="input-course-name">
+diff -ruN a/views/pages/profile.php b/views/pages/profile.php
+--- a/views/pages/profile.php	2026-10-09 08:00:02.566393756 +0000
++++ b/views/pages/profile.php	2026-10-09 08:00:02.568475544 +0000
+@@ -19,6 +19,7 @@
+                                 <p><?= htmlspecialchars($c['uni_name']) ?> &bull; <?= htmlspecialchars($c['campus_location']) ?> &bull; <?= $c['year'] ?>&deg; Anno</p>
+                             </div>
+                             <form action="<?= htmlspecialchars($route('/profilo/rimuovi-corso')) ?>" method="POST" onsubmit="return confirm('Vuoi davvero rimuovere questo corso dal calendario?');">
++                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                                 <input type="hidden" name="profile_id" value="<?= $c['profile_id'] ?>">
+                                 <button type="submit" class="btn-danger" title="Rimuovi corso">X</button>
+                             </form>
+@@ -216,7 +217,7 @@
+         try {
+             const response = await fetch(window.APP_BASE_PATH + '/api/corsi-nascosti/toggle', {
+                 method: 'POST',
+-                headers: { 'Content-Type': 'application/json' },
++                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.CSRF_TOKEN },
+                 body: JSON.stringify({ course_name: nomeCorso })
+             });
+             if (response.ok) location.reload(); 
