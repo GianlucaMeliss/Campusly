@@ -17,10 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await fetch(`${basePath}/api/preferenze/tema`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ theme: nuovoTema })
             });
         } catch (e) {
