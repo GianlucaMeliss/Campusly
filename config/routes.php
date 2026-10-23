@@ -18,10 +18,11 @@ $router->post('/register', function (): void { (new AuthController())->processRe
 $router->get('/logout', function (): void { (new AuthController())->logout(); });
 $router->get('/api/eventi-personali', function (): void { (new ApiController())->getPersonalEvents(); });
 $router->post('/api/eventi-personali', function (): void { (new ApiController())->savePersonalEvent(); });
-$router->get('/api/eventi-personali/delete/{id}', function (string $id): void { (new ApiController())->deletePersonalEvent($id); });
+$router->post('/api/eventi-personali/delete/{id}', function (string $id): void { (new ApiController())->deletePersonalEvent($id); });
 $router->get('/api/corsi-nascosti', function (): void { (new ApiController())->getHiddenCourses(); });
 $router->post('/api/corsi-nascosti/toggle', function (): void { (new ApiController())->toggleHiddenCourse(); });
 $router->get('/api/calendario', function (): void { (new ApiController())->getCalendarEvents(); });
+$router->get('/api/versione', function (): void { (new ApiController())->getAppVersion(); });
 $router->post('/api/richiesta-onboarding', function () { (new \App\Controllers\ApiController())->submitOnboardingRequest(); });
 
 $router->post('/api/gruppi/crea', function (): void { (new ApiController())->createGroup(); });
@@ -73,11 +74,6 @@ $router->get('/profilo', function () use ($requireAuth): void {
     $requireAuth();
     (new ProfileController())->showProfile();
 });
-$router->post('/profilo/aggiorna-corso', function () use ($requireAuth): void {
-    $requireAuth();
-    (new ProfileController())->updateCourse();
-});
-
 // API Sincronizzazione Tema
 $router->post('/api/preferenze/tema', function () use ($requireAuth): void {
     $requireAuth();

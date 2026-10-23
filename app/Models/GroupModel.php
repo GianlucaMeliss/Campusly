@@ -35,7 +35,7 @@ class GroupModel extends Model
         $group = $stmt->fetch();
 
         if (!$group) {
-            return ['status' => 'error', 'message' => 'Codice invito non valido'];
+            return ['status' => 'error', 'error' => 'Codice invito non valido', 'message' => 'Codice invito non valido'];
         }
 
         $groupId = $group['id'];
