@@ -495,63 +495,412 @@ body.dark-mode .lezione-card {
     font-weight: 600;
 }
 /* =========================================
-   VISTA GRUPPO: MODELLO "WHEN2MEET" (COLONNE)
+   SWITCHER GRUPPI NELLA TOOLBAR
    ========================================= */
-.group-day-tabs { 
-    display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 20px;
-    -webkit-overflow-scrolling: touch; scrollbar-width: none;
-}
-.group-day-tabs::-webkit-scrollbar { display: none; }
-.group-day-tab { 
-    padding: 10px 18px; border-radius: 20px; background: var(--surface); 
-    border: 1px solid var(--border-color); cursor: pointer; white-space: nowrap; 
-    font-weight: 600; color: var(--text-secondary); transition: 0.2s; 
-}
-.group-day-tab.active { 
-    background: var(--primary-color); color: white; border-color: var(--primary-color); 
+.group-switcher-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
 }
 
-/* Griglia Doodle */
+.group-pills {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 0;
+}
+.group-pills::-webkit-scrollbar { display: none; }
+
+.group-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: var(--surface);
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border-color);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.group-pill:hover {
+    border-color: var(--primary-color);
+    color: var(--text-primary) !important;
+}
+
+.group-pill.active {
+    background: var(--gradient-brand);
+    color: #ffffff !important;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(232, 62, 140, 0.25);
+}
+
+.group-pill .pill-count {
+    background: rgba(0, 0, 0, 0.12);
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+.group-pill.active .pill-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
+.group-pill.pill-add {
+    border-style: dashed;
+    color: var(--primary-color) !important;
+    background: transparent;
+}
+
+.active-group-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.invite-badge {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    padding: 5px 12px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s;
+}
+.invite-badge:hover {
+    border-color: var(--primary-color);
+}
+
+.privacy-quick-select {
+    width: auto !important;
+    padding: 5px 10px !important;
+    font-size: 0.8rem !important;
+    border-radius: 10px !important;
+    background-color: var(--surface) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* Tabs del Modale Gruppi */
+.group-modal-tabs {
+    display: flex;
+    background: var(--bg-main);
+    padding: 4px;
+    border-radius: var(--radius-md);
+    margin-bottom: 20px;
+}
+.g-tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 700;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.g-tab.active {
+    background: var(--surface);
+    color: var(--primary-color);
+    box-shadow: var(--shadow-soft);
+}
+
+/* =========================================
+   VISTA GRUPPO: BANNER BUCHI LIBERI & TABS
+   ========================================= */
+.free-slots-banner {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-left: 5px solid #10b981;
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.free-slots-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.free-slots-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.free-slot-chip {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+body.dark-mode .free-slot-chip {
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.18);
+}
+
+.group-day-tabs { 
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 0 14px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.group-day-tabs::-webkit-scrollbar { display: none; }
+
+.group-day-tab { 
+    flex: 1;
+    min-width: 105px;
+    text-align: center;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--surface); 
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    white-space: nowrap; 
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.group-day-tab .day-num {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+.group-day-tab.is-today {
+    border-color: var(--primary-color);
+}
+.group-day-tab.active { 
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    box-shadow: 0 6px 16px rgba(232, 62, 140, 0.25);
+}
+.group-day-tab.active .day-num {
+    color: white;
+}
+
+/* =========================================
+   TABELLA COMPARATIVA GRUPPO (DOODLE GRID)
+   ========================================= */
 .doodle-container {
-    display: flex; background: var(--surface); border-radius: var(--radius-lg);
-    border: 1px solid var(--border-color); box-shadow: var(--shadow-soft);
-    position: relative; overflow: hidden; margin-bottom: 30px;
+    display: flex;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-soft);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 30px;
 }
+
 .doodle-times {
-    width: 55px; flex-shrink: 0; background: var(--bg-main);
-    border-right: 1px solid var(--border-color); position: relative;
+    width: 52px;
+    flex-shrink: 0;
+    background: var(--bg-main);
+    border-right: 1px solid var(--border-color);
+    position: relative;
+    z-index: 15;
 }
+
 .doodle-time-label {
-    position: absolute; right: 8px; width: 100%; text-align: right;
-    font-size: 0.75rem; color: var(--text-secondary); transform: translateY(-50%);
-    font-weight: 600;
+    position: absolute;
+    right: 6px;
+    width: 100%;
+    text-align: right;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    transform: translateY(-50%);
+    font-weight: 700;
 }
+
 .doodle-members-wrapper {
-    display: flex; flex: 1; overflow-x: auto; position: relative;
+    display: flex;
+    flex: 1;
+    overflow-x: auto;
+    position: relative;
     -webkit-overflow-scrolling: touch;
 }
+
 .doodle-member-col {
-    flex: 1; min-width: 100px; border-right: 1px dashed var(--border-color);
+    flex: 1;
+    min-width: 145px;
+    border-right: 1px dashed var(--border-color);
     position: relative;
 }
 .doodle-member-col:last-child { border-right: none; }
+
 .doodle-header {
-    position: sticky; top: 0; background: var(--surface); z-index: 20;
-    text-align: center; padding: 12px 4px; font-size: 0.9rem; font-weight: 700;
-    border-bottom: 1px solid var(--border-color); white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis;
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 20;
+    padding: 8px 6px;
+    border-bottom: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
+
+.doodle-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(124, 77, 255, 0.15);
+    color: var(--brand-purple);
+    font-weight: 800;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.doodle-member-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    overflow: hidden;
+}
+
+.doodle-member-name {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+    line-height: 1.1;
+}
+
+.doodle-member-status {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
 .doodle-header.is-me {
-    background: var(--primary-color); color: white;
+    background: rgba(232, 62, 140, 0.08);
+    border-bottom-color: var(--primary-color);
 }
+.doodle-header.is-me .doodle-avatar {
+    background: var(--gradient-brand);
+    color: #fff;
+}
+
+/* Fascia Verde condivisa in background */
+.doodle-free-band {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background: rgba(16, 185, 129, 0.06);
+    border-top: 1px dashed rgba(16, 185, 129, 0.35);
+    border-bottom: 1px dashed rgba(16, 185, 129, 0.35);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Card Evento nel Gruppo (Con supporto Dark Mode) */
 .doodle-card {
-    position: absolute; border-radius: 6px; padding: 6px; font-size: 0.75rem;
-    overflow: hidden; border-left: 4px solid; cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.06); display: flex; flex-direction: column;
-    line-height: 1.25; transition: transform 0.1s;
+    position: absolute;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 0.75rem;
+    overflow: hidden;
+    border-left: 4px solid hsl(var(--card-hue, 330), 80%, 55%);
+    background-color: hsl(var(--card-hue, 330), 92%, 95%);
+    color: var(--text-primary);
+    cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.2;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.doodle-card:active { transform: scale(0.97); }
+
+body.dark-mode .doodle-card {
+    background-color: hsl(var(--card-hue, 330), 38%, 22%);
+    border-left-color: hsl(var(--card-hue, 330), 75%, 65%);
+    color: #ffffff;
+}
+
+.doodle-card.is-opaque {
+    background: repeating-linear-gradient(
+        -45deg,
+        var(--bg-main),
+        var(--bg-main) 8px,
+        var(--surface) 8px,
+        var(--surface) 16px
+    ) !important;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--text-secondary) !important;
+    color: var(--text-secondary) !important;
+}
+
+.doodle-card:hover {
+    z-index: 50 !important;
+    transform: scale(1.02);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
 .doodle-card-title {
-    font-weight: 700; margin-bottom: 4px; white-space: nowrap; 
-    overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem;
+    font-weight: 800;
+    font-size: 0.78rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.doodle-card-time {
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 0.85;
+}
+
+.doodle-card-loc {
+    font-size: 0.68rem;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
 }

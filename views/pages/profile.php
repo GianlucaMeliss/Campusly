@@ -55,25 +55,40 @@
         <!-- 4. GRUPPI DI STUDIO -->
         <div class="highlight-box">
             <h2 class="section-title">Gruppi di Studio & Carpooling</h2>
-            <p class="section-subtitle">Condividi i tuoi orari con gli amici per organizzare viaggi, pause e sessioni di studio. Le materie nascoste non verranno mostrate agli altri.</p>
+            <p class="section-subtitle">Condividi i tuoi orari con gli amici per trovare finestre libere comuni, organizzare viaggi e sessioni di studio. Le materie nascoste restano sempre private.</p>
             
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px;">
                 <?php if (!empty($groups)): ?>
                     <?php foreach ($groups as $g): ?>
-                        <div class="active-course-card">
-                            <div class="course-info">
-                                <h3><?= htmlspecialchars($g['name']) ?></h3>
-                                <p>
-                                    Codice Invito: <strong><?= htmlspecialchars($g['invite_code']) ?></strong> &bull; 
-                                    Privacy: <?= $g['privacy_level'] === 'transparent' ? 'Dettaglio Completo' : ($g['privacy_level'] === 'logistical' ? 'Solo Sede' : 'Solo Occupato') ?>
-                                </p>
+                        <div class="active-course-card" style="flex-wrap: wrap; gap: 14px;">
+                            <div class="course-info" style="flex: 1; min-width: 220px;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <h3 style="margin: 0;"><?= htmlspecialchars($g['name']) ?></h3>
+                                    <span style="background: rgba(124, 77, 255, 0.12); color: var(--brand-purple); font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;">
+                                        👥 <?= (int)($g['members_count'] ?? 1) ?> membri
+                                    </span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-secondary);">
+                                    <span>Codice: <strong style="font-family: monospace; color: var(--text-primary);"><?= htmlspecialchars($g['invite_code']) ?></strong></span>
+                                    <button type="button" onclick="copiaCodiceProfilo('<?= htmlspecialchars($g['invite_code']) ?>', this)" style="background: var(--surface); border: 1px solid var(--border-color); border-radius: 6px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer; font-weight: 600; color: var(--primary-color);">
+                                        📋 Copia
+                                    </button>
+                                </div>
                             </div>
-                            <!-- In futuro qui aggiungeremo il tasto "Esci" o "Apri" -->
-                            <a href="<?= htmlspecialchars($route('/dashboard?group=' . $g['id'])) ?>" class="btn btn-secondary btn-sm">Apri Calendario</a>
+
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <select onchange="aggiornaPrivacyProfilo(<?= (int)$g['id'] ?>, this.value)" style="padding: 8px 12px; font-size: 0.85rem; border-radius: var(--radius-md); width: auto; background: var(--surface); border: 1px solid var(--border-color);">
+                                    <option value="transparent" <?= $g['privacy_level'] === 'transparent' ? 'selected' : '' ?>>👁️ Dettaglio Completo</option>
+                                    <option value="logistical" <?= $g['privacy_level'] === 'logistical' ? 'selected' : '' ?>>📍 Solo Sede/Aula</option>
+                                    <option value="opaque" <?= $g['privacy_level'] === 'opaque' ? 'selected' : '' ?>>🔒 Solo Occupato</option>
+                                </select>
+                                <a href="<?= htmlspecialchars($route('/dashboard?group=' . $g['id'])) ?>" class="btn btn-primary btn-sm">Apri</a>
+                                <button type="button" onclick="abbandonaGruppo(<?= (int)$g['id'] ?>, '<?= htmlspecialchars(addslashes($g['name'])) ?>')" class="btn-danger" title="Esci dal gruppo" style="padding: 8px 12px; font-size: 0.85rem;">Esci</button>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <p class="empty-state">Non fai parte di nessun gruppo al momento.</p>
+                    <p class="empty-state">Non fai parte di nessun gruppo al momento. Creane uno o inserisci il codice di un amico!</p>
                 <?php endif; ?>
             </div>
 
@@ -222,6 +237,40 @@
             });
             if (response.ok) location.reload(); 
         } catch (error) { alert("Errore di connessione al Cloud."); }
+    };
+
+    window.copiaCodiceProfilo = function(codice, btn) {
+        navigator.clipboard.writeText(codice);
+        const orig = btn.textContent;
+        btn.textContent = '✅ Copiato!';
+        setTimeout(() => btn.textContent = orig, 2000);
+    };
+
+    window.aggiornaPrivacyProfilo = async function(groupId, privacyLevel) {
+        try {
+            const res = await fetch(window.APP_BASE_PATH + '/api/gruppi/privacy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.CSRF_TOKEN },
+                body: JSON.stringify({ group_id: groupId, privacy_level: privacyLevel, csrf_token: window.CSRF_TOKEN })
+            });
+            if (!res.ok) alert('Errore durante il salvataggio della privacy.');
+        } catch (e) {
+            alert('Errore di rete.');
+        }
+    };
+
+    window.abbandonaGruppo = async function(groupId, nomeGruppo) {
+        if (!confirm(`Vuoi davvero uscire dal gruppo "${nomeGruppo}"?`)) return;
+        try {
+            const res = await fetch(window.APP_BASE_PATH + '/api/gruppi/lascia', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.CSRF_TOKEN },
+                body: JSON.stringify({ group_id: groupId, csrf_token: window.CSRF_TOKEN })
+            });
+            if (res.ok) location.reload();
+        } catch (e) {
+            alert('Errore di connessione.');
+        }
     };
 </script>
 <script src="<?= htmlspecialchars($url('/assets/js/app.js')) ?>"></script>

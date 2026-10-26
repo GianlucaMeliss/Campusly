@@ -636,14 +636,18 @@ class ApiController
             }
         }
 
-        // Raccogliamo i nomi dei membri per il frontend
+        // Raccogliamo i nomi e la privacy dei membri per il frontend
         $groupInfo = [];
         foreach ($members as $m) {
-            $groupInfo[$m['id']] = $m['first_name'];
+            $groupInfo[$m['id']] = [
+                'name' => $m['first_name'],
+                'last_name' => $m['last_name'] ?? '',
+                'privacy' => $m['privacy_level']
+            ];
         }
 
-        // Restituiamo un oggetto strutturato
         echo json_encode([
+            'current_user_id' => $userId,
             'members' => $groupInfo,
             'events' => $megaEvents
         ]);
@@ -688,4 +692,55 @@ class ApiController
 
         return $tuttiGliEventi;
     }
+
+    public function leaveGroup(): void
+    {
+        header("Content-Type: application/json; charset=UTF-8");
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Non autenticato']);
+            exit;
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        $groupId = (int)($data['group_id'] ?? 0);
+
+        if ($groupId <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID gruppo non valido']);
+            exit;
+        }
+
+        $model = new \App\Models\GroupModel();
+        $model->leaveGroup((int)$_SESSION['user_id'], $groupId);
+        echo json_encode(['status' => 'success']);
+        exit;
+    }
+
+    public function updateGroupPrivacy(): void
+    {
+        header("Content-Type: application/json; charset=UTF-8");
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Non autenticato']);
+            exit;
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        $groupId = (int)($data['group_id'] ?? 0);
+        $privacy = $data['privacy_level'] ?? '';
+
+        if ($groupId <= 0 || !in_array($privacy, self::PRIVACY_LEVELS, true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Dati non validi']);
+            exit;
+        }
+
+        $model = new \App\Models\GroupModel();
+        $model->updatePrivacy((int)$_SESSION['user_id'], $groupId, $privacy);
+        echo json_encode(['status' => 'success']);
+        exit;
+    }
+
+
 }

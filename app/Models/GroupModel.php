@@ -38,9 +38,8 @@ class GroupModel extends Model
             return ['status' => 'error', 'error' => 'Codice invito non valido', 'message' => 'Codice invito non valido'];
         }
 
-        $groupId = $group['id'];
+        $groupId = (int)$group['id'];
 
-        // Controllo esplicito per evitare errori PDO
         $check = $this->db->prepare("SELECT user_id FROM group_members WHERE group_id = :gid AND user_id = :uid");
         $check->execute(['gid' => $groupId, 'uid' => $userId]);
 
@@ -55,13 +54,50 @@ class GroupModel extends Model
         return ['status' => 'success', 'group_id' => $groupId];
     }
 
+    public function leaveGroup(int $userId, int $groupId): bool
+    {
+        $stmt = $this->db->prepare("DELETE FROM group_members WHERE group_id = :gid AND user_id = :uid");
+        $stmt->execute(['gid' => $groupId, 'uid' => $userId]);
+
+        // Se non ci sono più membri nel gruppo, eliminiamo il gruppo orfano
+        $check = $this->db->prepare("SELECT COUNT(*) FROM group_members WHERE group_id = :gid");
+        $check->execute(['gid' => $groupId]);
+        if ((int)$check->fetchColumn() === 0) {
+            $delGroup = $this->db->prepare("DELETE FROM study_groups WHERE id = :gid");
+            $delGroup->execute(['gid' => $groupId]);
+        }
+
+        return true;
+    }
+
+    public function updatePrivacy(int $userId, int $groupId, string $privacyLevel): bool
+    {
+        $stmt = $this->db->prepare("
+            UPDATE group_members 
+            SET privacy_level = :priv 
+            WHERE group_id = :gid AND user_id = :uid
+        ");
+        return $stmt->execute([
+            'priv' => $privacyLevel,
+            'gid'  => $groupId,
+            'uid'  => $userId
+        ]);
+    }
+
     public function getUserGroups(int $userId): array
     {
         $stmt = $this->db->prepare("
-            SELECT sg.id, sg.name, sg.invite_code, gm.privacy_level 
+            SELECT 
+                sg.id, 
+                sg.name, 
+                sg.invite_code, 
+                sg.created_by,
+                gm.privacy_level,
+                (SELECT COUNT(*) FROM group_members gm2 WHERE gm2.group_id = sg.id) AS members_count
             FROM study_groups sg
             JOIN group_members gm ON sg.id = gm.group_id
             WHERE gm.user_id = :user_id
+            ORDER BY sg.name ASC
         ");
         $stmt->execute(['user_id' => $userId]);
         return $stmt->fetchAll() ?: [];
@@ -74,6 +110,7 @@ class GroupModel extends Model
             FROM group_members gm
             JOIN users u ON gm.user_id = u.id
             WHERE gm.group_id = :group_id
+            ORDER BY u.first_name ASC
         ");
         $stmt->execute(['group_id' => $groupId]);
         return $stmt->fetchAll() ?: [];

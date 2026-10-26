@@ -24,9 +24,10 @@ $router->post('/api/corsi-nascosti/toggle', function (): void { (new ApiControll
 $router->get('/api/calendario', function (): void { (new ApiController())->getCalendarEvents(); });
 $router->get('/api/versione', function (): void { (new ApiController())->getAppVersion(); });
 $router->post('/api/richiesta-onboarding', function () { (new \App\Controllers\ApiController())->submitOnboardingRequest(); });
-
 $router->post('/api/gruppi/crea', function (): void { (new ApiController())->createGroup(); });
 $router->post('/api/gruppi/unisciti', function (): void { (new ApiController())->joinGroup(); });
+$router->post('/api/gruppi/lascia', function (): void { (new ApiController())->leaveGroup(); });
+$router->post('/api/gruppi/privacy', function (): void { (new ApiController())->updateGroupPrivacy(); });
 $router->get('/api/calendario/gruppo/{id}', function (string $id): void { (new ApiController())->getGroupCalendar($id); });
 
 // Middleware/Controllo di Sicurezza (Funzione helper)
@@ -40,19 +41,23 @@ $requireAuth = function() {
 $router->get('/dashboard', function () use ($requireAuth): void {
     $requireAuth(); // Verifica che sia loggato
     
-    // Verifica che abbia completato l'onboarding
+    $userId = (int)$_SESSION['user_id'];
     $userModel = new \App\Models\UserModel();
-    $config = $userModel->getUserCourseConfig((int)$_SESSION['user_id']);
+    $config = $userModel->getUserCourseConfig($userId);
     
     if (!$config) {
         header('Location: ' . BASE_PATH . '/onboarding');
         exit;
     }
 
+    $groupModel = new \App\Models\GroupModel();
+    $userGroups = $groupModel->getUserGroups($userId);
+
     \App\Core\View::render('pages/calendar', [
         'pageTitle' => 'Il Mio Calendario',
         'pageCss' => 'calendar',
-        'course' => $config
+        'course' => $config,
+        'groups' => $userGroups
     ]);
 });
 
