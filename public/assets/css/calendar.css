@@ -541,10 +541,10 @@ body.dark-mode .lezione-card {
 }
 
 .group-pill.active {
-    background: var(--gradient-brand);
+    background: var(--primary-color);
     color: #ffffff !important;
-    border-color: transparent;
-    box-shadow: 0 4px 12px rgba(232, 62, 140, 0.25);
+    border-color: var(--primary-color);
+    box-shadow: none; /* Rimossa aura rosa */
 }
 
 .group-pill .pill-count {
@@ -709,7 +709,7 @@ body.dark-mode .free-slot-chip {
     background: var(--primary-color);
     color: white;
     border-color: var(--primary-color);
-    box-shadow: 0 6px 16px rgba(232, 62, 140, 0.25);
+    box-shadow: none; /* Rimossa aura rosa */
 }
 .group-day-tab.active .day-num {
     color: white;
@@ -817,8 +817,8 @@ body.dark-mode .free-slot-chip {
 }
 
 .doodle-header.is-me {
-    background: rgba(232, 62, 140, 0.08);
-    border-bottom-color: var(--primary-color);
+    background: var(--bg-main); /* Sostituito lo sfondo rosino con il neutro del tema */
+    border-bottom: 2px solid var(--primary-color);
 }
 .doodle-header.is-me .doodle-avatar {
     background: var(--gradient-brand);

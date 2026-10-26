@@ -110,3 +110,23 @@ $router->get('/servizi', function (): void {
 $router->get('/servizi/{slug}', function (string $slug): void {
     (new PageController())->showItem($slug);
 });
+
+// Rotta Magic Link Invito Gruppo
+$router->get('/invito/{code}', function (string $code): void {
+    $cleanCode = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $code));
+
+    // Se l'utente non è loggato, salviamo il codice in sessione e lo mandiamo al login
+    if (!isset($_SESSION['user_id'])) {
+        $_SESSION['pending_invite_code'] = $cleanCode;
+        header('Location: ' . BASE_PATH . '/login');
+        exit;
+    }
+
+    $groupModel = new \App\Models\GroupModel();
+    $group = $groupModel->getGroupByCode($cleanCode);
+
+    \App\Core\View::render('pages/invite', [
+        'pageTitle' => $group ? 'Invito: ' . $group['name'] : 'Invito Gruppo - Campusly',
+        'group' => $group
+    ]);
+});

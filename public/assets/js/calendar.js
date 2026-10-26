@@ -1142,3 +1142,55 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     caricaSettimana(dataRiferimento);
 });
+
+// Condivisione Magic Link (Nativa su mobile + fallback copia link)
+window.condividiLinkGruppo = async function(codice, nomeGruppo, btnEl) {
+    const inviteUrl = `${window.location.origin}${API_BASE_PATH}/invito/${codice}`;
+    const shareData = {
+        title: `Unisciti a "${nomeGruppo}" su Campusly`,
+        text: `Confrontiamo i nostri orari universitari su Campusly! Entra nel gruppo "${nomeGruppo}":`,
+        url: inviteUrl
+    };
+
+    if (navigator.share) {
+        try {
+            await navigator.share(shareData);
+            return;
+        } catch (err) {
+            // Se l'utente annulla lo share sheet nativo, non facciamo nulla
+            if (err.name === 'AbortError') return;
+        }
+    }
+
+    // Fallback Desktop: copia l'URL completo negli appunti
+    try {
+        await navigator.clipboard.writeText(inviteUrl);
+        if (btnEl) {
+            const orig = btnEl.innerHTML;
+            btnEl.innerHTML = `✅ Link d'invito copiato!`;
+            setTimeout(() => { btnEl.innerHTML = orig; }, 2200);
+        }
+    } catch (e) {
+        prompt("Copia questo link di invito:", inviteUrl);
+    }
+};
+
+// ==========================================
+// POP-UP NOVITÀ AGGIORNAMENTO (1 SOLA VOLTA)
+// ==========================================
+const WHATS_NEW_VERSION = 'campusly_whatsnew_v2_groups';
+
+window.chiudiWhatsNew = function() {
+    const modal = document.getElementById('whats-new-modal');
+    if (modal) modal.style.display = 'none';
+    localStorage.setItem(WHATS_NEW_VERSION, 'seen');
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (!localStorage.getItem(WHATS_NEW_VERSION)) {
+        const modal = document.getElementById('whats-new-modal');
+        if (modal) {
+            setTimeout(() => { modal.style.display = 'flex'; }, 800);
+        }
+    }
+});

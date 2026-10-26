@@ -115,4 +115,24 @@ class GroupModel extends Model
         $stmt->execute(['group_id' => $groupId]);
         return $stmt->fetchAll() ?: [];
     }
+
+    public function getGroupByCode(string $inviteCode): ?array
+    {
+        $stmt = $this->db->prepare("
+            SELECT 
+                sg.id, 
+                sg.name, 
+                sg.invite_code,
+                u.first_name AS creator_name,
+                (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = sg.id) AS members_count
+            FROM study_groups sg
+            LEFT JOIN users u ON sg.created_by = u.id
+            WHERE sg.invite_code = :code
+            LIMIT 1
+        ");
+        $stmt->execute(['code' => strtoupper(trim($inviteCode))]);
+        $group = $stmt->fetch();
+
+        return $group ?: null;
+    }
 }

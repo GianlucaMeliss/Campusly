@@ -52,7 +52,7 @@
             <?php endif; ?>
         </div>
 
-        <!-- 4. GRUPPI DI STUDIO -->
+        <!-- 3. GRUPPI DI STUDIO -->
         <div class="highlight-box">
             <h2 class="section-title">Gruppi di Studio & Carpooling</h2>
             <p class="section-subtitle">Condividi i tuoi orari con gli amici per trovare finestre libere comuni, organizzare viaggi e sessioni di studio. Le materie nascoste restano sempre private.</p>
@@ -64,14 +64,14 @@
                             <div class="course-info" style="flex: 1; min-width: 220px;">
                                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
                                     <h3 style="margin: 0;"><?= htmlspecialchars($g['name']) ?></h3>
-                                    <span style="background: rgba(124, 77, 255, 0.12); color: var(--brand-purple); font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;">
-                                        👥 <?= (int)($g['members_count'] ?? 1) ?> membri
+                                    <span style="background: var(--surface); border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;">
+                                        👥 <?= (int)($g['members_count'] ?? 1) ?>
                                     </span>
                                 </div>
-                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-secondary);">
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-secondary);">
                                     <span>Codice: <strong style="font-family: monospace; color: var(--text-primary);"><?= htmlspecialchars($g['invite_code']) ?></strong></span>
-                                    <button type="button" onclick="copiaCodiceProfilo('<?= htmlspecialchars($g['invite_code']) ?>', this)" style="background: var(--surface); border: 1px solid var(--border-color); border-radius: 6px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer; font-weight: 600; color: var(--primary-color);">
-                                        📋 Copia
+                                    <button type="button" onclick="condividiInvitoProfilo('<?= htmlspecialchars($g['invite_code']) ?>', '<?= htmlspecialchars(addslashes($g['name'])) ?>', this)" style="background: var(--surface); border: 1px solid var(--border-color); border-radius: 6px; padding: 3px 10px; font-size: 0.75rem; cursor: pointer; font-weight: 600; color: var(--text-primary);">
+                                        🔗 Invita Link
                                     </button>
                                 </div>
                             </div>
@@ -82,7 +82,7 @@
                                     <option value="logistical" <?= $g['privacy_level'] === 'logistical' ? 'selected' : '' ?>>📍 Solo Sede/Aula</option>
                                     <option value="opaque" <?= $g['privacy_level'] === 'opaque' ? 'selected' : '' ?>>🔒 Solo Occupato</option>
                                 </select>
-                                <a href="<?= htmlspecialchars($route('/dashboard?group=' . $g['id'])) ?>" class="btn btn-primary btn-sm">Apri</a>
+                                <a href="<?= htmlspecialchars($route('/dashboard?group=' . $g['id'])) ?>" class="btn btn-primary btn-sm" style="box-shadow: none;">Apri</a>
                                 <button type="button" onclick="abbandonaGruppo(<?= (int)$g['id'] ?>, '<?= htmlspecialchars(addslashes($g['name'])) ?>')" class="btn-danger" title="Esci dal gruppo" style="padding: 8px 12px; font-size: 0.85rem;">Esci</button>
                             </div>
                         </div>
@@ -98,7 +98,7 @@
             </div>
         </div>
 
-        <!-- 3. PREFERENZE -->
+        <!-- 4. PREFERENZE -->
         <div class="highlight-box">
             <h2 class="section-title">Preferenze App</h2>
             <p class="section-subtitle">Scegli il tema dell'interfaccia. La scelta verrà sincronizzata automaticamente su tutti i tuoi dispositivi.</p>
@@ -112,8 +112,6 @@
             </div>
         </div>
     </div>
-
-    
 </section>
 
 <!-- MODALE CREA GRUPPO -->
@@ -129,12 +127,12 @@
             <div class="form-group">
                 <label>Tuo Livello di Privacy</label>
                 <select id="new-group-privacy">
-                    <option value="transparent">Trasparente (Mostra materie e aule esatte)</option>
-                    <option value="logistical" selected>Logistico (Mostra solo in che sede ti trovi)</option>
+                    <option value="transparent" selected>Trasparente (Mostra materie e aule esatte)</option>
+                    <option value="logistical">Logistico (Mostra solo in che sede ti trovi)</option>
                     <option value="opaque">Opaco (Mostra solo che sei occupato)</option>
                 </select>
             </div>
-            <button type="submit" class="btn btn-primary">Genera Codice Invito</button>
+            <button type="submit" class="btn btn-primary">Genera Link Invito</button>
         </form>
     </div>
 </div>
@@ -152,8 +150,8 @@
             <div class="form-group">
                 <label>Tuo Livello di Privacy</label>
                 <select id="join-group-privacy">
-                    <option value="transparent">Trasparente (Mostra materie e aule esatte)</option>
-                    <option value="logistical" selected>Logistico (Mostra solo in che sede ti trovi)</option>
+                    <option value="transparent" selected>Trasparente (Mostra materie e aule esatte)</option>
+                    <option value="logistical">Logistico (Mostra solo in che sede ti trovi)</option>
                     <option value="opaque">Opaco (Mostra solo che sei occupato)</option>
                 </select>
             </div>
@@ -163,87 +161,31 @@
 </div>
 
 <script>
-
-    window.CSRF_TOKEN = '<?= htmlspecialchars($_SESSION['csrf_token']) ?>';
-
-    window.creaGruppo = async function(e) {
-        e.preventDefault();
-        const btn = e.target.querySelector('button[type="submit"]');
-        btn.disabled = true;
-        btn.textContent = 'Creazione...';
-
-        try {
-            const res = await fetch(window.APP_BASE_PATH + '/api/gruppi/crea', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: document.getElementById('new-group-name').value,
-                    privacy_level: document.getElementById('new-group-privacy').value,
-                    csrf_token: window.CSRF_TOKEN
-                })
-            });
-            const data = await res.json();
-            if (data.status === 'success') {
-                alert(`Gruppo creato! Il codice di invito è: ${data.invite_code}`);
-                location.reload();
-            } else {
-                alert(data.error || 'Errore durante la creazione.');
-            }
-        } catch (error) {
-            alert('Errore di connessione.');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Genera Codice Invito';
-        }
-    };
-
-    window.uniscitiGruppo = async function(e) {
-        e.preventDefault();
-        const btn = e.target.querySelector('button[type="submit"]');
-        btn.disabled = true;
-        btn.textContent = 'Verifica in corso...';
-
-        try {
-            const res = await fetch(window.APP_BASE_PATH + '/api/gruppi/unisciti', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    invite_code: document.getElementById('join-group-code').value.toUpperCase(),
-                    privacy_level: document.getElementById('join-group-privacy').value,
-                    csrf_token: window.CSRF_TOKEN
-                })
-            });
-            const data = await res.json();
-            if (data.status === 'success') {
-                location.reload();
-            } else {
-                alert(data.error || 'Codice non valido o errore server.');
-            }
-        } catch (error) {
-            alert('Errore di connessione.');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Entra nel Gruppo';
-        }
-    };
-
     window.APP_BASE_PATH = '<?= htmlspecialchars($basePath ?? '') ?>';
-    window.ripristinaCorso = async function(nomeCorso) {
-        try {
-            const response = await fetch(window.APP_BASE_PATH + '/api/corsi-nascosti/toggle', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.CSRF_TOKEN },
-                body: JSON.stringify({ course_name: nomeCorso })
-            });
-            if (response.ok) location.reload(); 
-        } catch (error) { alert("Errore di connessione al Cloud."); }
-    };
+    window.CSRF_TOKEN = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';
 
-    window.copiaCodiceProfilo = function(codice, btn) {
-        navigator.clipboard.writeText(codice);
-        const orig = btn.textContent;
-        btn.textContent = '✅ Copiato!';
-        setTimeout(() => btn.textContent = orig, 2000);
+    window.condividiInvitoProfilo = async function(codice, nomeGruppo, btn) {
+        const inviteUrl = `${window.location.origin}${window.APP_BASE_PATH}/invito/${codice}`;
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `Unisciti a "${nomeGruppo}" su Campusly`,
+                    text: `Confrontiamo i nostri orari universitari su Campusly! Entra nel gruppo "${nomeGruppo}":`,
+                    url: inviteUrl
+                });
+                return;
+            } catch (err) {
+                if (err.name === 'AbortError') return;
+            }
+        }
+        try {
+            await navigator.clipboard.writeText(inviteUrl);
+            const orig = btn.innerHTML;
+            btn.innerHTML = '✅ Link Copiato!';
+            setTimeout(() => btn.innerHTML = orig, 2000);
+        } catch (e) {
+            prompt("Copia questo link di invito:", inviteUrl);
+        }
     };
 
     window.aggiornaPrivacyProfilo = async function(groupId, privacyLevel) {
@@ -271,6 +213,77 @@
         } catch (e) {
             alert('Errore di connessione.');
         }
+    };
+
+    window.creaGruppo = async function(e) {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.textContent = 'Creazione...';
+
+        try {
+            const res = await fetch(window.APP_BASE_PATH + '/api/gruppi/crea', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.CSRF_TOKEN },
+                body: JSON.stringify({
+                    name: document.getElementById('new-group-name').value,
+                    privacy_level: document.getElementById('new-group-privacy').value,
+                    csrf_token: window.CSRF_TOKEN
+                })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert(data.error || 'Errore durante la creazione.');
+            }
+        } catch (error) {
+            alert('Errore di connessione.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Genera Link Invito';
+        }
+    };
+
+    window.uniscitiGruppo = async function(e) {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.textContent = 'Verifica in corso...';
+
+        try {
+            const res = await fetch(window.APP_BASE_PATH + '/api/gruppi/unisciti', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.CSRF_TOKEN },
+                body: JSON.stringify({
+                    invite_code: document.getElementById('join-group-code').value.toUpperCase(),
+                    privacy_level: document.getElementById('join-group-privacy').value,
+                    csrf_token: window.CSRF_TOKEN
+                })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert(data.error || 'Codice non valido o errore server.');
+            }
+        } catch (error) {
+            alert('Errore di connessione.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Entra nel Gruppo';
+        }
+    };
+
+    window.ripristinaCorso = async function(nomeCorso) {
+        try {
+            const response = await fetch(window.APP_BASE_PATH + '/api/corsi-nascosti/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.CSRF_TOKEN },
+                body: JSON.stringify({ course_name: nomeCorso })
+            });
+            if (response.ok) location.reload(); 
+        } catch (error) { alert("Errore di connessione al Cloud."); }
     };
 </script>
 <script src="<?= htmlspecialchars($url('/assets/js/app.js')) ?>"></script>

@@ -29,7 +29,14 @@ class AuthController
     public function processLogin(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . BASE_PATH . '/login');
+            if (!empty($_SESSION['pending_invite_code'])) {
+                $code = $_SESSION['pending_invite_code'];
+                unset($_SESSION['pending_invite_code']);
+                header('Location: ' . BASE_PATH . '/invito/' . urlencode($code));
+                exit;
+            }
+
+            header('Location: ' . BASE_PATH . '/dashboard');
             exit;
         }
 
@@ -221,6 +228,13 @@ class AuthController
 
         if (!$saved) {
             header('Location: ' . BASE_PATH . '/onboarding?add=1&error=invalid');
+            exit;
+        }
+
+        if (!empty($_SESSION['pending_invite_code'])) {
+            $code = $_SESSION['pending_invite_code'];
+            unset($_SESSION['pending_invite_code']);
+            header('Location: ' . BASE_PATH . '/invito/' . urlencode($code));
             exit;
         }
 

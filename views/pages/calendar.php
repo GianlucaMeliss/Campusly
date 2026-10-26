@@ -52,9 +52,9 @@ foreach ($groups as $g) {
 
                 <?php if ($activeGroup): ?>
                     <div class="active-group-info">
-                        <span class="invite-badge" onclick="copiaCodiceInvito('<?= htmlspecialchars($activeGroup['invite_code']) ?>', this)" title="Clicca per copiare il codice invito">
-                            🔑 Codice: <strong><?= htmlspecialchars($activeGroup['invite_code']) ?></strong> 📋
-                        </span>
+                        <button type="button" class="invite-badge" onclick="condividiLinkGruppo('<?= htmlspecialchars($activeGroup['invite_code']) ?>', '<?= htmlspecialchars(addslashes($activeGroup['name'])) ?>', this)" title="Condividi link di invito">
+                            🔗 Invita Amici (<strong><?= htmlspecialchars($activeGroup['invite_code']) ?></strong>)
+                        </button>
                         <select class="privacy-quick-select" onchange="cambiaPrivacyGruppo(<?= (int)$activeGroup['id'] ?>, this.value)" title="Il tuo livello di privacy in questo gruppo">
                             <option value="transparent" <?= $activeGroup['privacy_level'] === 'transparent' ? 'selected' : '' ?>>👁️ Mostra materie e aule</option>
                             <option value="logistical" <?= $activeGroup['privacy_level'] === 'logistical' ? 'selected' : '' ?>>📍 Mostra solo sede/aula</option>
@@ -195,6 +195,51 @@ foreach ($groups as $g) {
         </div>
     </div>
     
+</div>
+
+<!-- 7. MODALE NOVITÀ AGGIORNAMENTO (Compare 1 sola volta) -->
+<div id="whats-new-modal" class="modale-overlay hidden" style="display: none; z-index: 2500;">
+    <div class="modale-content highlight-box" style="padding: 28px;">
+        <button class="modale-close" onclick="chiudiWhatsNew()">&times;</button>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <span style="background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.78rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">
+                🚀 Nuovo Aggiornamento
+            </span>
+            <h2 class="section-title" style="margin-top: 10px; margin-bottom: 4px;">Novità su Campusly!</h2>
+            <p class="section-subtitle" style="margin-bottom: 0;">Abbiamo reso i Gruppi di Studio molto più potenti e immediati.</p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;">
+            <div style="display: flex; gap: 12px; align-items: flex-start; background: var(--bg-main); padding: 12px 14px; border-radius: var(--radius-md);">
+                <span style="font-size: 1.4rem;">⚡</span>
+                <div>
+                    <strong style="font-size: 0.92rem; display: block; color: var(--text-primary);">Gruppi sempre a portata di tap</strong>
+                    <span style="font-size: 0.82rem; color: var(--text-secondary);">Passa dal tuo orario personale a quello dei tuoi gruppi direttamente dalla barra in alto nel calendario.</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: flex-start; background: var(--bg-main); padding: 12px 14px; border-radius: var(--radius-md);">
+                <span style="font-size: 1.4rem;">✨</span>
+                <div>
+                    <strong style="font-size: 0.92rem; display: block; color: var(--text-primary);">Calcolo automatico "Buchi Liberi"</strong>
+                    <span style="font-size: 0.82rem; color: var(--text-secondary);">Campusly trova in automatico le fasce orarie in cui tu e i tuoi amici siete tutti liberi contemporaneamente.</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: flex-start; background: var(--bg-main); padding: 12px 14px; border-radius: var(--radius-md);">
+                <span style="font-size: 1.4rem;">🔗</span>
+                <div>
+                    <strong style="font-size: 0.92rem; display: block; color: var(--text-primary);">Invito rapido con Magic Link</strong>
+                    <span style="font-size: 0.82rem; color: var(--text-secondary);">Invia il link del gruppo su WhatsApp o Telegram: i tuoi compagni entreranno con un solo tap.</span>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-primary" style="width: 100%;" onclick="chiudiWhatsNew()">
+            Fantastico, inizia!
+        </button>
+    </div>
 </div>
 
 <!-- MODALE INSTALLAZIONE PWA (Dinamico) -->
