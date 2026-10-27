@@ -56,11 +56,48 @@ document.addEventListener('DOMContentLoaded', () => {
 // 3. SERVICE WORKER (PWA)
 // ==========================================
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register(`${basePath}/service-worker.js`)
-            .then(registration => console.log('Service Worker registrato con successo!'))
-            .catch(error => console.error('Errore SW:', error));
+    window.addEventListener('load', async () => {
+        try {
+            const hadController = !!navigator.serviceWorker.controller;
+            const reg = await navigator.serviceWorker.register(`${basePath}/service-worker.js`, {
+                scope: `${basePath}/`, updateViaCache: 'none'
+            });
+
+            // Prima visita: salva pagina e asset per l'uso offline
+            if (!hadController) {
+                const r = await navigator.serviceWorker.ready;
+                r.active && r.active.postMessage({
+                    type: 'CACHE_URLS',
+                    page: location.origin + location.pathname + location.search,
+                    assets: performance.getEntriesByType('resource').map(e => e.name)
+                });
+            }
+
+            // Ricontrolla aggiornamenti quando l'app torna visibile / online
+            const check = () => { reg.update().catch(() => {}); checkAppVersion(); };
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+            window.addEventListener('online', check);
+            setInterval(check, 60 * 60 * 1000);
+            checkAppVersion();
+        } catch (e) { console.error('Errore SW:', e); }
     });
+}
+
+async function checkAppVersion() {
+    if (!navigator.onLine) return;
+    try {
+        const r = await fetch(`${basePath}/api/versione`, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+        const { version } = await r.json();
+        const current = document.querySelector('meta[name="app-version"]')?.content;
+        if (version && current && version !== current && !document.getElementById('upd-banner')) {
+            const b = document.createElement('div');
+            b.id = 'upd-banner';
+            b.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#111;color:#fff;padding:14px;border-radius:12px;display:flex;gap:12px;align-items:center;justify-content:space-between';
+            b.innerHTML = '<span>Nuova versione disponibile</span><button style="padding:8px 14px;border-radius:8px;border:0">Aggiorna</button>';
+            b.querySelector('button').onclick = () => location.reload();
+            document.body.appendChild(b);
+        }
+    } catch (e) { /* offline o rete debole: riprova al prossimo controllo */ }
 }
 // ==========================================
 // 4. INSTALLAZIONE PWA (Pop-up Dinamico)

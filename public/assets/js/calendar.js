@@ -173,11 +173,15 @@ async function caricaSettimana(dataRif) {
     let endpoint = window.ACTIVE_GROUP_ID ? `/api/calendario/gruppo/${window.ACTIVE_GROUP_ID}` : `/api/calendario`;
     const urlProxy = `${API_BASE_PATH}${endpoint}?inizio=${encodeURIComponent(lunedi.toISOString())}&fine=${encodeURIComponent(domenica.toISOString())}`;
     
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
     try {
-        const response = await fetch(urlProxy);
+        const response = await fetch(urlProxy, { signal: ctrl.signal });
         if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
         
         const datiReteText = await response.text();
+
         const payloadGrezzo = JSON.parse(datiReteText); // Se non è JSON, salta nel catch e non salva
 
         if (datiReteText !== datiCacheText) {
@@ -208,6 +212,8 @@ async function caricaSettimana(dataRif) {
             const container = document.getElementById('calendario-container');
             if (container) container.innerHTML = `<div class="errore" style="color:red; padding:20px; text-align:center;">⚠️ Nessuna connessione e nessun dato in memoria.</div>`;
         }
+    }finally {
+        clearTimeout(timer);
     }
 }
 

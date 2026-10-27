@@ -40,3 +40,10 @@ DirectoryIndex index.php
 </IfModule>
 
 Options -Indexes
+
+<Files "service-worker.js">
+    ExpiresActive Off
+    <IfModule mod_headers.c>
+        Header set Cache-Control "no-cache, max-age=0"
+    </IfModule>
+</Files>
