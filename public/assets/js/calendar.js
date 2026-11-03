@@ -890,7 +890,7 @@ function aggiornaBoxEvidenza() {
                 </button>
                 <span>${indiceEvidenza + 1} di ${eventiSettimana.length}</span>
                 <button onclick="window.cambiaEvidenza(1)" ${indiceEvidenza === eventiSettimana.length - 1 ? 'disabled' : ''}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    <svg viewBox="0 0 24 24" fill="black" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
             </div>
         </div>
