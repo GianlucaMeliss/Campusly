@@ -605,9 +605,9 @@ function renderizzaAgendaGruppo(payload, lunedi) {
     // 2. Banner Finestre Libere Comuni
     const nomeGiornoEsteso = dataRifGiorno.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'short' });
     htmlTop += `<div class="free-slots-banner">
-        <div class="free-slots-title">
+        <!--<div class="free-slots-title">
             <span>✨ Finestre libere per tutti (${esc(nomeGiornoEsteso)} tra le 08:30 e le 18:30)</span>
-        </div>
+        </div>--!>
         <div class="free-slots-list">`;
 
     if (finestreComuni.length > 0) {
