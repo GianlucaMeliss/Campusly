@@ -884,19 +884,13 @@ function aggiornaBoxEvidenza() {
                 <span class="hl-badge ${badgeClass}" style="width: fit-content;">${badgeTesto}</span>
                 ${overlapBadgeHtml}
             </div>
-            <div class="hl-nav" style="flex: 0 0 auto; display: flex; align-items: center; gap: 8px; white-space: nowrap;">
-                <button onclick="window.cambiaEvidenza(-1)" ${indiceEvidenza === 0 ? 'disabled' : ''}
-                    style="display:flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; border:1px solid currentColor; border-radius:8px; background:transparent; color:inherit; cursor:pointer; ${indiceEvidenza === 0 ? 'opacity:.3; cursor:default;' : ''}">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
+            <div class="hl-nav">
+                <button onclick="window.cambiaEvidenza(-1)" aria-label="Evidenza precedente" ${indiceEvidenza === 0 ? 'disabled' : ''}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                 </button>
                 <span>${indiceEvidenza + 1} di ${eventiSettimana.length}</span>
-                <button onclick="window.cambiaEvidenza(1)" ${indiceEvidenza === eventiSettimana.length - 1 ? 'disabled' : ''}
-                    style="display:flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; border:1px solid currentColor; border-radius:8px; background:transparent; color:inherit; cursor:pointer; ${indiceEvidenza === eventiSettimana.length - 1 ? 'opacity:.3; cursor:default;' : ''}">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
+                <button onclick="window.cambiaEvidenza(1)" aria-label="Evidenza successiva" ${indiceEvidenza === eventiSettimana.length - 1 ? 'disabled' : ''}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
             </div>
         </div>

@@ -743,4 +743,30 @@ body.dark-mode .free-slot-chip {
     border-left: 4px solid var(--text-secondary) !important;
     color: var(--text-secondary) !important;
     box-shadow: none;
+}/* Dimensione icone nei bottoni di navigazione */
+
+.hl-nav { flex: 0 0 auto; white-space: nowrap; }
+
+.hl-nav button svg,
+.settimana-nav .btn-icon svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.settimana-nav .btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-primary);
+    transition: background 0.2s;
+}
+
+.settimana-nav .btn-icon:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+    box-shadow: none;
 }
