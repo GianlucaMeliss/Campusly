@@ -53,12 +53,12 @@ foreach ($groups as $g) {
                 <?php if ($activeGroup): ?>
                     <div class="active-group-info">
                         <button type="button" class="invite-badge" onclick="condividiLinkGruppo('<?= htmlspecialchars($activeGroup['invite_code']) ?>', '<?= htmlspecialchars(addslashes($activeGroup['name'])) ?>', this)" title="Condividi link di invito">
-                            🔗 Invita Amici (<strong><?= htmlspecialchars($activeGroup['invite_code']) ?></strong>)
+                            🔗 Invita(<strong><?= htmlspecialchars($activeGroup['invite_code']) ?></strong>)
                         </button>
                         <select class="privacy-quick-select" onchange="cambiaPrivacyGruppo(<?= (int)$activeGroup['id'] ?>, this.value)" title="Il tuo livello di privacy in questo gruppo">
-                            <option value="transparent" <?= $activeGroup['privacy_level'] === 'transparent' ? 'selected' : '' ?>>👁️ Mostra materie e aule</option>
-                            <option value="logistical" <?= $activeGroup['privacy_level'] === 'logistical' ? 'selected' : '' ?>>📍 Mostra solo sede/aula</option>
-                            <option value="opaque" <?= $activeGroup['privacy_level'] === 'opaque' ? 'selected' : '' ?>>🔒 Mostra solo "Occupato"</option>
+                            <option value="transparent" <?= $activeGroup['privacy_level'] === 'transparent' ? 'selected' : '' ?>>👁️ Mostra completo</option>
+                            <option value="logistical" <?= $activeGroup['privacy_level'] === 'logistical' ? 'selected' : '' ?>>📍 Mostra sede/aula</option>
+                            <option value="opaque" <?= $activeGroup['privacy_level'] === 'opaque' ? 'selected' : '' ?>>🔒 Mostra "Occupato"</option>
                         </select>
                     </div>
                 <?php endif; ?>
