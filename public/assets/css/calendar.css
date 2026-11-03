@@ -714,155 +714,24 @@ body.dark-mode .free-slot-chip {
 .group-day-tab.active .day-num {
     color: white;
 }
-
 /* =========================================
-   TABELLA COMPARATIVA GRUPPO (DOODLE GRID)
+   ELEMENTI SPECIFICI VISTA GRUPPO SU GRIGLIA STANDARD
    ========================================= */
-.doodle-container {
-    display: flex;
-    background: var(--surface);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-soft);
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 30px;
-}
 
-.doodle-times {
-    width: 52px;
-    flex-shrink: 0;
-    background: var(--bg-main);
-    border-right: 1px solid var(--border-color);
-    position: relative;
-    z-index: 15;
-}
-
-.doodle-time-label {
-    position: absolute;
-    right: 6px;
-    width: 100%;
-    text-align: right;
-    font-size: 0.72rem;
-    color: var(--text-secondary);
-    transform: translateY(-50%);
-    font-weight: 700;
-}
-
-.doodle-members-wrapper {
-    display: flex;
-    flex: 1;
-    overflow-x: auto;
-    position: relative;
-    -webkit-overflow-scrolling: touch;
-}
-
-.doodle-member-col {
-    flex: 1;
-    min-width: 145px;
-    border-right: 1px dashed var(--border-color);
-    position: relative;
-}
-.doodle-member-col:last-child { border-right: none; }
-
-.doodle-header {
-    position: sticky;
-    top: 0;
-    background: var(--surface);
-    z-index: 20;
-    padding: 8px 6px;
-    border-bottom: 2px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.doodle-avatar {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: rgba(124, 77, 255, 0.15);
-    color: var(--brand-purple);
-    font-weight: 800;
-    font-size: 0.78rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.doodle-member-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    overflow: hidden;
-}
-
-.doodle-member-name {
-    font-size: 0.85rem;
-    font-weight: 800;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100px;
-    line-height: 1.1;
-}
-
-.doodle-member-status {
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-.doodle-header.is-me {
-    background: var(--bg-main); /* Sostituito lo sfondo rosino con il neutro del tema */
-    border-bottom: 2px solid var(--primary-color);
-}
-.doodle-header.is-me .doodle-avatar {
-    background: var(--gradient-brand);
-    color: #fff;
-}
-
-/* Fascia Verde condivisa in background */
+/* Fascia Verde disponibilità comune sullo sfondo di .giorno-colonna */
 .doodle-free-band {
     position: absolute;
     left: 0;
     right: 0;
-    background: rgba(16, 185, 129, 0.06);
-    border-top: 1px dashed rgba(16, 185, 129, 0.35);
-    border-bottom: 1px dashed rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.08);
+    border-top: 1px dashed rgba(16, 185, 129, 0.4);
+    border-bottom: 1px dashed rgba(16, 185, 129, 0.4);
     pointer-events: none;
     z-index: 1;
 }
 
-/* Card Evento nel Gruppo (Con supporto Dark Mode) */
-.doodle-card {
-    position: absolute;
-    border-radius: 8px;
-    padding: 6px 8px;
-    font-size: 0.75rem;
-    overflow: hidden;
-    border-left: 4px solid hsl(var(--card-hue, 330), 80%, 55%);
-    background-color: hsl(var(--card-hue, 330), 92%, 95%);
-    color: var(--text-primary);
-    cursor: pointer;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.06);
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    line-height: 1.2;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-body.dark-mode .doodle-card {
-    background-color: hsl(var(--card-hue, 330), 38%, 22%);
-    border-left-color: hsl(var(--card-hue, 330), 75%, 65%);
-    color: #ffffff;
-}
-
-.doodle-card.is-opaque {
+/* Stile per le card dei membri con privacy "Solo Occupato" */
+.lezione-card.lezione-opaca {
     background: repeating-linear-gradient(
         -45deg,
         var(--bg-main),
@@ -873,34 +742,5 @@ body.dark-mode .doodle-card {
     border: 1px solid var(--border-color);
     border-left: 4px solid var(--text-secondary) !important;
     color: var(--text-secondary) !important;
-}
-
-.doodle-card:hover {
-    z-index: 50 !important;
-    transform: scale(1.02);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-}
-
-.doodle-card-title {
-    font-weight: 800;
-    font-size: 0.78rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.doodle-card-time {
-    font-size: 0.7rem;
-    font-weight: 600;
-    opacity: 0.85;
-}
-
-.doodle-card-loc {
-    font-size: 0.68rem;
-    opacity: 0.9;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: 1px;
+    box-shadow: none;
 }

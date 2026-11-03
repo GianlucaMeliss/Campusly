@@ -621,144 +621,126 @@ function renderizzaAgendaGruppo(payload, lunedi) {
 
     container.innerHTML = htmlTop;
 
-    // 3. Configurazione Griglia Oraria (8:00 - 20:00)
-    const oraInizio = 8;
-    const oraFine = 20;
-    const altezzaOra = 60; 
+    // 3. Configurazione Griglia identica al Calendario Personale (8:00 - 20:00, 45px/ora)
+    const oraInizioCalendario = 8;
+    const oraFineCalendario = 20;
+    const altezzaOra = 45;
     const fattoreScala = altezzaOra / 60;
-    const altezzaTotale = (oraFine - oraInizio) * altezzaOra;
-    const headerAltezza = 54;
+    const altezzaTotale = (oraFineCalendario - oraInizioCalendario) * altezzaOra;
 
-    const doodle = document.createElement('div');
-    doodle.className = 'doodle-container';
-    
-    // Colonna Orari a sinistra
-    const timesCol = document.createElement('div');
-    timesCol.className = 'doodle-times';
-    timesCol.style.height = `${altezzaTotale + headerAltezza}px`;
-    timesCol.innerHTML = `<div class="doodle-header" style="height:${headerAltezza}px; border-bottom: 2px solid var(--border-color); background:transparent;"></div>`;
-    
-    for (let h = oraInizio; h <= oraFine; h++) {
-        const topPx = (h - oraInizio) * altezzaOra + headerAltezza;
-        timesCol.innerHTML += `<div class="doodle-time-label" style="top: ${topPx}px">${h}:00</div>`;
-    }
-    doodle.appendChild(timesCol);
-
-    // Contenitore colonne membri
     const wrapper = document.createElement('div');
-    wrapper.className = 'doodle-members-wrapper';
-    wrapper.style.height = `${altezzaTotale + headerAltezza}px`;
+    wrapper.className = 'calendario-main-container';
+    wrapper.innerHTML += `<div class="angolo-vuoto"></div>`;
+    wrapper.style.setProperty('--num-giorni', Math.max(1, keysMembri.length));
 
-    // Griglia orizzontale di sfondo + Fasce verdi comuni + Linea rossa ora attuale
-    const bgGrid = document.createElement('div');
-    bgGrid.style.cssText = `position:absolute; top:${headerAltezza}px; left:0; right:0; height:${altezzaTotale}px; pointer-events:none; z-index:1; min-width:100%;`;
-    
-    for (let h = oraInizio; h <= oraFine; h++) {
-        const topPx = (h - oraInizio) * altezzaOra;
-        bgGrid.innerHTML += `<div style="position:absolute; top:${topPx}px; width:100%; border-top:1px solid var(--border-color); opacity:0.5;"></div>`;
-    }
-
-    // Disegna le fasce verdi di disponibilità comune sullo sfondo
-    finestreComuni.forEach(slot => {
-        const topPx = (slot.startMin - oraInizio * 60) * fattoreScala;
-        const heightPx = (slot.endMin - slot.startMin) * fattoreScala;
-        bgGrid.innerHTML += `<div class="doodle-free-band" style="top:${topPx}px; height:${heightPx}px;"></div>`;
-    });
-
-    // Linea rossa dell'orario corrente se stiamo guardando oggi
-    if (stessoGiornoLocale(dataRifGiorno, adesso) && adesso.getHours() >= oraInizio && adesso.getHours() < oraFine) {
-        const nowTopPx = (((adesso.getHours() - oraInizio) * 60) + adesso.getMinutes()) * fattoreScala;
-        bgGrid.innerHTML += `<div class="time-indicator" style="top: ${nowTopPx}px; z-index: 30;"></div>`;
-    }
-
-    wrapper.appendChild(bgGrid);
-
-    // 4. Creiamo la colonna per ciascun membro del gruppo
+    // Intestazioni Colonne (Una per ogni membro, stile identico a .header-colonna)
     keysMembri.forEach(idMem => {
         const isMe = (idMem === mioId);
         const infoMembro = membri[idMem];
         const rawName = typeof infoMembro === 'object' ? (infoMembro.name || 'Studente') : String(infoMembro);
         const nomeDisplay = isMe ? "Tu" : rawName;
-        const iniziale = rawName.charAt(0).toUpperCase();
-
-        let eventiMembro = eventiGiorno.filter(e => String(e.member_id) === String(idMem));
-        const numImpegni = eventiMembro.length;
-        const statusText = numImpegni === 0 ? '🟢 Libero oggi' : `${numImpegni} impegn${numImpegni === 1 ? 'o' : 'i'}`;
-
-        const col = document.createElement('div');
-        col.className = 'doodle-member-col';
-
-        const header = document.createElement('div');
-        header.className = `doodle-header ${isMe ? 'is-me' : ''}`;
-        header.style.height = `${headerAltezza}px`;
-        header.innerHTML = `
-            <div class="doodle-avatar">${esc(iniziale)}</div>
-            <div class="doodle-member-info">
-                <span class="doodle-member-name">${esc(nomeDisplay)}</span>
-                <span class="doodle-member-status">${esc(statusText)}</span>
-            </div>
-        `;
-        col.appendChild(header);
-
-        const grid = document.createElement('div');
-        grid.className = 'doodle-grid';
-        grid.style.cssText = `position: relative; height: ${altezzaTotale}px; overflow: hidden; z-index: 5;`;
-
-        gestisciSovrapposizioni(eventiMembro); 
-
-        eventiMembro.forEach(ev => {
-            const dInizio = new Date(ev.dataInizio);
-            const dFine = new Date(ev.dataFine);
-
-            const topPx = (((dInizio.getHours() - oraInizio) * 60) + dInizio.getMinutes()) * fattoreScala;
-            const hPx = Math.max(24, ((dFine.getTime() - dInizio.getTime()) / 60000) * fattoreScala);
-
-            const card = document.createElement('div');
-            const isOccupatoGenerico = ev.nome && ev.nome.startsWith("Occupato");
-            card.className = 'doodle-card' + (isOccupatoGenerico ? ' is-opaque' : '');
-            card.style.top = `${topPx}px`;
-            card.style.height = `${hPx}px`;
-            card.style.width = ev.widthCSS ? `calc(${ev.widthCSS} - 6px)` : 'calc(100% - 8px)';
-            card.style.left = ev.leftCSS ? `calc(${ev.leftCSS} + 2px)` : '4px';
-            card.style.zIndex = ev.zIndex || 10;
-
-            // Puliamo il nome del membro dal titolo (visto che è già nell'header della colonna)
-            let cleanTitle = formattaTitolo(ev.nome || 'Lezione');
-            cleanTitle = cleanTitle.replace(/\s*\([^)]+\)\s*$/, '');
-
-            if (!isOccupatoGenerico) {
-                const hue = getColoreHue(cleanTitle);
-                card.style.setProperty('--card-hue', hue);
-            }
-
-            // Estraiamo l'aula o sede se disponibile
-            let luogoTesto = '';
-            if (ev.risorse && ev.risorse.length > 0 && ev.risorse[0].aula) {
-                const aula = ev.risorse[0].aula.descrizione || '';
-                const edif = (ev.risorse[0].aula.edificio && ev.risorse[0].aula.edificio.descrizione) ? ev.risorse[0].aula.edificio.descrizione : '';
-                luogoTesto = edif ? `${aula} (${edif})` : aula;
-            } else if (ev.luogo && ev.luogo !== 'Non condiviso') {
-                luogoTesto = ev.luogo;
-            }
-
-            const orarioStr = `${dInizio.getHours()}:${dInizio.getMinutes().toString().padStart(2,'0')} - ${dFine.getHours()}:${dFine.getMinutes().toString().padStart(2,'0')}`;
-
-            card.innerHTML = `
-                <div class="doodle-card-title">${esc(cleanTitle)}</div>
-                <div class="doodle-card-time">${orarioStr}</div>
-                ${luogoTesto && hPx >= 48 ? `<div class="doodle-card-loc">📍 ${esc(luogoTesto)}</div>` : ''}
-            `;
-            
-            card.addEventListener('click', () => window.apriModaleDettagli(ev));
-            grid.appendChild(card);
-        });
-
-        col.appendChild(grid);
-        wrapper.appendChild(col);
+        const classeOggi = isMe ? 'header-oggi' : '';
+        wrapper.innerHTML += `<div class="header-colonna ${classeOggi}">${esc(nomeDisplay)}</div>`;
     });
 
-    doodle.appendChild(wrapper);
-    container.appendChild(doodle);
+    // Colonna Orari a sinistra
+    const orariCol = document.createElement('div');
+    orariCol.className = 'orari-colonna';
+    orariCol.style.height = `${altezzaTotale}px`;
+    for (let h = oraInizioCalendario; h <= oraFineCalendario; h++) {
+        const topPx = (h - oraInizioCalendario) * altezzaOra;
+        orariCol.innerHTML += `<div class="orario-label" style="top: ${topPx}px">${h}:00</div>`;
+    }
+    wrapper.appendChild(orariCol);
+
+    const isOggi = stessoGiornoLocale(dataRifGiorno, adesso);
+
+    // 4. Colonne Membri (Usano .giorno-colonna e .lezione-card come nel calendario personale)
+    keysMembri.forEach(idMem => {
+        const colonna = document.createElement('div');
+        colonna.className = 'giorno-colonna';
+        colonna.style.height = `${altezzaTotale}px`;
+
+        // Disegna le fasce verdi di disponibilità comune sullo sfondo della colonna
+        finestreComuni.forEach(slot => {
+            const topPx = (slot.startMin - oraInizioCalendario * 60) * fattoreScala;
+            const heightPx = (slot.endMin - slot.startMin) * fattoreScala;
+            colonna.innerHTML += `<div class="doodle-free-band" style="top:${topPx}px; height:${heightPx}px;"></div>`;
+        });
+
+        // Indicatore linea rossa dell'ora attuale
+        if (isOggi && adesso.getHours() >= oraInizioCalendario && adesso.getHours() < oraFineCalendario) {
+            const topPx = (((adesso.getHours() - oraInizioCalendario) * 60) + adesso.getMinutes()) * fattoreScala;
+            colonna.innerHTML += `<div class="time-indicator" style="top: ${topPx}px"></div>`;
+        }
+
+        let eventiMembro = eventiGiorno.filter(e => String(e.member_id) === String(idMem));
+        gestisciSovrapposizioni(eventiMembro);
+
+        eventiMembro.forEach(evento => {
+            const dataInizio = new Date(evento.dataInizio);
+            const dataFine = new Date(evento.dataFine);
+
+            const topPx = (((dataInizio.getHours() - oraInizioCalendario) * 60) + dataInizio.getMinutes()) * fattoreScala;
+            const altezzaPx = ((dataFine.getTime() - dataInizio.getTime()) / 60000) * fattoreScala;
+
+            const durataMinuti = (dataFine.getTime() - dataInizio.getTime()) / 60000;
+            const classeBreve = durataMinuti <= 90 ? ' lezione-breve' : '';
+            const isOccupatoGenerico = evento.nome && evento.nome.startsWith("Occupato");
+            const classeOpaque = isOccupatoGenerico ? ' lezione-opaca' : '';
+
+            const card = document.createElement('div');
+            card.className = 'lezione-card' + classeBreve + classeOpaque;
+            card.style.top = `${topPx}px`;
+            card.style.height = `${altezzaPx}px`;
+            card.style.width = evento.widthCSS;
+            card.style.left = evento.leftCSS;
+            card.style.zIndex = evento.zIndex;
+            card.style.cursor = 'pointer';
+
+            card.addEventListener('click', () => window.apriModaleDettagli(evento));
+
+            // Rimuoviamo il suffisso "(Nome)" dal titolo perché il nome è già nell'intestazione della colonna
+            let rawTitle = formattaTitolo(evento.nome || 'Lezione').replace(/\s*\([^)]+\)\s*$/, '');
+            let titolo = esc(rawTitle);
+
+            const partizione = estraiPartizione(evento);
+            if (partizione && partizione.descrizione) {
+                const descShort = partizione.descrizione.replace(/cognomi\s*/i, "").trim();
+                titolo += ` <span style="font-size: 0.85em; opacity: 0.9;">(${esc(descShort)})</span>`;
+            }
+
+            const orario = `${dataInizio.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })} - ${dataFine.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })}`;
+
+            let aule = [];
+            if (evento.risorse) {
+                evento.risorse.forEach(r => {
+                    if (r.aula && isAulaValida(r.aula)) aule.push(r.aula.descrizione);
+                });
+            }
+            const auleTesto = aule.length > 0 ? aule.join(', ') : (evento.luogo && evento.luogo !== 'Non condiviso' ? evento.luogo : "?");
+
+            if (!isOccupatoGenerico) {
+                const hueMateria = getColoreHue(rawTitle);
+                card.style.setProperty('--card-hue', hueMateria);
+                if (evento.isPersonale) {
+                    card.style.backgroundColor = 'var(--brand-fuchsia)';
+                    card.style.color = '#fff';
+                }
+            }
+
+            card.innerHTML = `
+                <div class="lezione-titolo">${titolo}</div>
+                <div class="lezione-orario">${icnOra} ${orario}</div>
+                ${!isOccupatoGenerico ? `<div class="lezione-dettaglio">${icnAula} ${esc(evento.isPersonale ? (evento.luogo || 'Personale') : auleTesto)}</div>` : ''}
+            `;
+            colonna.appendChild(card);
+        });
+
+        wrapper.appendChild(colonna);
+    });
+
+    container.appendChild(wrapper);
 }
 
 // ==========================================
