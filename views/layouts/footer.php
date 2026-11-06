@@ -7,5 +7,18 @@
             </p>
         </div>
     </footer>
+    <script>
+        window.addEventListener('load', () => {
+        const loader = document.getElementById('pwa-loader');
+        if (loader) {
+            loader.classList.add('hidden');
+            setTimeout(() => {
+            if (loader.parentNode) {
+                loader.parentNode.removeChild(loader);
+            }
+            }, 500);
+        }
+        });
+    </script>
 </body>
 </html>

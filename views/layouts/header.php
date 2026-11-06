@@ -52,8 +52,58 @@ $activePage = $activeMenu ?? ($pageCss ?? 'home');
     <?php if (!empty($pageCss)): ?>
         <link rel="stylesheet" href="<?= $url('/assets/css/' . $pageCss . '.css') ?>">
     <?php endif; ?>
+
+    <!--Stile caricamento PWA -->
+    <style>
+      #pwa-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: #F8F7FA;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 999999;
+        transition: opacity 0.5s ease, visibility 0.5s;
+        font-family: sans-serif;
+      }
+      #pwa-loader.hidden {
+        opacity: 0;
+        visibility: hidden;
+      }
+      #pwa-loader .loader-logo {
+        width: 120px; 
+        margin-bottom: 20px;
+        animation: pulse 2s infinite ease-in-out;
+      }
+      #pwa-loader .spinner {
+        border: 4px solid #e0e0e0;
+        border-top: 4px solid #E83E8C;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
 </head>
 <body class="<?= (isset($_SESSION['theme']) && $_SESSION['theme'] === 'dark') ? 'dark-mode' : '' ?>">
+    <div id="pwa-loader">
+      <img src="<?= $url('/img/campus.png') ?>" alt="Campusly Logo" class="loader-logo">
+      <div class="spinner"></div>
+    </div>
+    
     <header class="site-header">
         <div class="container site-header__inner">
             <!-- USA IL ROUTE HELPER ($route) PER I COLLEGAMENTI ALLE PAGINE -->
