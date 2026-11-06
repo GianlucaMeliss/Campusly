@@ -99,11 +99,12 @@ $activePage = $activeMenu ?? ($pageCss ?? 'home');
     </style>
 </head>
 <body class="<?= (isset($_SESSION['theme']) && $_SESSION['theme'] === 'dark') ? 'dark-mode' : '' ?>">
+    <!--
     <div id="pwa-loader">
       <img src="<?= $url('/img/campus.png') ?>" alt="Campusly Logo" class="loader-logo">
       <div class="spinner"></div>
-    </div>
-    
+    </div>-->
+
     <header class="site-header">
         <div class="container site-header__inner">
             <!-- USA IL ROUTE HELPER ($route) PER I COLLEGAMENTI ALLE PAGINE -->
