@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$baseConfig = [
+return [
     'site' => [
         'name' => 'Campusly',
         'tagline' => 'Il tuo calendario universitario',
@@ -33,13 +33,3 @@ $baseConfig = [
         'contact_subject' => '🔔 Nuovo Contatto dal Sito',
     ],
 ];
-
-$localConfigFile = __DIR__ . '/local.php';
-if (is_file($localConfigFile)) {
-    $localConfig = require $localConfigFile;
-    if (is_array($localConfig)) {
-        $baseConfig = array_replace_recursive($baseConfig, $localConfig);
-    }
-}
-
-return $baseConfig;

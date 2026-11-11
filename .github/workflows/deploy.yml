@@ -3,11 +3,25 @@ name: Deploy to Altervista via FTP
 on:
   push:
     branches:
-      - main # Cambialo in 'master' se il tuo branch principale si chiama così
+      - main
 
 jobs:
+  test:
+    name: 🧪 Pre-Deploy Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+      - name: 🔍 Sintassi PHP
+        run: find app config public views tests -name "*.php" -print0 | xargs -0 -n1 php -l
+      - name: 🧪 Test Unitari
+        run: php tests/run.php
+
   web-deploy:
     name: 🎉 Deploy
+    needs: test
     runs-on: ubuntu-latest
     
     steps:
@@ -24,8 +38,15 @@ jobs:
           exclude: |
             **/.DS_Store
             app/logs/**
+            data/cache/*.json
+            data/cache/*.tmp
+            database/**
+            tests/**
+            tools/**
             AI_INSTRUCTIONS.md
+            CAMPUSLY_TODO_MIGLIORAMENTI.md
             repomix-final.xml
+            repomix-output.xml
             .git*
             **/.git*/**
             .github/**
