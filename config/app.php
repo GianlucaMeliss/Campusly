@@ -5,7 +5,7 @@ $config = [
     'site' => [
         'name' => 'Campusly',
         'tagline' => 'Il tuo calendario universitario',
-        'url' => '',
+        'url' => 'https://gianlucamelis.altervista.org/Campusly',
         'locale' => 'it',
         'base_path' => defined('BASE_PATH') ? BASE_PATH : '',
     ],
@@ -17,15 +17,15 @@ $config = [
 
     'db' => [
         'host' => 'localhost',
-        'name' => '',
-        'user' => '',
+        'name' => 'my_gianlucamelis',
+        'user' => 'gianlucamelis',
         'pass' => '',
         'charset' => 'utf8mb4',
     ],
 
     'mail' => [
-        'from' => 'noreply@example.com',
-        'contact_email' => 'info@example.com',
+        'from' => 'noreply@gianlucamelis.altervista.org',
+        'contact_email' => 'melis.gianlucagm@gmail.com',
         'contact_subject' => '🔔 Nuovo Contatto dal Sito',
     ],
 

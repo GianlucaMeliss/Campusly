@@ -39,29 +39,26 @@ jobs:
           TRUSTED_PROXIES: ${{ secrets.TRUSTED_PROXIES }}
         run: |
           php -r '
-          $required = ["DB_NAME", "DB_USER", "SITE_URL", "CONTACT_EMAIL", "MAIL_FROM"];
-          foreach ($required as $k) {
-              if (trim((string)getenv($k)) === "") {
-                  fwrite(STDERR, "Secret obbligatorio mancante: {$k}\n");
-                  exit(1);
-              }
-          }
+          $envOrDefault = function (string $key, string $default): string {
+              $val = trim((string)getenv($key));
+              return $val !== "" ? $val : $default;
+          };
           $proxiesRaw = trim((string)getenv("TRUSTED_PROXIES"));
           $proxies = $proxiesRaw === "" ? [] : array_values(array_filter(array_map("trim", explode(",", $proxiesRaw))));
           $cfg = [
               "site" => [
-                  "url" => rtrim((string)getenv("SITE_URL"), "/"),
+                  "url" => rtrim($envOrDefault("SITE_URL", "https://gianlucamelis.altervista.org/Campusly"), "/"),
               ],
               "db" => [
                   "host" => "localhost",
-                  "name" => (string)getenv("DB_NAME"),
-                  "user" => (string)getenv("DB_USER"),
+                  "name" => $envOrDefault("DB_NAME", "my_gianlucamelis"),
+                  "user" => $envOrDefault("DB_USER", "gianlucamelis"),
                   "pass" => (string)getenv("DB_PASS"),
                   "charset" => "utf8mb4",
               ],
               "mail" => [
-                  "from" => (string)getenv("MAIL_FROM"),
-                  "contact_email" => (string)getenv("CONTACT_EMAIL"),
+                  "from" => $envOrDefault("MAIL_FROM", "noreply@gianlucamelis.altervista.org"),
+                  "contact_email" => $envOrDefault("CONTACT_EMAIL", "melis.gianlucagm@gmail.com"),
               ],
               "security" => [
                   "trusted_proxies" => $proxies,
