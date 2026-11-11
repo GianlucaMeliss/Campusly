@@ -1,27 +1,16 @@
 <?php
-// Gestione percorsi sicura per l'ambiente di produzione
 $basePath = defined('BASE_PATH') ? BASE_PATH : '/Campusly';
 
-/**
- * 1. HELPER PER GLI ASSETS (CSS, JS, Immagini)
- * Aggiunge /public/ e il versioning automatico contro la cache del browser.
- * Manteniamo il nome $url per compatibilità con le viste (es. calendar.php)
- */
 $url = function (string $path) use ($basePath): string {
     $relativePath = '/public/' . ltrim($path, '/');
     $fullUrl = rtrim($basePath, '/') . $relativePath;
     
-    // Cache busting automatico basato sull'ultima modifica del file
     $physicalPath = defined('BASEPATH') ? BASEPATH . $relativePath : $_SERVER['DOCUMENT_ROOT'] . $fullUrl;
     $version = file_exists($physicalPath) ? filemtime($physicalPath) : '1.0';
     
     return htmlspecialchars($fullUrl . '?v=' . $version);
 };
 
-/**
- * 2. HELPER PER LE ROTTE (Pagine, Login, Dashboard)
- * Crea URL puliti senza /public/ e senza ?v=...
- */
 $route = function (string $path) use ($basePath): string {
     return htmlspecialchars(rtrim($basePath, '/') . '/' . ltrim($path, '/'));
 };
@@ -44,7 +33,6 @@ $activePage = $activeMenu ?? ($pageCss ?? 'home');
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Campusly">
     
-    <!-- USA IL RESOURCE HELPER ($url) PER IMMAGINI E CSS -->
     <link rel="icon" href="<?= $url('/assets/img/icon-192.png') ?>">
     <link rel="apple-touch-icon" href="<?= $url('/assets/img/icon-192.png') ?>">
     
@@ -52,62 +40,11 @@ $activePage = $activeMenu ?? ($pageCss ?? 'home');
     <?php if (!empty($pageCss)): ?>
         <link rel="stylesheet" href="<?= $url('/assets/css/' . $pageCss . '.css') ?>">
     <?php endif; ?>
-
-    <!--Stile caricamento PWA -->
-    <style>
-      #pwa-loader {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background-color: #F8F7FA;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 999999;
-        transition: opacity 0.5s ease, visibility 0.5s;
-        font-family: sans-serif;
-      }
-      #pwa-loader.hidden {
-        opacity: 0;
-        visibility: hidden;
-      }
-      #pwa-loader .loader-logo {
-        width: 120px; 
-        margin-bottom: 20px;
-        animation: pulse 2s infinite ease-in-out;
-      }
-      #pwa-loader .spinner {
-        border: 4px solid #e0e0e0;
-        border-top: 4px solid #E83E8C;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-      }
-      @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    </style>
 </head>
 <body class="<?= (isset($_SESSION['theme']) && $_SESSION['theme'] === 'dark') ? 'dark-mode' : '' ?>">
-    <!--
-    <div id="pwa-loader">
-      <img src="<?= $url('/img/campus.png') ?>" alt="Campusly Logo" class="loader-logo">
-      <div class="spinner"></div>
-    </div>-->
 
     <header class="site-header">
         <div class="container site-header__inner">
-            <!-- USA IL ROUTE HELPER ($route) PER I COLLEGAMENTI ALLE PAGINE -->
             <a href="<?= $route('/') ?>" class="site-brand">
                 <img src="<?= $url('/assets/img/icon-192.png') ?>" alt="Campusly Logo" width="36" height="36" style="border-radius: 8px;">
                 <span>Campusly</span>
@@ -117,10 +54,12 @@ $activePage = $activeMenu ?? ($pageCss ?? 'home');
                 <?php if ($isLoggedIn): ?>
                     <a href="<?= $route('/dashboard') ?>" class="<?= $activePage === 'calendar' ? 'active-link' : '' ?>">Calendario</a>
                     <a href="<?= $route('/profilo') ?>" class="<?= $activePage === 'profile' ? 'active-link' : '' ?>">Profilo</a>
-                    <a href="<?= $route('/logout') ?>" style="color: #ef4444 !important; font-weight: 600;">Esci</a>
+                    <form action="<?= $route('/logout') ?>" method="POST" style="display: inline; margin: 0;" onsubmit="if(navigator.serviceWorker&&navigator.serviceWorker.controller){navigator.serviceWorker.controller.postMessage({type:'CLEAR_USER_DATA'});}">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                        <button type="submit" style="background: none; border: none; padding: 0; font: inherit; color: #ef4444; font-weight: 600; cursor: pointer;">Esci</button>
+                    </form>
                 <?php else: ?>
                     <a href="<?= $route('/login') ?>" style="color: var(--text-primary) !important; font-weight: 700; font-size: 1rem;">Accedi</a>
-                    <!-- Forziamo il bianco assoluto sul pulsante per scavalcare il CSS della navbar -->
                     <a href="<?= $route('/register') ?>" class="btn btn-primary btn-sm" style="color: #ffffff !important;">Inizia ora</a>
                 <?php endif; ?>
             </nav>

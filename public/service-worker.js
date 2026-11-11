@@ -1,28 +1,15 @@
-/* Campusly - Service Worker
- *
- * Strategie:
- *  - Pagine HTML (navigazioni): rete con timeout -> ultima copia salvata -> pagina "offline".
- *    Online e con rete buona si ha sempre l'HTML nuovo (e quindi i nuovi ?v=mtime degli asset).
- *  - Asset statici (CSS/JS/img): cache-first se l'URL ha ?v=..., altrimenti stale-while-revalidate.
- *    Le versioni vecchie dello stesso file vengono eliminate in automatico.
- *  - /api/*: MAI intercettate. I dati offline li gestisce calendar.js con localStorage.
- *
- * Non serve più cambiare a mano un numero di versione: gli URL degli asset cambiano da soli
- * (?v=filemtime) e la cache si auto-aggiorna.
- */
+/* Campusly - Service Worker */
 
-const SCOPE_PATH = new URL(self.registration.scope).pathname; // es. "/Campusly/"
+const SCOPE_PATH = new URL(self.registration.scope).pathname;
 const PAGES_CACHE = 'campusly-pages';
 const STATIC_CACHE = 'campusly-static';
 
-const NAV_TIMEOUT_MS = 4000;   // oltre questo tempo, con rete lenta, si mostra la copia salvata
+const NAV_TIMEOUT_MS = 4000;
 const MAX_PAGES = 20;
 const MAX_STATIC = 150;
 
-// Pagine da NON salvare (token CSRF / flussi che richiedono rete)
-const NO_CACHE_PAGES = ['login', 'register', 'logout', 'invito/'];
-
-/* ---------- Helper ---------- */
+// Pagine da NON salvare (token CSRF / flussi di autenticazione)
+const NO_CACHE_PAGES = ['login', 'register', 'logout', 'password-dimenticata', 'reset-password/', 'invito/'];
 
 const relPath = (url) => url.pathname.slice(SCOPE_PATH.length);
 
@@ -80,15 +67,12 @@ function offlineResponse() {
     );
 }
 
-/* ---------- Ciclo di vita ---------- */
-
 self.addEventListener('install', () => {
     self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
     event.waitUntil((async () => {
-        // Elimina TUTTE le vecchie cache (es. campusly-app-v14, campusly-data-v14)
         const keep = [PAGES_CACHE, STATIC_CACHE];
         const names = await caches.keys();
         await Promise.all(names.filter((n) => !keep.includes(n)).map((n) => caches.delete(n)));
@@ -96,20 +80,17 @@ self.addEventListener('activate', (event) => {
     })());
 });
 
-/* ---------- Fetch ---------- */
-
 self.addEventListener('fetch', (event) => {
     const { request } = event;
-    if (request.method !== 'GET') return;
-
     const url = new URL(request.url);
-    if (!isOurs(url.href)) return; // altre origini e /api/*: gestite dal browser
 
-    // Logout: svuota le copie salvate (nessun dato dell'utente resta sul dispositivo)
-    if (relPath(url) === 'logout') {
+    if (isOurs(url.href) && relPath(url) === 'logout') {
         event.waitUntil(clearUserCaches());
         return;
     }
+
+    if (request.method !== 'GET') return;
+    if (!isOurs(url.href)) return;
 
     if (request.mode === 'navigate') {
         event.respondWith(handleNavigation(event));
@@ -131,7 +112,7 @@ async function handleNavigation(event) {
         }
         return res;
     });
-    network.catch(() => {}); // evita "unhandled rejection" se vince il timeout
+    network.catch(() => {});
     event.waitUntil(network.catch(() => {}));
 
     const lookup = async () => {
@@ -144,13 +125,13 @@ async function handleNavigation(event) {
     try {
         const timeout = new Promise((resolve) => setTimeout(() => resolve(null), NAV_TIMEOUT_MS));
         const res = await Promise.race([network, timeout]);
-        if (res) return res;                       // rete buona: pagina fresca
+        if (res) return res;
 
-        const cached = await lookup();             // rete lenta: copia salvata subito
+        const cached = await lookup();
         if (cached) return cached;
-        return await network.catch(() => offlineResponse()); // nessuna copia: aspetta la rete
+        return await network.catch(() => offlineResponse());
     } catch (e) {
-        return (await lookup()) || offlineResponse();        // rete assente
+        return (await lookup()) || offlineResponse();
     }
 }
 
@@ -160,7 +141,6 @@ async function handleStatic(event) {
     const cache = await caches.open(STATIC_CACHE);
     const hit = await cache.match(request);
 
-    // URL versionato (?v=mtime): contenuto immutabile, si serve subito dalla cache
     if (hit && url.searchParams.has('v')) return hit;
 
     const refresh = fetch(request).then(async (res) => {
@@ -173,7 +153,7 @@ async function handleStatic(event) {
     });
     refresh.catch(() => {});
 
-    if (hit) {                                     // stale-while-revalidate
+    if (hit) {
         event.waitUntil(refresh.catch(() => {}));
         return hit;
     }
@@ -186,8 +166,6 @@ async function handleStatic(event) {
     }
 }
 
-/* ---------- Messaggi dalla pagina ---------- */
-
 self.addEventListener('message', (event) => {
     const data = event.data || {};
 
@@ -196,8 +174,6 @@ self.addEventListener('message', (event) => {
     if (data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-// Alla PRIMA visita la pagina e i suoi asset sono già stati caricati prima che il SW
-// prendesse il controllo: li salviamo ora, così l'app funziona offline già dal primo accesso.
 async function warmUp({ page, assets = [] }) {
     const jobs = [];
 

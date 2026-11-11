@@ -4,33 +4,66 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Core\Model;
+use PDOException;
 
 class GroupModel extends Model
 {
+    private const INVITE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    private const INVITE_LENGTH = 12;
+
+    public static function generateInviteCode(int $length = self::INVITE_LENGTH): string
+    {
+        $max = strlen(self::INVITE_ALPHABET) - 1;
+        $code = '';
+        for ($i = 0; $i < $length; $i++) {
+            $code .= self::INVITE_ALPHABET[random_int(0, $max)];
+        }
+        return $code;
+    }
+
     public function createGroup(int $userId, string $groupName, string $privacyLevel = 'transparent'): array
     {
-        $inviteCode = strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+        $attempts = 0;
+        while ($attempts < 5) {
+            $attempts++;
+            $inviteCode = self::generateInviteCode();
 
-        try {
-            $this->db->beginTransaction();
+            try {
+                $this->db->beginTransaction();
 
-            $stmt = $this->db->prepare("INSERT INTO study_groups (name, invite_code, created_by) VALUES (:name, :code, :user_id)");
-            $stmt->execute(['name' => $groupName, 'code' => $inviteCode, 'user_id' => $userId]);
-            $groupId = (int)$this->db->lastInsertId();
+                $stmt = $this->db->prepare("INSERT INTO study_groups (name, invite_code, created_by) VALUES (:name, :code, :user_id)");
+                $stmt->execute(['name' => $groupName, 'code' => $inviteCode, 'user_id' => $userId]);
+                $groupId = (int)$this->db->lastInsertId();
 
-            $this->joinGroup($userId, $inviteCode, $privacyLevel);
+                $this->joinGroup($userId, $inviteCode, $privacyLevel);
 
-            $this->db->commit();
-            return ['status' => 'success', 'group_id' => $groupId, 'invite_code' => $inviteCode];
-        } catch (\Exception $e) {
-            $this->db->rollBack();
-            throw $e;
+                $this->db->commit();
+                return ['status' => 'success', 'group_id' => $groupId, 'invite_code' => $inviteCode];
+            } catch (PDOException $e) {
+                if ($this->db->inTransaction()) {
+                    $this->db->rollBack();
+                }
+                // 23000 = violazione UNIQUE su invite_code -> riprova con un nuovo codice
+                if ($e->getCode() === '23000' && $attempts < 5) {
+                    continue;
+                }
+                throw $e;
+            }
         }
+
+        throw new \RuntimeException('Impossibile generare un codice invito univoco.');
+    }
+
+    public function isMember(int $userId, int $groupId): bool
+    {
+        $stmt = $this->db->prepare("SELECT 1 FROM group_members WHERE group_id = :gid AND user_id = :uid LIMIT 1");
+        $stmt->execute(['gid' => $groupId, 'uid' => $userId]);
+        return (bool)$stmt->fetchColumn();
     }
 
     public function joinGroup(int $userId, string $inviteCode, string $privacyLevel = 'logistical'): array
     {
-        $stmt = $this->db->prepare("SELECT id FROM study_groups WHERE invite_code = :code");
+        $stmt = $this->db->prepare("SELECT id FROM study_groups WHERE invite_code = :code LIMIT 1");
         $stmt->execute(['code' => $inviteCode]);
         $group = $stmt->fetch();
 
@@ -40,10 +73,7 @@ class GroupModel extends Model
 
         $groupId = (int)$group['id'];
 
-        $check = $this->db->prepare("SELECT user_id FROM group_members WHERE group_id = :gid AND user_id = :uid");
-        $check->execute(['gid' => $groupId, 'uid' => $userId]);
-
-        if ($check->fetch()) {
+        if ($this->isMember($userId, $groupId)) {
             $upd = $this->db->prepare("UPDATE group_members SET privacy_level = :priv WHERE group_id = :gid AND user_id = :uid");
             $upd->execute(['priv' => $privacyLevel, 'gid' => $groupId, 'uid' => $userId]);
         } else {
@@ -59,7 +89,6 @@ class GroupModel extends Model
         $stmt = $this->db->prepare("DELETE FROM group_members WHERE group_id = :gid AND user_id = :uid");
         $stmt->execute(['gid' => $groupId, 'uid' => $userId]);
 
-        // Se non ci sono più membri nel gruppo, eliminiamo il gruppo orfano
         $check = $this->db->prepare("SELECT COUNT(*) FROM group_members WHERE group_id = :gid");
         $check->execute(['gid' => $groupId]);
         if ((int)$check->fetchColumn() === 0) {

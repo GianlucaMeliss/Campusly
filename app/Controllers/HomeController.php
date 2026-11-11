@@ -10,9 +10,9 @@ final class HomeController
     public function index(): void
     {
         View::render('pages/home', [
-            'pageTitle' => 'Home',
-            'pageDescription' => 'Starter template base per siti e servizi web.',
-            'pageCss' => 'home',
+            'pageTitle'       => 'Campusly - Il tuo Calendario Universitario',
+            'pageDescription' => 'Il tuo calendario universitario per non perdere mai più un evento accademico.',
+            'pageCss'         => 'home',
         ]);
     }
 }

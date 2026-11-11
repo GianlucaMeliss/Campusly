@@ -9,13 +9,13 @@ class CinecaAdapter implements UniversityAdapterInterface
 {
     private const API_URL = 'https://unins.prod.up.cineca.it/api/Impegni/getImpegniCalendarioPubblico';
 
-    public function getSchedule(string $startDate, string $endDate, array $courseConfig): array
+    public function buildRequest(string $startDate, string $endDate, array $courseConfig): array
     {
         $linkCalendarioId = $courseConfig['linkCalendarioId'] ?? '';
         $clienteId = $courseConfig['clienteId'] ?? '';
 
         if (empty($linkCalendarioId) || empty($clienteId)) {
-            throw new \Exception("Codici Insubria mancanti. Rifai l'onboarding.");
+            throw new Exception("Codici Insubria mancanti. Rifai l'onboarding.");
         }
 
         $payloadArray = [
@@ -31,35 +31,31 @@ class CinecaAdapter implements UniversityAdapterInterface
             "dataFine" => $endDate
         ];
 
-        $ch = curl_init(self::API_URL);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payloadArray));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json;charset=utf-8',
-            'Accept: application/json, text/plain, */*',
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-        ]);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        
-        // Opzioni di velocità importate dal tuo proxy.php originale
-        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        return [
+            'url'     => self::API_URL,
+            'method'  => 'POST',
+            'headers' => [
+                'Content-Type: application/json;charset=utf-8',
+                'Accept: application/json, text/plain, */*',
+            ],
+            'body'    => (string)json_encode($payloadArray),
+        ];
+    }
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        if (curl_errno($ch)) {
-            throw new Exception("Errore cURL: " . curl_error($ch));
-        }
-        curl_close($ch);
-
-        if ($httpCode >= 200 && $httpCode < 300) {
-            $data = json_decode($response, true);
-            return is_array($data) ? $data : [];
+    public function parseResponse(string $body, int $httpCode, string $startDate = '', string $endDate = ''): array
+    {
+        if ($httpCode < 200 || $httpCode >= 300) {
+            throw new Exception("Errore API Cineca: HTTP " . $httpCode);
         }
 
-        throw new Exception("Errore API Cineca: HTTP " . $httpCode);
+        $data = json_decode($body, true);
+        return is_array($data) ? $data : [];
+    }
+
+    public function getSchedule(string $startDate, string $endDate, array $courseConfig): array
+    {
+        $request = $this->buildRequest($startDate, $endDate, $courseConfig);
+        $res = HttpClient::send($request);
+        return $this->parseResponse($res['body'], $res['http_code'], $startDate, $endDate);
     }
 }

@@ -7,8 +7,28 @@ use App\Core\Model;
 
 class PersonalEventModel extends Model
 {
-    public function getUserEvents(int $userId): array
+    public function getUserEvents(int $userId, ?string $from = null, ?string $to = null): array
     {
+        if ($from !== null && $to !== null) {
+            $fromTs = strtotime($from);
+            $toTs = strtotime($to);
+            if ($fromTs !== false && $toTs !== false) {
+                $stmt = $this->db->prepare("
+                    SELECT * FROM personal_events 
+                    WHERE user_id = :user_id 
+                      AND start_time < :to 
+                      AND end_time > :from 
+                    ORDER BY start_time ASC
+                ");
+                $stmt->execute([
+                    'user_id' => $userId,
+                    'from'    => date('Y-m-d H:i:s', $fromTs),
+                    'to'      => date('Y-m-d H:i:s', $toTs),
+                ]);
+                return $stmt->fetchAll() ?: [];
+            }
+        }
+
         $stmt = $this->db->prepare("SELECT * FROM personal_events WHERE user_id = :user_id ORDER BY start_time ASC");
         $stmt->execute(['user_id' => $userId]);
         return $stmt->fetchAll() ?: [];
@@ -36,7 +56,7 @@ class PersonalEventModel extends Model
     {
         $stmt = $this->db->prepare("DELETE FROM personal_events WHERE id = :id AND user_id = :user_id");
         return $stmt->execute([
-            'id' => $eventId,
+            'id'      => $eventId,
             'user_id' => $userId
         ]);
     }

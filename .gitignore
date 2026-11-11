@@ -24,11 +24,14 @@ ehthumbs.db
 *.swo
 
 # =========================
-# Logs / debug
+# Logs / debug / cache
 # =========================
 *.log
 logs/
-applogs/
+app/logs/*
+!app/logs/.gitkeep
+data/cache/*.json
+data/cache/*.tmp
 *.tmp
 temp/
 tmp/
@@ -39,11 +42,14 @@ tmp/
 .env
 .env.*
 !.env.example
+config/local.php
 
 # =========================
 # Local notes / exports
 # =========================
 repomix-output.xml
+repomix-final.xml
+CAMPUSLY_TODO_MIGLIORAMENTI.md
 funz.txt
 info.docx
 OPERAZIONI.xlsx
@@ -70,3 +76,5 @@ coverage/
 !.gitignore
 !.gitattributes
 !public/.htaccess
+!data/cache/.htaccess
+!database/.htaccess

@@ -5,11 +5,12 @@
 
             <?php
             $registerErrors = [
-                'empty_fields'   => 'Compila tutti i campi obbligatori.',
-                'invalid_email'  => 'Inserisci un indirizzo email valido.',
-                'weak_password'  => 'La password deve avere almeno 8 caratteri.',
-                'email_exists'   => 'Esiste già un account con questa email.',
-                'server'         => 'Errore del server. Riprova tra poco.',
+                'empty_fields'  => 'Compila tutti i campi obbligatori.',
+                'invalid_email' => 'Inserisci un indirizzo email valido.',
+                'weak_password' => 'La password deve avere almeno 8 caratteri.',
+                'email_exists'  => 'Esiste già un account con questa email.',
+                'ratelimit'     => 'Troppi tentativi di registrazione. Riprova più tardi.',
+                'server'        => 'Errore del server. Riprova tra poco.',
             ];
             $registerError = $registerErrors[$_GET['error'] ?? ''] ?? null;
             ?>
@@ -19,7 +20,6 @@
                 </div>
             <?php endif; ?>
             
-            <!-- Modificato $url('/register') con $route('/register') -->
             <form action="<?= htmlspecialchars($route('/register')) ?>" method="POST" style="display: flex; flex-direction: column; gap: 15px; margin-top: 2rem;">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                 <div style="display: flex; gap: 10px;">

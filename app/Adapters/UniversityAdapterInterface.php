@@ -5,13 +5,17 @@ namespace App\Adapters;
 
 interface UniversityAdapterInterface
 {
-    /**
-     * Recupera l'orario delle lezioni per un dato intervallo di date.
-     * 
-     * @param string $startDate Data di inizio in formato ISO (es. 2026-09-18T00:00:00.000Z)
-     * @param string $endDate Data di fine in formato ISO
-     * @param array $courseConfig Configurazioni specifiche del corso (ID esterni, token, ecc.)
-     * @return array Array associativo contenente gli eventi normalizzati
-     */
     public function getSchedule(string $startDate, string $endDate, array $courseConfig): array;
+
+    /**
+     * Costruisce i parametri della richiesta HTTP per l'esecuzione sincrona o parallela.
+     *
+     * @return array{url: string, method: string, headers: array<int, string>, body?: string|null}
+     */
+    public function buildRequest(string $startDate, string $endDate, array $courseConfig): array;
+
+    /**
+     * Normalizza la risposta HTTP grezza nel formato eventi di Campusly.
+     */
+    public function parseResponse(string $body, int $httpCode, string $startDate = '', string $endDate = ''): array;
 }

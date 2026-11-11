@@ -1,9 +1,16 @@
 <?php
 declare(strict_types=1);
 
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+
 if (session_status() === PHP_SESSION_NONE) {
-    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
-    session_set_cookie_params(['lifetime' => 0, 'path' => '/', 'secure' => $isHttps, 'httponly' => true, 'samesite' => 'Lax']);
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path'     => '/',
+        'secure'   => $isHttps,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 
@@ -42,24 +49,44 @@ spl_autoload_register(function (string $class): void {
 
 \App\Core\ErrorHandler::register();
 
-// Ripristino automatico della sessione tramite "Remember Me"
-if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_me'])) {
-    $tokenHash = hash('sha256', $_COOKIE['remember_me']);
+// Ripristino automatico della sessione tramite "Remember Me" con rotazione del token
+if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_me']) && is_string($_COOKIE['remember_me'])) {
+    $oldTokenHash = hash('sha256', $_COOKIE['remember_me']);
     $userModel = new \App\Models\UserModel();
-    $user = $userModel->findUserByToken($tokenHash);
+    $user = $userModel->findUserByToken($oldTokenHash);
 
     if ($user) {
         session_regenerate_id(true);
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_name'] = $user['first_name'];
 
+        // Rotazione token: elimina quello usato ed emettine uno nuovo
+        $userModel->deleteToken($oldTokenHash);
+        $newToken = bin2hex(random_bytes(32));
+        $newTokenHash = hash('sha256', $newToken);
+        $expiresAt = date('Y-m-d H:i:s', time() + (365 * 24 * 60 * 60));
+        $userModel->storeRememberToken((int)$user['id'], $newTokenHash, $expiresAt);
+
+        setcookie('remember_me', $newToken, [
+            'expires'  => time() + (365 * 24 * 60 * 60),
+            'path'     => '/',
+            'secure'   => $isHttps,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+
         $db = \App\Core\Database::getInstance();
         $stmt = $db->prepare("SELECT theme FROM user_preferences WHERE user_id = ?");
         $stmt->execute([$user['id']]);
         $_SESSION['theme'] = $stmt->fetchColumn() ?: 'light';
     } else {
-        // Se il token è scaduto o non valido, rimuoviamo il cookie orfano
-        setcookie('remember_me', '', time() - 3600, '/');
+        setcookie('remember_me', '', [
+            'expires'  => time() - 3600,
+            'path'     => '/',
+            'secure'   => $isHttps,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
     }
 }
 

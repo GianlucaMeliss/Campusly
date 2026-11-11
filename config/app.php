@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-return [
+$baseConfig = [
     'site' => [
         'name' => 'Campusly',
         'tagline' => 'Il tuo calendario universitario',
@@ -15,20 +15,27 @@ return [
         'default_description' => 'Il tuo calendario universitario per non perdere mai più un evento accademico.',
     ],
 
-    'assets' => [
-        'version' => '1.0.0',
-    ],
-    
     'db' => [
-        'host' => 'localhost', // Host del database
-        'name' => 'my_gianlucamelis', // Nome del database
-        'user' => 'gianlucamelis', // Username
-        'pass' => '', // Password
-        'charset' => 'utf8mb4'
+        'host' => 'localhost',
+        'name' => '',
+        'user' => '',
+        'pass' => '',
+        'charset' => 'utf8mb4',
     ],
 
     'mail' => [
-        'contact_email' => 'melis.gianlucagm@gmail.com', // Cambia questa email per ogni nuovo progetto
+        'from' => 'noreply@campusly.it',
+        'contact_email' => 'info@campusly.it',
         'contact_subject' => '🔔 Nuovo Contatto dal Sito',
     ],
 ];
+
+$localConfigFile = __DIR__ . '/local.php';
+if (is_file($localConfigFile)) {
+    $localConfig = require $localConfigFile;
+    if (is_array($localConfig)) {
+        $baseConfig = array_replace_recursive($baseConfig, $localConfig);
+    }
+}
+
+return $baseConfig;
