@@ -1,0 +1,20 @@
+{
+  "data": [
+    {
+      "start": "2026-10-14T09:30:00+02:00",
+      "end": "2026-10-14T11:15:00+02:00",
+      "course": {
+        "name_it": "Architettura dei Calcolatori",
+        "lecturers": {
+          "data": [
+            { "person": { "short_name": "Neri M." } }
+          ]
+        }
+      },
+      "place": {
+        "office": "Aula A11",
+        "building": { "name_it": "Campus Est" }
+      }
+    }
+  ]
+}

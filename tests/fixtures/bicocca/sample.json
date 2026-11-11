@@ -1,0 +1,15 @@
+{
+  "celle": [
+    {
+      "data": "13/10/2026",
+      "ora_inizio": "14:00",
+      "ora_fine": "16:00",
+      "nome_insegnamento": "ECONOMIA AZIENDALE",
+      "aula": "U6-01 [Edificio U6]",
+      "docente": "Verdi",
+      "tipo": "Lezione",
+      "percorso_didattico": "Comune",
+      "Annullato": "1"
+    }
+  ]
+}

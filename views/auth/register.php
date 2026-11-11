@@ -5,12 +5,13 @@
 
             <?php
             $registerErrors = [
-                'empty_fields'  => 'Compila tutti i campi obbligatori.',
-                'invalid_email' => 'Inserisci un indirizzo email valido.',
-                'weak_password' => 'La password deve avere almeno 8 caratteri.',
-                'email_exists'  => 'Esiste già un account con questa email.',
-                'ratelimit'     => 'Troppi tentativi di registrazione. Riprova più tardi.',
-                'server'        => 'Errore del server. Riprova tra poco.',
+                'empty_fields'      => 'Compila tutti i campi obbligatori.',
+                'invalid_email'     => 'Inserisci un indirizzo email valido.',
+                'weak_password'     => 'La password deve avere almeno 8 caratteri.',
+                'password_too_long' => 'La password non può superare i 72 caratteri.',
+                'email_exists'      => 'Esiste già un account con questa email.',
+                'ratelimit'         => 'Troppi tentativi di registrazione. Riprova più tardi.',
+                'server'            => 'Errore del server. Riprova tra poco.',
             ];
             $registerError = $registerErrors[$_GET['error'] ?? ''] ?? null;
             ?>
@@ -40,7 +41,7 @@
 
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <label for="password" style="font-size: 0.9rem; font-weight: 600;">Password</label>
-                    <input type="password" name="password" id="password" placeholder="Almeno 8 caratteri" required minlength="8" style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                    <input type="password" name="password" id="password" placeholder="Da 8 a 72 caratteri" required minlength="8" maxlength="72" style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
                 </div>
 
                 <button type="submit" style="background: var(--primary-color); color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px;">Registrati</button>

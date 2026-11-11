@@ -1,51 +1,46 @@
-# 🤖 AI Developer Instructions for PHP MVC Starter Template
+# 🤖 AI Developer Instructions per Campusly
 
-## 📌 Project Overview
-This is a custom, lightweight, vanilla PHP (8.4+) MVC boilerplate designed for fast deployment of websites, landing pages, and web services. It uses a Front Controller pattern, flat-file JSON data storage (with an optional PDO Singleton), and requires no external dependencies like Composer or Node.js to run the core architecture.
-
-**Your Goal as an AI:** When assisting with this project, you MUST adhere to the existing architectural patterns. Do not suggest adding heavyweight frameworks (like Laravel or Symfony components). Maintain the simplicity, security, and speed of this vanilla PHP structure.
+## 📌 Panoramica del Progetto
+**Campusly** è un'applicazione web e PWA in PHP 8.4+ vanilla con architettura MVC custom e database MySQL (`InnoDB`, `utf8mb4`), progettata per aggregare gli orari universitari (Cineca, EasyStaff Statale/Bicocca, USI), filtrare le materie non seguite, gestire eventi personali in UTC e confrontare le disponibilità nei Gruppi di Studio.
 
 ---
 
-## 🏗️ Architecture & Directory Structure
-
-- `/app/` - Contains the core application logic (Namespaced `App\`).
-  - `/Controllers/` - Handles incoming requests and calls views/models.
-  - `/Core/` - System files (`Router.php`, `View.php`, `Database.php`, `ErrorHandler.php`).
-  - `/Models/` - Data retrieval logic.
-  - `/logs/` - System logs (e.g., `error.log`, `cookie_consents.csv`).
-- `/config/` - Centralized configuration (`app.php`) and routing definitions (`routes.php`).
-- `/data/` - Flat-file databases (e.g., `content.json`). Protected from direct web access via `.htaccess`.
-- `/public/` - The Web Root. Contains the Front Controller (`index.php`), `.htaccess`, and all public assets (`/assets/`).
-- `/views/` - HTML/PHP templates.
+## 🏗️ Architettura & Cartelle
+- `/app/Adapters/` - Adapter per le API degli atenei (`UniversityAdapterInterface`, `HttpClient`, `CinecaAdapter`, `StataleAdapter`, `BicoccaAdapter`, `UsiAdapter`, `PoliMiAdapter`). Ogni adapter implementa `buildRequest()`, `parseResponse()` e `getSchedule()`.
+- `/app/Controllers/` - Controller HTTP e API suddivisi per dominio:
+  - `AuthController` (login, registrazione, logout POST, onboarding, password dimenticata/reset).
+  - `ProfileController` (profilo utente, rimozione corso, sync tema).
+  - `CalendarApiController` (calendario, eventi personali con validazione range, corsi nascosti).
+  - `GroupApiController` (creazione/ingresso/uscita gruppi, privacy con whitelist, calendario di gruppo).
+  - `OnboardingApiController` (corsi per ateneo, curriculum, segnalazioni rate-limited).
+  - `ContactController` (form contatti con honeypot, log consensi cookie con rotazione CSV, CSP report).
+  - `ApiController` (`getAppVersion`).
+- `/app/Core/` - Componenti di sistema (`Router`, `View`, `Database`, `Model`, `ErrorHandler`, `Csrf`, `Http`, `RateLimiter`, `AppVersion`, `Str`).
+- `/app/Models/` - Accesso ai dati MySQL via PDO prepared statements (`UserModel`, `GroupModel`, `PersonalEventModel`, `HiddenCourseModel`).
+- `/app/Services/` - `ScheduleService` (validazione date, chiave cache `inizio`+`fine`+hash corsi, scrittura atomica, esecuzione parallela `curl_multi`, fallback stale-on-error).
+- `/config/` - `app.php` (default non sensibili + merge automatico con `config/local.php`), `local.example.php` (template configurazione locale), `routes.php`.
+- `/data/cache/` - Microcache JSON degli orari settimanali (protetta da `.htaccess`).
+- `/database/` - `schema.sql` (schema completo) e `/database/migrations/NNN_*.sql` (migrazioni incrementali).
+- `/tests/` - Suite di test a zero dipendenze (`php tests/run.php`) e fixture JSON in `/tests/fixtures/`.
 
 ---
 
-## ⚙️ Core Mechanics & Strict Rules
+## ⚙️ Regole Fondamentali
 
-### 1. Routing & Boundaries
-All requests are routed through `/public/index.php` via `.htaccess`.
-- **Strict Boundary:** This template deliberately DOES NOT use Middleware, Route Grouping, or Route Naming. If you feel the need to implement these, stop. The project scope has exceeded this boilerplate.
-- **Define new routes** ONLY in `/config/routes.php`.
-- **Syntax:** `$router->get('/path', function() { (new Controller())->method(); });`
-
-### 2. Global Error Handling
-The application uses a centralized `App\Core\ErrorHandler` initialized in `index.php`.
-- **Do not use `die()` or `exit()`** to handle failures (especially in Database operations).
-- Always `throw new Exception('message')`. The global handler will catch it, log the technical details securely to `/app/logs/error.log`, and return either a generic 500 HTML page or a 500 JSON response depending on the request type.
-
-### 3. API & Form Security (The Golden Rule)
-All endpoints inside `App\Controllers\ApiController.php` (or any POST handlers) MUST adhere to these strict security standards:
-- **CSRF Validation:** A global token is generated in `index.php`. EVERY POST request (whether classic HTML form or JS fetch) must include and validate `$_SESSION['csrf_token']`.
-- **Rate-Limiting:** Every POST endpoint must implement session-based throttling to prevent abuse.
-- **Standardized Responses:** Use `header("Location: ...")` for HTML forms, or strictly formatted JSON with appropriate HTTP status codes (200, 400, 403, 429, 500) for AJAX/Fetch requests.
-
-### 4. Views & Rendering
-Views are rendered using `App\Core\View::render('folder/file', $dataArray);`.
-- `View::render()` automatically includes `header.php` and `footer.php`.
-- Global configurations (from `config/app.php`) are extracted into the views.
-- **Rule:** Keep business logic OUT of the views. Use `htmlspecialchars()` when outputting ANY variable to prevent XSS.
-
-### 5. Data Management
-- **JSON (Default):** Use flat JSON files inside `/data/` for simple sites. 
-- **PDO (Optional):** If the database array in `config/app.php` is filled, `App\Core\Database::getInstance()` returns a singleton PDO connection. Any database-driven model MUST extend `App\Core\Model`. ALWAYS use PDO Prepared Statements for queries.
+1. **Zero Dipendenze esterne:** resta su PHP vanilla. Niente Composer o framework in produzione.
+2. **`BASEPATH` vs `BASE_PATH`:**
+   - `BASEPATH` = percorso **su disco** della root del progetto (da usare per file, cache, log, `require`).
+   - `BASE_PATH` = prefisso **URL** (`''` o `/Campusly`), da usare esclusivamente per link e redirect HTTP.
+3. **Configurazione & Segreti (`config/local.php`):**
+   - Non committare mai credenziali DB o indirizzi email reali in `config/app.php`.
+   - Tutti i segreti risiedono in `config/local.php` (ignorato da Git).
+   - Non costruire mai link assoluti (es. reset password) usando `$_SERVER['HTTP_HOST']`: usa sempre `$appConfig['site']['url']`.
+4. **Sicurezza POST, CSRF e Rate Limiting:**
+   - Ogni richiesta `POST` viene verificata centralmente da `Csrf::verifyOrFail()` in `public/index.php`.
+   - Ogni endpoint POST sensibile deve applicare `App\Core\RateLimiter` (`login`, `register`, `forgot`, `join`, `group_create`, `onboarding`, `contact`, `cookielog`, `csp`).
+   - Usa `App\Core\Http::json()`, `Http::input()`, `Http::requireUserId()` e `Http::clientIp()`.
+5. **Timezone & Date:**
+   - Il bootstrap (`public/index.php`) imposta `date_default_timezone_set('UTC')`. Salva e filtra gli eventi personali in UTC con `gmdate()`.
+6. **Database & Test:**
+   - Ogni modifica al DB richiede una nuova migrazione in `database/migrations/` e l'aggiornamento di `database/schema.sql`.
+   - Prima di ogni commit esegui `php tests/run.php` e verifica la sintassi con `php -l`.

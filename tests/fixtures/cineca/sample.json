@@ -1,0 +1,18 @@
+[
+  {
+    "nome": "ANALISI MATEMATICA",
+    "dataInizio": "2026-10-12T09:00:00.000Z",
+    "dataFine": "2026-10-12T11:00:00.000Z",
+    "stato": "C",
+    "tipoAbbreviazione": "LEZ",
+    "risorse": [
+      {
+        "aula": {
+          "descrizione": "Aula Magna",
+          "edificio": { "descrizione": "Padiglione Morselli" }
+        },
+        "docente": { "cognome": "Rossi" }
+      }
+    ]
+  }
+]

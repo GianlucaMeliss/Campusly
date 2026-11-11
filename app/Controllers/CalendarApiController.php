@@ -18,8 +18,8 @@ final class CalendarApiController
     {
         $userId = Http::requireUserId();
 
-        $dataInizio = (string)($_GET['inizio'] ?? date('Y-m-d\T00:00:00.000\Z'));
-        $dataFine = (string)($_GET['fine'] ?? date('Y-m-d\T23:59:59.000\Z', strtotime('+7 days')));
+        $dataInizio = (string)($_GET['inizio'] ?? gmdate('Y-m-d\T00:00:00.000\Z'));
+        $dataFine = (string)($_GET['fine'] ?? gmdate('Y-m-d\T23:59:59.000\Z', time() + 7 * 86400));
 
         $userModel = new UserModel();
         $userCourses = $userModel->getUserCourses($userId);
@@ -47,21 +47,35 @@ final class CalendarApiController
     public function getPersonalEvents(): void
     {
         $userId = Http::requireUserId();
-        $from = isset($_GET['inizio']) ? (string)$_GET['inizio'] : null;
-        $to = isset($_GET['fine']) ? (string)$_GET['fine'] : null;
 
-        $model = new PersonalEventModel();
-        $events = $model->getUserEvents($userId, $from, $to);
+        $hasInizio = isset($_GET['inizio']);
+        $hasFine = isset($_GET['fine']);
+
+        if ($hasInizio xor $hasFine) {
+            Http::json(['error' => 'Specificare sia inizio che fine.'], 400);
+        }
+
+        $from = $hasInizio ? (string)$_GET['inizio'] : gmdate('Y-m-d\T00:00:00.000\Z', time() - 7 * 86400);
+        $to = $hasFine ? (string)$_GET['fine'] : gmdate('Y-m-d\T23:59:59.000\Z', time() + 28 * 86400);
+
+        $service = new ScheduleService();
+        try {
+            $service->validateDateRange($from, $to);
+            $model = new PersonalEventModel();
+            $events = $model->getUserEvents($userId, $from, $to);
+        } catch (InvalidArgumentException $e) {
+            Http::json(['error' => $e->getMessage()], 400);
+        }
 
         $formattedEvents = array_map(function (array $ev): array {
             return [
-                'idPersonale'      => $ev['id'],
-                'nome'             => $ev['title'],
-                'dataInizio'       => str_replace(' ', 'T', (string)$ev['start_time']) . 'Z',
-                'dataFine'         => str_replace(' ', 'T', (string)$ev['end_time']) . 'Z',
-                'tipoAbbreviazione'=> 'Personale',
-                'risorse'          => [['aula' => ['descrizione' => $ev['location']]]],
-                'isPersonale'      => true,
+                'idPersonale'       => $ev['id'],
+                'nome'              => $ev['title'],
+                'dataInizio'        => str_replace(' ', 'T', (string)$ev['start_time']) . 'Z',
+                'dataFine'          => str_replace(' ', 'T', (string)$ev['end_time']) . 'Z',
+                'tipoAbbreviazione' => 'Personale',
+                'risorse'           => [['aula' => ['descrizione' => $ev['location']]]],
+                'isPersonale'       => true,
             ];
         }, $events);
 
@@ -85,8 +99,8 @@ final class CalendarApiController
         $model = new PersonalEventModel();
         $model->createEvent($userId, [
             'title'      => Str::cut($title, 255),
-            'start_time' => date('Y-m-d H:i:s', $startTs),
-            'end_time'   => date('Y-m-d H:i:s', $endTs),
+            'start_time' => gmdate('Y-m-d H:i:s', $startTs),
+            'end_time'   => gmdate('Y-m-d H:i:s', $endTs),
             'location'   => Str::cut($location !== '' ? $location : 'Non specificato', 255),
         ]);
 

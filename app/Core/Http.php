@@ -57,7 +57,23 @@ final class Http
 
     public static function clientIp(): string
     {
-        return (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        $remoteAddr = (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        $appConfig = require BASEPATH . '/config/app.php';
+        $trustedProxies = $appConfig['security']['trusted_proxies'] ?? [];
+
+        if (
+            is_array($trustedProxies)
+            && in_array($remoteAddr, $trustedProxies, true)
+            && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])
+        ) {
+            $parts = explode(',', (string)$_SERVER['HTTP_X_FORWARDED_FOR']);
+            $candidate = trim($parts[0]);
+            if (filter_var($candidate, FILTER_VALIDATE_IP) !== false) {
+                return $candidate;
+            }
+        }
+
+        return filter_var($remoteAddr, FILTER_VALIDATE_IP) !== false ? $remoteAddr : '0.0.0.0';
     }
 
     public static function anonymizeIp(string $ip): string

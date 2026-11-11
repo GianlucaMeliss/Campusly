@@ -14,7 +14,25 @@ final class ErrorHandler
             if (!(error_reporting() & $level)) {
                 return false;
             }
-            throw new ErrorException($message, 0, $level, $file, $line);
+
+            // Notice e Deprecation vengono solo loggati senza interrompere l'esecuzione (B5)
+            if (in_array($level, [E_NOTICE, E_USER_NOTICE, E_DEPRECATED, E_USER_DEPRECATED, E_STRICT], true)) {
+                self::writeLog(sprintf(
+                    "[%s] Notice/Deprecation (%d): %s in %s:%d\n",
+                    gmdate('Y-m-d H:i:s'),
+                    $level,
+                    $message,
+                    $file,
+                    $line
+                ));
+                return true;
+            }
+
+            if (in_array($level, [E_WARNING, E_USER_WARNING, E_USER_ERROR, E_RECOVERABLE_ERROR], true)) {
+                throw new ErrorException($message, 0, $level, $file, $line);
+            }
+
+            return true;
         });
 
         set_exception_handler([self::class, 'handleException']);
@@ -33,6 +51,15 @@ final class ErrorHandler
         });
     }
 
+    private static function writeLog(string $logMessage): void
+    {
+        $logDir = BASEPATH . '/app/logs';
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0755, true);
+        }
+        @error_log($logMessage, 3, $logDir . '/error.log');
+    }
+
     public static function handleException(Throwable $exception): void
     {
         if (!headers_sent()) {
@@ -41,20 +68,16 @@ final class ErrorHandler
 
         $logMessage = sprintf(
             "[%s] Exception: %s in %s:%d\nStack trace:\n%s\n\n",
-            date('Y-m-d H:i:s'),
+            gmdate('Y-m-d H:i:s'),
             $exception->getMessage(),
             $exception->getFile(),
             $exception->getLine(),
             $exception->getTraceAsString()
         );
-        
-        $logDir = BASEPATH . '/app/logs';
-        if (!is_dir($logDir)) {
-            @mkdir($logDir, 0755, true);
-        }
-        @error_log($logMessage, 3, $logDir . '/error.log');
 
-        $isApi = strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') !== false 
+        self::writeLog($logMessage);
+
+        $isApi = strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') !== false
                  || ($_SERVER['HTTP_ACCEPT'] ?? '') === 'application/json';
 
         if ($isApi) {
@@ -62,7 +85,7 @@ final class ErrorHandler
                 header('Content-Type: application/json; charset=UTF-8');
             }
             echo json_encode([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'Errore interno del server. I nostri tecnici sono stati avvisati.'
             ]);
             exit;
@@ -70,7 +93,7 @@ final class ErrorHandler
 
         try {
             View::render('pages/500', [
-                'pageTitle' => '500 - Errore Interno',
+                'pageTitle'       => '500 - Errore Interno',
                 'pageDescription' => 'Si è verificato un errore tecnico.'
             ]);
         } catch (Throwable) {
@@ -79,7 +102,7 @@ final class ErrorHandler
             echo "<p>Si è verificato un problema critico. Riprova più tardi.</p>";
             echo "</div>";
         }
-        
+
         exit;
     }
 }

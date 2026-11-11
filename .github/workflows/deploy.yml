@@ -27,6 +27,40 @@ jobs:
     steps:
       - name: 🚚 Scarica il codice dal repo
         uses: actions/checkout@v4
+
+      - name: ⚙️ Genera config/local.php per Altervista
+        env:
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
+          SITE_URL: ${{ secrets.SITE_URL }}
+        run: |
+          cat << 'EOC' > config/local.php
+          <?php
+          declare(strict_types=1);
+          return [
+              'site' => [
+                  'url' => '${SITE_URL:-https://gianlucamelis.altervista.org/Campusly}',
+              ],
+              'db' => [
+                  'host' => 'localhost',
+                  'name' => '${DB_NAME:-my_gianlucamelis}',
+                  'user' => '${DB_USER:-gianlucamelis}',
+                  'pass' => '${DB_PASS:-}',
+                  'charset' => 'utf8mb4',
+              ],
+              'mail' => [
+                  'from' => 'noreply@gianlucamelis.altervista.org',
+                  'contact_email' => '${CONTACT_EMAIL:-melis.gianlucagm@gmail.com}',
+              ],
+          ];
+          EOC
+          sed -i "s|\${SITE_URL:-https://gianlucamelis.altervista.org/Campusly}|${SITE_URL:-https://gianlucamelis.altervista.org/Campusly}|g" config/local.php
+          sed -i "s|\${DB_NAME:-my_gianlucamelis}|${DB_NAME:-my_gianlucamelis}|g" config/local.php
+          sed -i "s|\${DB_USER:-gianlucamelis}|${DB_USER:-gianlucamelis}|g" config/local.php
+          sed -i "s|\${DB_PASS:-}|${DB_PASS:-}|g" config/local.php
+          sed -i "s|\${CONTACT_EMAIL:-melis.gianlucagm@gmail.com}|${CONTACT_EMAIL:-melis.gianlucagm@gmail.com}|g" config/local.php
       
       - name: 📂 Sincronizza i file via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -43,8 +77,10 @@ jobs:
             database/**
             tests/**
             tools/**
+            config/local.example.php
             AI_INSTRUCTIONS.md
             CAMPUSLY_TODO_MIGLIORAMENTI.md
+            CAMPUSLY_CORREZIONI_RESIDUE.md
             repomix-final.xml
             repomix-output.xml
             .git*

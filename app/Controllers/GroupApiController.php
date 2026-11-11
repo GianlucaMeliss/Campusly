@@ -17,12 +17,24 @@ use Throwable;
 final class GroupApiController
 {
     private const PRIVACY_LEVELS = ['transparent', 'logistical', 'opaque'];
+    private const MAX_GROUPS_PER_USER = 20;
 
     public function createGroup(): void
     {
         $userId = Http::requireUserId();
-        $data = Http::input();
+        $limiter = new RateLimiter();
+        $bucketKey = (string)$userId;
 
+        if ($limiter->tooManyAttempts('group_create:user', $bucketKey, 10, 3600)) {
+            Http::json(['error' => 'Hai creato troppi gruppi di recente. Riprova tra un\'ora.'], 429);
+        }
+
+        $model = new GroupModel();
+        if ($model->countGroupsCreatedByUser($userId) >= self::MAX_GROUPS_PER_USER) {
+            Http::json(['error' => 'Hai raggiunto il limite massimo di gruppi creabili (20).'], 400);
+        }
+
+        $data = Http::input();
         $name = isset($data['name']) && is_string($data['name']) ? Str::cut(trim($data['name']), 100) : '';
         $privacy = $data['privacy_level'] ?? 'transparent';
 
@@ -34,7 +46,7 @@ final class GroupApiController
             Http::json(['error' => 'Livello di privacy non valido'], 400);
         }
 
-        $model = new GroupModel();
+        $limiter->hit('group_create:user', $bucketKey);
         Http::json($model->createGroup($userId, $name, $privacy));
     }
 
@@ -128,8 +140,8 @@ final class GroupApiController
             Http::json(['error' => 'Accesso negato al gruppo'], 403);
         }
 
-        $dataInizio = (string)($_GET['inizio'] ?? date('Y-m-d\T00:00:00.000\Z'));
-        $dataFine = (string)($_GET['fine'] ?? date('Y-m-d\T23:59:59.000\Z', strtotime('+7 days')));
+        $dataInizio = (string)($_GET['inizio'] ?? gmdate('Y-m-d\T00:00:00.000\Z'));
+        $dataFine = (string)($_GET['fine'] ?? gmdate('Y-m-d\T23:59:59.000\Z', time() + 7 * 86400));
 
         $scheduleService = new ScheduleService();
         try {
@@ -144,7 +156,6 @@ final class GroupApiController
         $hiddenCourseModel = new HiddenCourseModel();
         $personalEventModel = new PersonalEventModel();
 
-        // Deduplica in-memory per membri che seguono esattamente gli stessi corsi
         $memoizedSchedules = [];
 
         foreach ($members as $member) {
@@ -179,7 +190,6 @@ final class GroupApiController
                     continue;
                 }
 
-                // Whitelist esplicita dei campi in base al livello di privacy
                 if ($isMe) {
                     $ev['member_id'] = $memberId;
                     $ev['is_me'] = true;
@@ -223,7 +233,6 @@ final class GroupApiController
                         'is_me'       => false,
                     ];
                 } else {
-                    // transparent
                     $ev['nome'] = ($ev['nome'] ?? 'Lezione') . ' (' . $member['first_name'] . ')';
                     $ev['member_id'] = $memberId;
                     $ev['is_me'] = false;

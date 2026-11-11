@@ -11,8 +11,7 @@ use App\Models\UserModel;
 
 class AuthController
 {
-    // Hash bcrypt costante per uniformare il tempo di verifica quando l'utente non esiste
-    private const DUMMY_PASSWORD_HASH = '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG';
+    private static ?string $dummyHash = null;
 
     private UserModel $userModel;
     private RateLimiter $rateLimiter;
@@ -21,6 +20,14 @@ class AuthController
     {
         $this->userModel = new UserModel();
         $this->rateLimiter = new RateLimiter();
+    }
+
+    private static function dummyPasswordHash(): string
+    {
+        if (self::$dummyHash === null) {
+            self::$dummyHash = password_hash('campusly_dummy_timing_shield', PASSWORD_DEFAULT);
+        }
+        return self::$dummyHash;
     }
 
     private function isHttps(): bool
@@ -52,14 +59,13 @@ class AuthController
             $this->rateLimiter->tooManyAttempts('login:ip', $ip, 5, 900)
             || ($email !== '' && $this->rateLimiter->tooManyAttempts('login:email', $emailBucketId, 5, 900))
         ) {
-            http_response_code(429);
             header('Location: ' . BASE_PATH . '/login?error=ratelimit');
             exit;
         }
 
         $user = $email !== '' ? $this->userModel->findAuthByEmail($email) : null;
-        $hashToVerify = $user['password_hash'] ?? self::DUMMY_PASSWORD_HASH;
-        $passwordValid = password_verify($password, (string)$hashToVerify);
+        $hashToVerify = $user['password_hash'] ?? self::dummyPasswordHash();
+        $passwordValid = strlen($password) <= 72 && password_verify($password, (string)$hashToVerify);
 
         if ($user && $passwordValid) {
             $this->rateLimiter->clear('login:email', $emailBucketId);
@@ -67,6 +73,7 @@ class AuthController
             session_regenerate_id(true);
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_name'] = $user['first_name'];
+            $_SESSION['password_changed_at'] = $user['password_changed_at'] ?? null;
 
             $db = \App\Core\Database::getInstance();
             $stmt = $db->prepare("SELECT theme FROM user_preferences WHERE user_id = ?");
@@ -76,7 +83,7 @@ class AuthController
             if ($remember) {
                 $token = bin2hex(random_bytes(32));
                 $tokenHash = hash('sha256', $token);
-                $expiresAt = date('Y-m-d H:i:s', time() + (365 * 24 * 60 * 60));
+                $expiresAt = gmdate('Y-m-d H:i:s', time() + (365 * 24 * 60 * 60));
 
                 $this->userModel->storeRememberToken((int)$user['id'], $tokenHash, $expiresAt);
 
@@ -154,7 +161,6 @@ class AuthController
 
         $ip = Http::clientIp();
         if ($this->rateLimiter->tooManyAttempts('register:ip', $ip, 5, 3600)) {
-            http_response_code(429);
             header('Location: ' . BASE_PATH . '/register?error=ratelimit');
             exit;
         }
@@ -176,6 +182,11 @@ class AuthController
 
         if (strlen($password) < 8) {
             header('Location: ' . BASE_PATH . '/register?error=weak_password');
+            exit;
+        }
+
+        if (strlen($password) > 72) {
+            header('Location: ' . BASE_PATH . '/register?error=password_too_long');
             exit;
         }
 
@@ -208,6 +219,7 @@ class AuthController
             session_regenerate_id(true);
             $_SESSION['user_id'] = $userId;
             $_SESSION['user_name'] = $firstName;
+            $_SESSION['password_changed_at'] = null;
 
             header('Location: ' . BASE_PATH . '/onboarding');
             exit;
@@ -247,17 +259,22 @@ class AuthController
             $user = $this->userModel->findByEmail($email);
 
             if ($user) {
+                $appConfig = require BASEPATH . '/config/app.php';
+                $baseUrl = rtrim((string)($appConfig['site']['url'] ?? ''), '/');
+                if ($baseUrl === '') {
+                    error_log('[forgot-password] site.url non configurato');
+                    header('Location: ' . BASE_PATH . '/password-dimenticata?status=sent');
+                    exit;
+                }
+
                 $token = bin2hex(random_bytes(32));
                 $tokenHash = hash('sha256', $token);
-                $expiresAt = date('Y-m-d H:i:s', time() + 3600);
+                $expiresAt = gmdate('Y-m-d H:i:s', time() + 3600);
 
                 $this->userModel->createPasswordReset((int)$user['id'], $tokenHash, $expiresAt);
 
-                $appConfig = require BASEPATH . '/config/app.php';
                 $from = str_replace(["\r", "\n"], '', (string)($appConfig['mail']['from'] ?? 'noreply@campusly.it'));
-                $scheme = $this->isHttps() ? 'https' : 'http';
-                $host = preg_replace('/[^a-zA-Z0-9.\-:]/', '', (string)($_SERVER['HTTP_HOST'] ?? 'localhost'));
-                $resetUrl = $scheme . '://' . $host . BASE_PATH . '/reset-password/' . $token;
+                $resetUrl = $baseUrl . '/reset-password/' . $token;
 
                 $subject = 'Campusly - Reimposta la tua password';
                 $message = "Ciao " . $user['first_name'] . ",\n\n"
@@ -271,14 +288,13 @@ class AuthController
             }
         }
 
-        // Risposta sempre uniforme per non rivelare se l'email è registrata
         header('Location: ' . BASE_PATH . '/password-dimenticata?status=sent');
         exit;
     }
 
     public function showResetPassword(string $token): void
     {
-        $cleanToken = preg_replace('/[^a-f0-9]/', '', strtolower($token));
+        $cleanToken = preg_replace('/[^a-f0-9]/', '', strtolower($token)) ?? '';
         $reset = strlen($cleanToken) === 64
             ? $this->userModel->findValidPasswordReset(hash('sha256', $cleanToken))
             : null;
@@ -292,7 +308,7 @@ class AuthController
 
     public function processResetPassword(string $token): void
     {
-        $cleanToken = preg_replace('/[^a-f0-9]/', '', strtolower($token));
+        $cleanToken = preg_replace('/[^a-f0-9]/', '', strtolower($token)) ?? '';
         if (strlen($cleanToken) !== 64) {
             header('Location: ' . BASE_PATH . '/password-dimenticata');
             exit;
@@ -307,6 +323,10 @@ class AuthController
         $password = (string)($_POST['password'] ?? '');
         if (strlen($password) < 8) {
             header('Location: ' . BASE_PATH . '/reset-password/' . $cleanToken . '?error=weak_password');
+            exit;
+        }
+        if (strlen($password) > 72) {
+            header('Location: ' . BASE_PATH . '/reset-password/' . $cleanToken . '?error=password_too_long');
             exit;
         }
 

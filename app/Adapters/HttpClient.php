@@ -9,12 +9,39 @@ final class HttpClient
 {
     private const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
 
-    private static function createHandle(array $request, int $timeout = 10, bool $verifySsl = true)
+    private static function resolveCaBundle(): ?string
     {
-        $url = $request['url'] ?? '';
-        $method = strtoupper($request['method'] ?? 'GET');
+        $configured = ini_get('curl.cainfo');
+        if (is_string($configured) && $configured !== '' && is_file($configured)) {
+            return $configured;
+        }
+
+        $candidates = [
+            '/etc/ssl/certs/ca-certificates.crt',
+            '/etc/pki/tls/certs/ca-bundle.crt',
+            '/etc/ssl/cert.pem',
+        ];
+
+        foreach ($candidates as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
+    private static function createHandle(array $request, int $timeout = 10)
+    {
+        $url = (string)($request['url'] ?? '');
+        $method = strtoupper((string)($request['method'] ?? 'GET'));
         $headers = $request['headers'] ?? [];
         $body = $request['body'] ?? null;
+        $verifySsl = (bool)($request['verify_ssl'] ?? true);
+
+        if (!$verifySsl) {
+            error_log('[HttpClient] Attenzione: verifica SSL disabilitata esplicitamente per URL: ' . $url);
+        }
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -23,8 +50,11 @@ final class HttpClient
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verifySsl);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $verifySsl ? 2 : 0);
 
-        if ($verifySsl && is_file('/etc/ssl/cert.pem')) {
-            curl_setopt($ch, CURLOPT_CAINFO, '/etc/ssl/cert.pem');
+        if ($verifySsl) {
+            $customCa = $request['ca_info'] ?? self::resolveCaBundle();
+            if (is_string($customCa) && $customCa !== '' && is_file($customCa)) {
+                curl_setopt($ch, CURLOPT_CAINFO, $customCa);
+            }
         }
 
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
@@ -47,21 +77,12 @@ final class HttpClient
 
     public static function send(array $request, int $timeout = 15): array
     {
-        $ch = self::createHandle($request, $timeout, true);
+        $ch = self::createHandle($request, $timeout);
         $response = curl_exec($ch);
         $errno = curl_errno($ch);
-
-        // Fallback se la catena SSL dell'ateneo (es. Cineca) è incompleta in locale
-        if (in_array($errno, [60, 77, 35], true)) {
-            curl_close($ch);
-            $ch = self::createHandle($request, $timeout, false);
-            $response = curl_exec($ch);
-            $errno = curl_errno($ch);
-        }
-
         $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-        if ($errno) {
+        if ($errno !== 0) {
             $err = curl_error($ch);
             curl_close($ch);
             throw new Exception("Errore cURL: " . $err);
@@ -85,7 +106,7 @@ final class HttpClient
         $results = [];
 
         foreach ($requests as $key => $req) {
-            $ch = self::createHandle($req, $totalTimeout, true);
+            $ch = self::createHandle($req, $totalTimeout);
             $handles[$key] = $ch;
             curl_multi_add_handle($mh, $ch);
         }
@@ -109,31 +130,15 @@ final class HttpClient
             $body = curl_multi_getcontent($ch);
             $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            curl_multi_remove_handle($mh, $ch);
-            curl_close($ch);
-
-            // Se un ateneo fallisce la verifica SSL per catena intermedia mancante, riprova singolarmente
-            if (in_array($errno, [60, 77, 35], true)) {
-                try {
-                    $fallback = self::send($requests[$key], $totalTimeout);
-                    $results[$key] = [
-                        'ok'        => ($fallback['http_code'] >= 200 && $fallback['http_code'] < 300),
-                        'body'      => $fallback['body'],
-                        'http_code' => $fallback['http_code'],
-                        'error'     => null,
-                    ];
-                    continue;
-                } catch (Exception $e) {
-                    $error = $e->getMessage();
-                }
-            }
-
             $results[$key] = [
                 'ok'        => ($errno === 0 && $httpCode >= 200 && $httpCode < 300),
                 'body'      => is_string($body) ? $body : '',
                 'http_code' => $httpCode,
                 'error'     => $error,
             ];
+
+            curl_multi_remove_handle($mh, $ch);
+            curl_close($ch);
         }
 
         curl_multi_close($mh);

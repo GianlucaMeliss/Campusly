@@ -9,9 +9,14 @@ class UsiAdapter implements UniversityAdapterInterface
 {
     public function buildRequest(string $startDate, string $endDate, array $config): array
     {
-        $urlWeb = $config['url'] ?? '';
-        if (empty($urlWeb)) {
+        $urlWeb = (string)($config['url'] ?? '');
+        if ($urlWeb === '') {
             throw new Exception("URL USI mancante nella configurazione del corso");
+        }
+
+        // Pulisce eventuale sintassi Markdown [url](url) presente nel DB
+        if (preg_match('/https?:\/\/[^\s\]\)]+/', $urlWeb, $m)) {
+            $urlWeb = $m[0];
         }
 
         $apiUrl = preg_replace(
@@ -33,14 +38,22 @@ class UsiAdapter implements UniversityAdapterInterface
 
     public function parseResponse(string $body, int $httpCode, string $startDate = '', string $endDate = ''): array
     {
-        if ($httpCode !== 200 || $body === '') {
-            return [];
+        if ($httpCode !== 200) {
+            throw new Exception("Errore API USI: HTTP " . $httpCode);
+        }
+
+        if (trim($body) === '') {
+            throw new Exception("Errore API USI: risposta vuota");
         }
 
         $risposta = json_decode($body, true);
-        $datiUSI = is_array($risposta) ? ($risposta['data'] ?? []) : [];
+        if (!is_array($risposta) || json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception("Errore API USI: JSON non valido");
+        }
+
+        $datiUSI = $risposta['data'] ?? [];
         if (!is_array($datiUSI)) {
-            return [];
+            throw new Exception("Errore API USI: struttura dati mancante");
         }
 
         $eventi = [];

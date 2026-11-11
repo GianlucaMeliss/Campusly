@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+date_default_timezone_set('UTC');
+
 $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -49,6 +51,20 @@ spl_autoload_register(function (string $class): void {
 
 \App\Core\ErrorHandler::register();
 
+// C7: Verifica validità sessione rispetto a cambi password successivi al login
+if (!empty($_SESSION['user_id'])) {
+    $userModel = new \App\Models\UserModel();
+    $dbChangedAt = $userModel->getPasswordChangedAt((int)$_SESSION['user_id']);
+    $sessChangedAt = $_SESSION['password_changed_at'] ?? null;
+
+    if ($dbChangedAt !== null && ($sessChangedAt === null || strtotime($dbChangedAt) > strtotime((string)$sessChangedAt))) {
+        $_SESSION = [];
+        session_destroy();
+        header('Location: ' . BASE_PATH . '/login');
+        exit;
+    }
+}
+
 // Ripristino automatico della sessione tramite "Remember Me" con rotazione del token
 if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_me']) && is_string($_COOKIE['remember_me'])) {
     $oldTokenHash = hash('sha256', $_COOKIE['remember_me']);
@@ -59,12 +75,12 @@ if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_me']) && is_string($
         session_regenerate_id(true);
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_name'] = $user['first_name'];
+        $_SESSION['password_changed_at'] = $user['password_changed_at'] ?? null;
 
-        // Rotazione token: elimina quello usato ed emettine uno nuovo
         $userModel->deleteToken($oldTokenHash);
         $newToken = bin2hex(random_bytes(32));
         $newTokenHash = hash('sha256', $newToken);
-        $expiresAt = date('Y-m-d H:i:s', time() + (365 * 24 * 60 * 60));
+        $expiresAt = gmdate('Y-m-d H:i:s', time() + (365 * 24 * 60 * 60));
         $userModel->storeRememberToken((int)$user['id'], $newTokenHash, $expiresAt);
 
         setcookie('remember_me', $newToken, [

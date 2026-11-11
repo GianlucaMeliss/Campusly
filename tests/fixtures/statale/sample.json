@@ -1,0 +1,15 @@
+{
+  "celle": [
+    {
+      "data": "12/10/2026",
+      "ora_inizio": "10:30",
+      "ora_fine": "12:30",
+      "nome_insegnamento": "DIRITTO PRIVATO",
+      "aula": "Aula 201 [Festa del Perdono]",
+      "docente": "Bianchi",
+      "tipo": "Lezione",
+      "percorso_didattico": "Cognomi A-L",
+      "Annullato": "0"
+    }
+  ]
+}

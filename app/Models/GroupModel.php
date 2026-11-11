@@ -21,6 +21,13 @@ class GroupModel extends Model
         return $code;
     }
 
+    public function countGroupsCreatedByUser(int $userId): int
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM study_groups WHERE created_by = :uid");
+        $stmt->execute(['uid' => $userId]);
+        return (int)$stmt->fetchColumn();
+    }
+
     public function createGroup(int $userId, string $groupName, string $privacyLevel = 'transparent'): array
     {
         $attempts = 0;
@@ -43,7 +50,6 @@ class GroupModel extends Model
                 if ($this->db->inTransaction()) {
                     $this->db->rollBack();
                 }
-                // 23000 = violazione UNIQUE su invite_code -> riprova con un nuovo codice
                 if ($e->getCode() === '23000' && $attempts < 5) {
                     continue;
                 }

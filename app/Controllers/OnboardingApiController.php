@@ -5,6 +5,7 @@ namespace App\Controllers;
 
 use App\Core\Database;
 use App\Core\Http;
+use App\Core\RateLimiter;
 use App\Core\Str;
 
 final class OnboardingApiController
@@ -40,6 +41,13 @@ final class OnboardingApiController
     public function submitOnboardingRequest(): void
     {
         $userId = Http::requireUserId();
+        $limiter = new RateLimiter();
+        $bucketKey = (string)$userId;
+
+        if ($limiter->tooManyAttempts('onboarding:user', $bucketKey, 5, 3600)) {
+            Http::json(['error' => 'Hai inviato troppe segnalazioni. Riprova tra un\'ora.'], 429);
+        }
+
         $data = Http::input();
 
         $type = (string)($data['type'] ?? '');
@@ -51,6 +59,8 @@ final class OnboardingApiController
         if ($name === '') {
             Http::json(['error' => 'Dato principale mancante'], 400);
         }
+
+        $limiter->hit('onboarding:user', $bucketKey);
 
         $requestDataToSave = $name;
         $tipoTesto = 'Segnalazione';

@@ -4,33 +4,32 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Core\Model;
+use InvalidArgumentException;
 
 class PersonalEventModel extends Model
 {
-    public function getUserEvents(int $userId, ?string $from = null, ?string $to = null): array
+    public function getUserEvents(int $userId, string $from, string $to): array
     {
-        if ($from !== null && $to !== null) {
-            $fromTs = strtotime($from);
-            $toTs = strtotime($to);
-            if ($fromTs !== false && $toTs !== false) {
-                $stmt = $this->db->prepare("
-                    SELECT * FROM personal_events 
-                    WHERE user_id = :user_id 
-                      AND start_time < :to 
-                      AND end_time > :from 
-                    ORDER BY start_time ASC
-                ");
-                $stmt->execute([
-                    'user_id' => $userId,
-                    'from'    => date('Y-m-d H:i:s', $fromTs),
-                    'to'      => date('Y-m-d H:i:s', $toTs),
-                ]);
-                return $stmt->fetchAll() ?: [];
-            }
+        $fromTs = strtotime($from);
+        $toTs = strtotime($to);
+
+        if ($fromTs === false || $toTs === false || $toTs < $fromTs) {
+            throw new InvalidArgumentException('Intervallo di date non valido.');
         }
 
-        $stmt = $this->db->prepare("SELECT * FROM personal_events WHERE user_id = :user_id ORDER BY start_time ASC");
-        $stmt->execute(['user_id' => $userId]);
+        $stmt = $this->db->prepare("
+            SELECT id, title, start_time, end_time, location 
+            FROM personal_events 
+            WHERE user_id = :user_id 
+              AND start_time < :to 
+              AND end_time > :from 
+            ORDER BY start_time ASC
+        ");
+        $stmt->execute([
+            'user_id' => $userId,
+            'from'    => gmdate('Y-m-d H:i:s', $fromTs),
+            'to'      => gmdate('Y-m-d H:i:s', $toTs),
+        ]);
         return $stmt->fetchAll() ?: [];
     }
 
@@ -40,7 +39,7 @@ class PersonalEventModel extends Model
             INSERT INTO personal_events (user_id, title, start_time, end_time, location) 
             VALUES (:user_id, :title, :start_time, :end_time, :location)
         ");
-        
+
         $stmt->execute([
             'user_id'    => $userId,
             'title'      => $data['title'],

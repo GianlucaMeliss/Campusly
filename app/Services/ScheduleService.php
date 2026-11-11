@@ -6,11 +6,13 @@ namespace App\Services;
 use App\Adapters\HttpClient;
 use App\Adapters\UniversityAdapterInterface;
 use InvalidArgumentException;
+use RuntimeException;
 use Throwable;
 
 final class ScheduleService
 {
     private const CACHE_TTL_SECONDS = 300;
+    private const EMPTY_CACHE_TTL_SECONDS = 60;
     private const MAX_RANGE_DAYS = 35;
 
     public function validateDateRange(string $from, string $to): array
@@ -32,8 +34,8 @@ final class ScheduleService
     public function cacheKey(string $from, string $to, array $userCourses): string
     {
         [$startTs, $endTs] = $this->validateDateRange($from, $to);
-        $startClean = date('Ymd', $startTs);
-        $endClean = date('Ymd', $endTs);
+        $startClean = gmdate('Ymd', $startTs);
+        $endClean = gmdate('Ymd', $endTs);
 
         $configs = array_column($userCourses, 'external_course_id');
         sort($configs);
@@ -61,14 +63,18 @@ final class ScheduleService
 
         $cacheFile = $cacheDir . '/' . $this->cacheKey($from, $to, $userCourses);
 
-        if (is_file($cacheFile) && (time() - (int)@filemtime($cacheFile) < self::CACHE_TTL_SECONDS)) {
+        if (is_file($cacheFile)) {
+            $age = time() - (int)@filemtime($cacheFile);
             $cached = json_decode((string)@file_get_contents($cacheFile), true);
             if (is_array($cached)) {
-                return [
-                    'events'          => $cached,
-                    'cache_status'    => 'HIT-MICROCACHE',
-                    'partial_failure' => false,
-                ];
+                $ttl = empty($cached) ? self::EMPTY_CACHE_TTL_SECONDS : self::CACHE_TTL_SECONDS;
+                if ($age < $ttl) {
+                    return [
+                        'events'          => $cached,
+                        'cache_status'    => 'HIT-MICROCACHE',
+                        'partial_failure' => false,
+                    ];
+                }
             }
         }
 
@@ -112,7 +118,7 @@ final class ScheduleService
                 $adapter = $adapters[$idx];
                 try {
                     if ($res['error'] !== null) {
-                        throw new \RuntimeException($res['error']);
+                        throw new RuntimeException($res['error']);
                     }
                     $eventiCorso = $adapter->parseResponse($res['body'], $res['http_code'], $from, $to);
                     $tuttiGliEventi = array_merge($tuttiGliEventi, $eventiCorso);
@@ -124,7 +130,7 @@ final class ScheduleService
             }
         }
 
-        if ($successCount === 0 && !empty($requests)) {
+        if ($successCount === 0 && (!empty($requests) || $partialFailure)) {
             if (is_file($cacheFile)) {
                 $stale = json_decode((string)@file_get_contents($cacheFile), true);
                 if (is_array($stale)) {

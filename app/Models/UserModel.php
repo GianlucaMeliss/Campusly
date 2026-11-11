@@ -5,6 +5,7 @@ namespace App\Models;
 
 use App\Core\Model;
 use PDOException;
+use Throwable;
 
 class UserModel extends Model
 {
@@ -23,15 +24,39 @@ class UserModel extends Model
 
     public function findAuthByEmail(string $email): ?array
     {
-        $stmt = $this->db->prepare("
-            SELECT id, email, password_hash, first_name, last_name, role 
-            FROM users 
-            WHERE email = :email 
-            LIMIT 1
-        ");
-        $stmt->execute(['email' => $email]);
-        $user = $stmt->fetch();
-        return $user ?: null;
+        try {
+            $stmt = $this->db->prepare("
+                SELECT id, email, password_hash, password_changed_at, first_name, last_name, role 
+                FROM users 
+                WHERE email = :email 
+                LIMIT 1
+            ");
+            $stmt->execute(['email' => $email]);
+            $user = $stmt->fetch();
+            return $user ?: null;
+        } catch (PDOException) {
+            $stmt = $this->db->prepare("
+                SELECT id, email, password_hash, first_name, last_name, role 
+                FROM users 
+                WHERE email = :email 
+                LIMIT 1
+            ");
+            $stmt->execute(['email' => $email]);
+            $user = $stmt->fetch();
+            return $user ?: null;
+        }
+    }
+
+    public function getPasswordChangedAt(int $userId): ?string
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT password_changed_at FROM users WHERE id = :id LIMIT 1");
+            $stmt->execute(['id' => $userId]);
+            $val = $stmt->fetchColumn();
+            return is_string($val) && $val !== '' ? $val : null;
+        } catch (PDOException) {
+            return null;
+        }
     }
 
     public function create(array $data): int
@@ -77,17 +102,19 @@ class UserModel extends Model
         $stmt = $this->db->prepare("DELETE FROM user_academic_profiles WHERE id = :id AND user_id = :uid");
         $stmt->execute(['id' => $profileId, 'uid' => $userId]);
     }
-    
+
     public function storeRememberToken(int $userId, string $tokenHash, string $expiresAt): void
     {
-        $this->db->exec("DELETE FROM user_tokens WHERE expires_at < NOW()");
+        $now = gmdate('Y-m-d H:i:s');
+        $stmtDel = $this->db->prepare("DELETE FROM user_tokens WHERE expires_at < :now");
+        $stmtDel->execute(['now' => $now]);
 
         $stmtOld = $this->db->prepare("
             SELECT id FROM user_tokens WHERE user_id = :uid ORDER BY expires_at DESC LIMIT 100 OFFSET 4
         ");
         $stmtOld->execute(['uid' => $userId]);
         $oldIds = $stmtOld->fetchAll(\PDO::FETCH_COLUMN);
-        
+
         if (!empty($oldIds)) {
             $placeholders = implode(',', array_fill(0, count($oldIds), '?'));
             $delOld = $this->db->prepare("DELETE FROM user_tokens WHERE id IN ($placeholders)");
@@ -107,16 +134,30 @@ class UserModel extends Model
 
     public function findUserByToken(string $tokenHash): ?array
     {
-        $stmt = $this->db->prepare("
-            SELECT u.id, u.first_name 
-            FROM users u 
-            JOIN user_tokens t ON u.id = t.user_id 
-            WHERE t.token_hash = :token_hash AND t.expires_at > NOW() 
-            LIMIT 1
-        ");
-        $stmt->execute(['token_hash' => $tokenHash]);
-        $user = $stmt->fetch();
-        return $user ?: null;
+        $now = gmdate('Y-m-d H:i:s');
+        try {
+            $stmt = $this->db->prepare("
+                SELECT u.id, u.first_name, u.password_changed_at 
+                FROM users u 
+                JOIN user_tokens t ON u.id = t.user_id 
+                WHERE t.token_hash = :token_hash AND t.expires_at > :now 
+                LIMIT 1
+            ");
+            $stmt->execute(['token_hash' => $tokenHash, 'now' => $now]);
+            $user = $stmt->fetch();
+            return $user ?: null;
+        } catch (PDOException) {
+            $stmt = $this->db->prepare("
+                SELECT u.id, u.first_name 
+                FROM users u 
+                JOIN user_tokens t ON u.id = t.user_id 
+                WHERE t.token_hash = :token_hash AND t.expires_at > :now 
+                LIMIT 1
+            ");
+            $stmt->execute(['token_hash' => $tokenHash, 'now' => $now]);
+            $user = $stmt->fetch();
+            return $user ?: null;
+        }
     }
 
     public function deleteToken(string $tokenHash): void
@@ -133,8 +174,9 @@ class UserModel extends Model
 
     public function createPasswordReset(int $userId, string $tokenHash, string $expiresAt): void
     {
-        $this->db->prepare("DELETE FROM password_resets WHERE user_id = :uid OR expires_at < NOW()")
-                 ->execute(['uid' => $userId]);
+        $now = gmdate('Y-m-d H:i:s');
+        $this->db->prepare("DELETE FROM password_resets WHERE user_id = :uid OR expires_at < :now")
+                 ->execute(['uid' => $userId, 'now' => $now]);
 
         $stmt = $this->db->prepare("
             INSERT INTO password_resets (user_id, token_hash, expires_at) 
@@ -145,33 +187,48 @@ class UserModel extends Model
 
     public function findValidPasswordReset(string $tokenHash): ?array
     {
+        $now = gmdate('Y-m-d H:i:s');
         $stmt = $this->db->prepare("
             SELECT id, user_id, token_hash, expires_at 
             FROM password_resets 
-            WHERE token_hash = :hash AND used_at IS NULL AND expires_at > NOW() 
+            WHERE token_hash = :hash AND used_at IS NULL AND expires_at > :now 
             LIMIT 1
         ");
-        $stmt->execute(['hash' => $tokenHash]);
+        $stmt->execute(['hash' => $tokenHash, 'now' => $now]);
         $row = $stmt->fetch();
         return $row ?: null;
     }
 
     public function consumePasswordReset(int $resetId, int $userId, string $newPassword): void
     {
+        $now = gmdate('Y-m-d H:i:s');
         $this->db->beginTransaction();
         try {
-            $updUser = $this->db->prepare("UPDATE users SET password_hash = :hash WHERE id = :uid");
-            $updUser->execute([
-                'hash' => password_hash($newPassword, PASSWORD_DEFAULT),
-                'uid'  => $userId,
-            ]);
+            try {
+                $updUser = $this->db->prepare("
+                    UPDATE users 
+                    SET password_hash = :hash, password_changed_at = :changed_at 
+                    WHERE id = :uid
+                ");
+                $updUser->execute([
+                    'hash'       => password_hash($newPassword, PASSWORD_DEFAULT),
+                    'changed_at' => $now,
+                    'uid'        => $userId,
+                ]);
+            } catch (PDOException) {
+                $updUser = $this->db->prepare("UPDATE users SET password_hash = :hash WHERE id = :uid");
+                $updUser->execute([
+                    'hash' => password_hash($newPassword, PASSWORD_DEFAULT),
+                    'uid'  => $userId,
+                ]);
+            }
 
-            $updReset = $this->db->prepare("UPDATE password_resets SET used_at = NOW() WHERE id = :id");
-            $updReset->execute(['id' => $resetId]);
+            $updReset = $this->db->prepare("UPDATE password_resets SET used_at = :now WHERE id = :id");
+            $updReset->execute(['now' => $now, 'id' => $resetId]);
 
             $this->deleteAllTokensForUser($userId);
             $this->db->commit();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
@@ -221,18 +278,21 @@ class UserModel extends Model
                 $curriculumId = (int)$this->db->lastInsertId();
             }
 
-            // Inserisci ignornado se la UNIQUE constraint (aggiunta dalla migrazione 001) interviene
-            $stmtCheck = $this->db->prepare("SELECT id FROM user_academic_profiles WHERE user_id = :uid AND curriculum_id = :currid");
-            $stmtCheck->execute(['uid' => $userId, 'currid' => $curriculumId]);
-
-            if (!$stmtCheck->fetch()) {
-                $insProf = $this->db->prepare("INSERT INTO user_academic_profiles (user_id, course_id, curriculum_id, enrollment_year) VALUES (:uid, :cid, :currid, :year)");
-                $insProf->execute(['uid' => $userId, 'cid' => $courseId, 'currid' => $curriculumId, 'year' => date('Y')]);
-            }
+            // C4: INSERT IGNORE atomico per evitare race condition da doppio click
+            $insProf = $this->db->prepare("
+                INSERT IGNORE INTO user_academic_profiles (user_id, course_id, curriculum_id, enrollment_year) 
+                VALUES (:uid, :cid, :currid, :year)
+            ");
+            $insProf->execute([
+                'uid'    => $userId,
+                'cid'    => $courseId,
+                'currid' => $curriculumId,
+                'year'   => gmdate('Y'),
+            ]);
 
             $this->db->commit();
             return true;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }

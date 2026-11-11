@@ -41,15 +41,15 @@ $router->post('/api/gruppi/lascia', function (): void { (new GroupApiController(
 $router->post('/api/gruppi/privacy', function (): void { (new GroupApiController())->updateGroupPrivacy(); });
 $router->get('/api/calendario/gruppo/{id}', function (string $id): void { (new GroupApiController())->getGroupCalendar($id); });
 
-// API Onboarding, Versione e Contatti
+// API Onboarding, Versione, Contatti e CSP
 $router->get('/api/universita/{id}/corsi', function (string $id): void { (new OnboardingApiController())->getCoursesByUniversity($id); });
 $router->get('/api/corsi/{id}/curriculums', function (string $id): void { (new OnboardingApiController())->getCourseCurriculums($id); });
 $router->post('/api/richiesta-onboarding', function (): void { (new OnboardingApiController())->submitOnboardingRequest(); });
 $router->get('/api/versione', function (): void { (new ApiController())->getAppVersion(); });
 $router->post('/api/log-cookie', function (): void { (new ContactController())->logCookie(); });
 $router->post('/api/contact', function (): void { (new ContactController())->sendContact(); });
+$router->post('/api/csp-report', function (): void { (new ContactController())->cspReport(); });
 
-// Controllo di autenticazione per le pagine protette
 $requireAuth = function (): void {
     if (!isset($_SESSION['user_id'])) {
         header('Location: ' . BASE_PATH . '/login');
@@ -59,11 +59,11 @@ $requireAuth = function (): void {
 
 $router->get('/dashboard', function () use ($requireAuth): void {
     $requireAuth();
-    
+
     $userId = (int)$_SESSION['user_id'];
     $userModel = new \App\Models\UserModel();
     $config = $userModel->getUserCourseConfig($userId);
-    
+
     if (!$config) {
         header('Location: ' . BASE_PATH . '/onboarding');
         exit;
@@ -89,7 +89,6 @@ $router->post('/onboarding', function () use ($requireAuth): void {
     (new AuthController())->processOnboarding();
 });
 
-// Pagine Profilo
 $router->get('/profilo', function () use ($requireAuth): void {
     $requireAuth();
     (new ProfileController())->showProfile();
@@ -103,7 +102,6 @@ $router->post('/api/preferenze/tema', function () use ($requireAuth): void {
     (new ProfileController())->syncTheme();
 });
 
-// Pagine Pubbliche Principali (rimossa rotta '/' duplicata)
 $router->get('/', function (): void {
     (new HomeController())->index();
 });
@@ -120,7 +118,6 @@ $router->get('/servizi/{slug}', function (string $slug): void {
     (new PageController())->showItem($slug);
 });
 
-// Rotta Magic Link Invito Gruppo
 $router->get('/invito/{code}', function (string $code): void {
     $cleanCode = strtoupper((string)preg_replace('/[^A-Za-z0-9]/', '', $code));
 
