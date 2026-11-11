@@ -34,12 +34,14 @@ final class Http
         return self::$decodedBody;
     }
 
-    public static function json(mixed $data, int $status = 200, array $headers = []): never
+    public static function json($data, int $status = 200, array $headers = []): void
     {
-        http_response_code($status);
-        header('Content-Type: application/json; charset=UTF-8');
-        foreach ($headers as $name => $value) {
-            header($name . ': ' . $value);
+        if (!headers_sent()) {
+            http_response_code($status);
+            header('Content-Type: application/json; charset=UTF-8');
+            foreach ($headers as $name => $value) {
+                header($name . ': ' . $value);
+            }
         }
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         exit;
@@ -58,9 +60,6 @@ final class Http
         return (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     }
 
-    /**
-     * Anonimizza IPv4 (ultimo ottetto a 0) e IPv6 (ultimi 80 bit a 0).
-     */
     public static function anonymizeIp(string $ip): string
     {
         $packed = @inet_pton($ip);

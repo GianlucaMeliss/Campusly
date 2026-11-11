@@ -15,17 +15,21 @@ $baseConfig = [
         'default_description' => 'Il tuo calendario universitario per non perdere mai più un evento accademico.',
     ],
 
+    'assets' => [
+        'version' => '1.0.0',
+    ],
+
     'db' => [
         'host' => 'localhost',
-        'name' => '',
-        'user' => '',
+        'name' => 'my_gianlucamelis',
+        'user' => 'gianlucamelis',
         'pass' => '',
         'charset' => 'utf8mb4',
     ],
 
     'mail' => [
         'from' => 'noreply@campusly.it',
-        'contact_email' => 'info@campusly.it',
+        'contact_email' => 'melis.gianlucagm@gmail.com',
         'contact_subject' => '🔔 Nuovo Contatto dal Sito',
     ],
 ];

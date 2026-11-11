@@ -13,11 +13,6 @@ final class ScheduleService
     private const CACHE_TTL_SECONDS = 300;
     private const MAX_RANGE_DAYS = 35;
 
-    /**
-     * Valida l'intervallo di date e restituisce i timestamp [inizio, fine].
-     *
-     * @return array{0: int, 1: int}
-     */
     public function validateDateRange(string $from, string $to): array
     {
         $startTs = strtotime($from);
@@ -47,12 +42,6 @@ final class ScheduleService
         return "settimana_{$startClean}_{$endClean}_{$hashCorsi}.json";
     }
 
-    /**
-     * Recupera gli eventi dei corsi di uno studente con microcache su disco,
-     * esecuzione parallela curl_multi, tolleranza ai guasti per singolo corso e fallback stale-on-error.
-     *
-     * @return array{events: array, cache_status: string, partial_failure: bool}
-     */
     public function getEventsForUser(int $userId, array $userCourses, string $from, string $to): array
     {
         $this->validateDateRange($from, $to);
@@ -72,8 +61,8 @@ final class ScheduleService
 
         $cacheFile = $cacheDir . '/' . $this->cacheKey($from, $to, $userCourses);
 
-        if (is_file($cacheFile) && (time() - (int)filemtime($cacheFile) < self::CACHE_TTL_SECONDS)) {
-            $cached = json_decode((string)file_get_contents($cacheFile), true);
+        if (is_file($cacheFile) && (time() - (int)@filemtime($cacheFile) < self::CACHE_TTL_SECONDS)) {
+            $cached = json_decode((string)@file_get_contents($cacheFile), true);
             if (is_array($cached)) {
                 return [
                     'events'          => $cached,
@@ -96,7 +85,7 @@ final class ScheduleService
                 continue;
             }
 
-            $adapterClass = (string)($courseData['adapter_class'] ?? '');
+            $adapterClass = ltrim((string)($courseData['adapter_class'] ?? ''), '\\');
             if ($adapterClass === '' || !class_exists($adapterClass)) {
                 continue;
             }
@@ -120,7 +109,6 @@ final class ScheduleService
             $responses = HttpClient::sendMulti($requests, 10);
 
             foreach ($responses as $idx => $res) {
-                /** @var UniversityAdapterInterface $adapter */
                 $adapter = $adapters[$idx];
                 try {
                     if ($res['error'] !== null) {
@@ -136,10 +124,9 @@ final class ScheduleService
             }
         }
 
-        // Se tutti gli adapter sono falliti, prova a servire la cache scaduta (stale-on-error)
         if ($successCount === 0 && !empty($requests)) {
             if (is_file($cacheFile)) {
-                $stale = json_decode((string)file_get_contents($cacheFile), true);
+                $stale = json_decode((string)@file_get_contents($cacheFile), true);
                 if (is_array($stale)) {
                     return [
                         'events'          => $stale,
@@ -148,10 +135,13 @@ final class ScheduleService
                     ];
                 }
             }
-            throw new \RuntimeException('Servizio orari temporaneamente non disponibile');
+            return [
+                'events'          => [],
+                'cache_status'    => 'ERROR-FALLBACK',
+                'partial_failure' => true,
+            ];
         }
 
-        // Salva su disco in modo atomico solo quando non ci sono errori parziali
         if (!$partialFailure) {
             $this->writeCacheAtomically($cacheDir, $cacheFile, $tuttiGliEventi);
         }
@@ -187,7 +177,7 @@ final class ScheduleService
         $files = glob($cacheDir . '/settimana_*.json') ?: [];
         $now = time();
         foreach ($files as $file) {
-            if (is_file($file) && ($now - (int)filemtime($file)) > 86400) {
+            if (is_file($file) && ($now - (int)@filemtime($file)) > 86400) {
                 @unlink($file);
             }
         }

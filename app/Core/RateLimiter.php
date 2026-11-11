@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App\Core;
 
-use PDOException;
+use Throwable;
 
 final class RateLimiter extends Model
 {
@@ -28,55 +28,57 @@ final class RateLimiter extends Model
 
     public function tooManyAttempts(string $bucket, string $id, int $max, int $windowSeconds): bool
     {
+        $since = date('Y-m-d H:i:s', time() - $windowSeconds);
         try {
             $stmt = $this->db->prepare("
                 SELECT COUNT(*) 
                 FROM rate_limits 
                 WHERE bucket = :bucket 
                   AND identifier = :id 
-                  AND created_at >= DATE_SUB(NOW(), INTERVAL :win SECOND)
+                  AND created_at >= :since
             ");
             $stmt->execute([
                 'bucket' => $bucket,
                 'id'     => $id,
-                'win'    => $windowSeconds,
+                'since'  => $since,
             ]);
             return (int)$stmt->fetchColumn() >= $max;
-        } catch (PDOException $e) {
-            if ($e->getCode() === '42S02') {
+        } catch (Throwable $e) {
+            try {
                 $this->ensureTable();
-                return false;
+            } catch (Throwable) {
             }
-            throw $e;
+            return false;
         }
     }
 
     public function hit(string $bucket, string $id): void
     {
-        if ( random_int(1, 50) === 1 ) {
+        if (random_int(1, 50) === 1) {
             $this->purgeOld();
         }
 
+        $now = date('Y-m-d H:i:s');
         try {
             $stmt = $this->db->prepare("
                 INSERT INTO rate_limits (bucket, identifier, created_at) 
-                VALUES (:bucket, :id, NOW())
+                VALUES (:bucket, :id, :now)
             ");
             $stmt->execute([
                 'bucket' => $bucket,
                 'id'     => $id,
+                'now'    => $now,
             ]);
-        } catch (PDOException $e) {
-            if ($e->getCode() === '42S02') {
+        } catch (Throwable) {
+            try {
                 $this->ensureTable();
                 $stmt = $this->db->prepare("
                     INSERT INTO rate_limits (bucket, identifier, created_at) 
-                    VALUES (:bucket, :id, NOW())
+                    VALUES (:bucket, :id, :now)
                 ");
-                $stmt->execute(['bucket' => $bucket, 'id' => $id]);
-                return;
+                $stmt->execute(['bucket' => $bucket, 'id' => $id, 'now' => $now]);
+            } catch (Throwable) {
             }
-            throw $e;
         }
     }
 
@@ -91,19 +93,17 @@ final class RateLimiter extends Model
                 'bucket' => $bucket,
                 'id'     => $id,
             ]);
-        } catch (PDOException $e) {
-            if ($e->getCode() !== '42S02') {
-                throw $e;
-            }
+        } catch (Throwable) {
         }
     }
 
     private function purgeOld(): void
     {
         try {
-            $this->db->exec("DELETE FROM rate_limits WHERE created_at < DATE_SUB(NOW(), INTERVAL 1 DAY)");
-        } catch (PDOException) {
-            // Ignora se la tabella non è ancora presente
+            $yesterday = date('Y-m-d H:i:s', time() - 86400);
+            $stmt = $this->db->prepare("DELETE FROM rate_limits WHERE created_at < :yesterday");
+            $stmt->execute(['yesterday' => $yesterday]);
+        } catch (Throwable) {
         }
     }
 }
