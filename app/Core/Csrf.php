@@ -31,7 +31,7 @@ final class Csrf
 
     /**
      * @deprecated Compatibilità temporanea per client con tab aperte pre-CSRF.
-     * Da rimuovere dopo il 2026-12-31 quando tutte le sessioni legacy saranno scadute.
+     * Da rimuovere dopo il 2026-12-31.
      */
     private static function isSameOriginJsonApi(): bool
     {
@@ -44,6 +44,11 @@ final class Csrf
 
     public static function verifyOrFail(): void
     {
+        $path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
+        if (str_ends_with($path, '/api/csp-report')) {
+            return;
+        }
+
         $expected = self::token();
         $given = self::provided();
 

@@ -27,10 +27,8 @@ final class ContactController
             exit;
         }
 
-        // B4: Destinazione fissa interna per prevenire Open Redirect via Referer
         $redirectBase = BASE_PATH . '/';
 
-        // B3: Honeypot anti-bot
         if (!empty($_POST['website'])) {
             header('Location: ' . $redirectBase . '?status=success');
             exit;
@@ -90,8 +88,8 @@ final class ContactController
         $limiter->hit('contact:ip', $ip);
 
         $appConfig = require BASEPATH . '/config/app.php';
-        $to = (string)($appConfig['mail']['contact_email'] ?? 'info@campusly.it');
-        $from = str_replace(["\r", "\n"], '', (string)($appConfig['mail']['from'] ?? 'noreply@campusly.it'));
+        $to = (string)($appConfig['mail']['contact_email'] ?? 'info@example.com');
+        $from = str_replace(["\r", "\n"], '', (string)($appConfig['mail']['from'] ?? 'noreply@example.com'));
         $subject = str_replace(["\r", "\n"], '', (string)($appConfig['mail']['contact_subject'] ?? 'Nuovo contatto'));
 
         $message = "Hai ricevuto una nuova richiesta di contatto dal sito web.\n\n";
@@ -128,7 +126,7 @@ final class ContactController
         $timeBetweenRequests = 10;
         if (
             (isset($_SESSION['last_cookie_log_time']) && (time() - (int)$_SESSION['last_cookie_log_time']) < $timeBetweenRequests)
-            || $limiter->tooManyAttempts('cookielog:ip', $ip, 5, 3600)
+            || $limiter->tooManyAttempts('cookielog:ip', $ip, 60, 3600)
         ) {
             Http::json(['status' => 'error', 'message' => 'Rate limit exceeded.'], 429);
         }
@@ -199,6 +197,7 @@ final class ContactController
             }
         }
 
-        Http::json(['status' => 'ok'], 204);
+        http_response_code(204);
+        exit;
     }
 }

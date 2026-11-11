@@ -5,7 +5,7 @@ $config = [
     'site' => [
         'name' => 'Campusly',
         'tagline' => 'Il tuo calendario universitario',
-        'url' => 'https://gianlucamelis.altervista.org/Campusly',
+        'url' => '',
         'locale' => 'it',
         'base_path' => defined('BASE_PATH') ? BASE_PATH : '',
     ],

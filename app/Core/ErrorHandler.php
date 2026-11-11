@@ -15,8 +15,7 @@ final class ErrorHandler
                 return false;
             }
 
-            // Notice e Deprecation vengono solo loggati senza interrompere l'esecuzione (B5)
-            if (in_array($level, [E_NOTICE, E_USER_NOTICE, E_DEPRECATED, E_USER_DEPRECATED, E_STRICT], true)) {
+            if (in_array($level, [E_NOTICE, E_USER_NOTICE, E_DEPRECATED, E_USER_DEPRECATED], true)) {
                 self::writeLog(sprintf(
                     "[%s] Notice/Deprecation (%d): %s in %s:%d\n",
                     gmdate('Y-m-d H:i:s'),

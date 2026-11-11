@@ -3,8 +3,9 @@
         max-width: 800px;
         margin: 60px auto 100px;
         padding: 60px 50px;
-        background: var(--col-white);
-        border-radius: var(--radius-lg);
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-xl);
         box-shadow: var(--shadow-soft);
     }
     
@@ -12,30 +13,30 @@
         .legal-container { padding: 40px 24px; margin: 40px 20px 80px; }
     }
 
-    .legal-header { text-align: center; margin-bottom: 50px; padding-bottom: 30px; border-bottom: 1px solid #E2E8F0; }
-    .legal-header h1 { color: var(--col-primary); font-size: clamp(2rem, 4vw, 2.5rem); }
+    .legal-header { text-align: center; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--border-color); }
+    .legal-header h1 { color: var(--primary-color); font-size: clamp(1.8rem, 4vw, 2.4rem); }
     
-    .legal-content { color: var(--col-text-main); line-height: 1.8; font-size: 1.05rem; }
-    .legal-content h2 { color: var(--col-primary); margin: 40px 0 15px; font-size: 1.5rem; }
-    .legal-content h3 { color: var(--col-primary-light); margin: 30px 0 10px; font-size: 1.25rem; }
-    .legal-content p { margin-bottom: 20px; color: var(--col-text-light); }
-    .legal-content ul { margin-bottom: 20px; padding-left: 20px; color: var(--col-text-light); }
-    .legal-content li { margin-bottom: 10px; }
+    .legal-content { color: var(--text-primary); line-height: 1.8; font-size: 1.02rem; }
+    .legal-content h2 { color: var(--primary-color); margin: 32px 0 12px; font-size: 1.35rem; }
+    .legal-content h3 { color: var(--text-primary); margin: 24px 0 10px; font-size: 1.15rem; }
+    .legal-content p { margin-bottom: 18px; color: var(--text-secondary); }
+    .legal-content ul { margin-bottom: 18px; padding-left: 20px; color: var(--text-secondary); }
+    .legal-content li { margin-bottom: 8px; }
     
-    .legal-back { display: inline-flex; align-items: center; gap: 8px; color: var(--col-text-light); font-weight: 600; margin-bottom: 20px; transition: var(--transition-smooth); }
-    .legal-back:hover { color: var(--col-primary); transform: translateX(-5px); }
+    .legal-back { display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); font-weight: 600; margin-bottom: 20px; }
+    .legal-back:hover { color: var(--primary-color); }
 </style>
 
 <div class="legal-container">
-    <a href="/" class="legal-back">
-        <i data-lucide="arrow-left"></i> Torna alla Home
+    <a href="<?= htmlspecialchars(BASE_PATH) ?>/" class="legal-back">
+        ← Torna alla Home
     </a>
 
     <header class="legal-header">
-        <h1><?= htmlspecialchars($titolo) ?></h1>
+        <h1><?= htmlspecialchars($titolo ?? 'Informativa Legale') ?></h1>
     </header>
 
     <div class="legal-content">
-        <?= $contenuto ?>
+        <?= $contenuto ?? '' ?>
     </div>
 </div>

@@ -51,17 +51,21 @@ spl_autoload_register(function (string $class): void {
 
 \App\Core\ErrorHandler::register();
 
-// C7: Verifica validità sessione rispetto a cambi password successivi al login
+// Verifica validità sessione rispetto a cambi password (al massimo una volta ogni 60 secondi)
 if (!empty($_SESSION['user_id'])) {
-    $userModel = new \App\Models\UserModel();
-    $dbChangedAt = $userModel->getPasswordChangedAt((int)$_SESSION['user_id']);
-    $sessChangedAt = $_SESSION['password_changed_at'] ?? null;
+    $lastPwCheck = (int)($_SESSION['pw_check_at'] ?? 0);
+    if ((time() - $lastPwCheck) >= 60) {
+        $_SESSION['pw_check_at'] = time();
+        $userModel = new \App\Models\UserModel();
+        $dbChangedAt = $userModel->getPasswordChangedAt((int)$_SESSION['user_id']);
+        $sessChangedAt = $_SESSION['password_changed_at'] ?? null;
 
-    if ($dbChangedAt !== null && ($sessChangedAt === null || strtotime($dbChangedAt) > strtotime((string)$sessChangedAt))) {
-        $_SESSION = [];
-        session_destroy();
-        header('Location: ' . BASE_PATH . '/login');
-        exit;
+        if ($dbChangedAt !== null && ($sessChangedAt === null || strtotime($dbChangedAt) > strtotime((string)$sessChangedAt))) {
+            $_SESSION = [];
+            session_destroy();
+            header('Location: ' . BASE_PATH . '/login');
+            exit;
+        }
     }
 }
 
@@ -76,6 +80,7 @@ if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_me']) && is_string($
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_name'] = $user['first_name'];
         $_SESSION['password_changed_at'] = $user['password_changed_at'] ?? null;
+        $_SESSION['pw_check_at'] = time();
 
         $userModel->deleteToken($oldTokenHash);
         $newToken = bin2hex(random_bytes(32));

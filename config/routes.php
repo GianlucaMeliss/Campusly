@@ -102,12 +102,25 @@ $router->post('/api/preferenze/tema', function () use ($requireAuth): void {
     (new ProfileController())->syncTheme();
 });
 
+// Pagine Pubbliche e Legali
 $router->get('/', function (): void {
     (new HomeController())->index();
 });
 
 $router->get('/chi-siamo', function (): void {
     (new PageController())->about();
+});
+
+$router->get('/privacy', function (): void {
+    (new PageController())->privacy();
+});
+
+$router->get('/cookie', function (): void {
+    (new PageController())->cookie();
+});
+
+$router->get('/termini', function (): void {
+    (new PageController())->terms();
 });
 
 $router->get('/servizi', function (): void {

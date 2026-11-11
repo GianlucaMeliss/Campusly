@@ -56,7 +56,7 @@ class AuthController
         $emailBucketId = hash('sha256', strtolower($email));
 
         if (
-            $this->rateLimiter->tooManyAttempts('login:ip', $ip, 5, 900)
+            $this->rateLimiter->tooManyAttempts('login:ip', $ip, 30, 900)
             || ($email !== '' && $this->rateLimiter->tooManyAttempts('login:email', $emailBucketId, 5, 900))
         ) {
             header('Location: ' . BASE_PATH . '/login?error=ratelimit');
@@ -74,6 +74,7 @@ class AuthController
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_name'] = $user['first_name'];
             $_SESSION['password_changed_at'] = $user['password_changed_at'] ?? null;
+            $_SESSION['pw_check_at'] = time();
 
             $db = \App\Core\Database::getInstance();
             $stmt = $db->prepare("SELECT theme FROM user_preferences WHERE user_id = ?");
@@ -160,7 +161,7 @@ class AuthController
         }
 
         $ip = Http::clientIp();
-        if ($this->rateLimiter->tooManyAttempts('register:ip', $ip, 5, 3600)) {
+        if ($this->rateLimiter->tooManyAttempts('register:ip', $ip, 30, 3600)) {
             header('Location: ' . BASE_PATH . '/register?error=ratelimit');
             exit;
         }
@@ -220,6 +221,7 @@ class AuthController
             $_SESSION['user_id'] = $userId;
             $_SESSION['user_name'] = $firstName;
             $_SESSION['password_changed_at'] = null;
+            $_SESSION['pw_check_at'] = time();
 
             header('Location: ' . BASE_PATH . '/onboarding');
             exit;
@@ -246,7 +248,7 @@ class AuthController
         $emailBucket = hash('sha256', strtolower($email));
 
         if (
-            $this->rateLimiter->tooManyAttempts('forgot:ip', $ip, 5, 900)
+            $this->rateLimiter->tooManyAttempts('forgot:ip', $ip, 15, 900)
             || ($email !== '' && $this->rateLimiter->tooManyAttempts('forgot:email', $emailBucket, 3, 900))
         ) {
             header('Location: ' . BASE_PATH . '/password-dimenticata?status=sent');
@@ -273,7 +275,7 @@ class AuthController
 
                 $this->userModel->createPasswordReset((int)$user['id'], $tokenHash, $expiresAt);
 
-                $from = str_replace(["\r", "\n"], '', (string)($appConfig['mail']['from'] ?? 'noreply@campusly.it'));
+                $from = str_replace(["\r", "\n"], '', (string)($appConfig['mail']['from'] ?? 'noreply@example.com'));
                 $resetUrl = $baseUrl . '/reset-password/' . $token;
 
                 $subject = 'Campusly - Reimposta la tua password';
